@@ -1,0 +1,54 @@
+:root {
+  /* Brand & Primary Actions (Matched to mobile/src/ui/theme/tokens.ts) */
+  --navy: #0D3472;
+  --navy-mid: #164A9E;
+  --navy-deep: #09234D;
+  --navy-ink: #0D1B3E;
+  --amber: #F3B32A;
+  --amber-hover: #E5A41C;
+  --amber-soft: #FEF3C7;
+  --amber-border: #FDE68A;
+  --amber-text: #92400E;
+  --teal: #0F766E;
+  --teal-dot: #0D9488;
+  --teal-soft: #CCFBF1;
+  --teal-border: #99F6E4;
+  --teal-text: #115E59;
+
+  /* Semantic Status Pills */
+  --sky-soft: #EFF6FF;
+  --sky-border: #BFDBFE;
+  --sky-text: #1D4ED8;
+  --emerald: #15803D;
+  --emerald-soft: #DCFCE7;
+  --emerald-border: #BBF7D0;
+  --emerald-text: #166534;
+  --rose: #DC2626;
+  --rose-soft: #FEE2E2;
+  --rose-border: #FECACA;
+  --rose-text: #991B1B;
+  --indigo-soft: #EEF2FF;
+  --indigo-border: #C7D2FE;
+  --indigo-text: #3730A3;
+
+  /* Surfaces & Typography */
+  --bg: #FFFFFF;
+  --surface: #FFFFFF;
+  --surface-soft: #F4F6FA;
+  --surface-muted: #F8FAFC;
+  --border: #E5E7EB;
+  --border-strong: #CBD5E1;
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-muted: #64748B;
+
+  /* Radii & Focus */
+  --radius-sm: 10px;
+  --radius-input: 12px;
+  --radius-md: 14px;
+  --radius-card: 20px;
+  --radius-hero: 24px;
+  --radius-pill: 999px;
+  --shadow-modal: 0 20px 52px rgba(9, 35, 77, 0.22);
+  --focus-ring: 0 0 0 3px rgba(13, 52, 114, 0.14);
+}

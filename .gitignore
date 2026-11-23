@@ -1,0 +1,30 @@
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Local databases & private uploads
+*.sqlite
+*.sqlite3
+*.db
+storage/app/private/
+
+# Node / Frontend
+node_modules/
+dist/
+dist-ssr/
+*.local
+*.tsbuildinfo
+
+# IDE / OS / Local tooling
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.qodo/
+
+# Mobile build outputs
+*.apk
+*.aab

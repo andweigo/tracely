@@ -1,0 +1,11 @@
+{
+  "name": "tracely-workspace",
+  "private": true,
+  "scripts": {
+    "start": "npm --prefix mobile start",
+    "start:reset": "npm --prefix mobile start -- --reset-cache",
+    "android": "npm --prefix mobile run android",
+    "test": "npm --prefix mobile test",
+    "lint": "npm --prefix mobile run lint"
+  }
+}
