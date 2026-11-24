@@ -13,7 +13,7 @@ import Svg, {
 } from 'react-native-svg';
 import { useAppServices } from '../../state/AppServiceContext';
 import { AppIconBadge } from '../components/AppIconBadge';
-import { SDO_COLORS } from '../theme/tokens';
+import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 
 interface OnboardingHighlight {
   readonly id: string;
@@ -278,6 +278,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.16)',
   },
   skipText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '700',
     color: '#FFFFFF',
@@ -294,11 +295,13 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   kicker: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 1.8,
   },
   displayTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 32,
     lineHeight: 37,
     fontWeight: '800',
@@ -306,6 +309,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   bodyCopy: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 15,
     lineHeight: 22,
     color: '#D6E7FF',
@@ -343,6 +347,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   primaryCtaText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 15,
     fontWeight: '800',
     color: SDO_COLORS.navy,
@@ -356,6 +361,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   secondaryCtaText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 14,
     fontWeight: '700',
     color: '#FFFFFF',

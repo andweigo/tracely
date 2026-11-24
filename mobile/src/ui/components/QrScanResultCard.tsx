@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { CheckCircle2, RefreshCw, ShieldAlert, ShieldCheck, X } from 'lucide-react-native';
 import { Document } from '../../domain/entities/Document';
 import { QrResolutionResult } from '../../domain/security/QrPayload';
-import { SDO_COLORS } from '../theme/tokens';
+import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 
 interface QrScanResultCardProps {
   result: QrResolutionResult;
@@ -186,6 +186,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   mintPillText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '700',
     color: SDO_COLORS.emeraldText,
@@ -201,6 +202,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   amberPillBadgeText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '700',
     color: SDO_COLORS.amberText,
@@ -212,6 +214,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   selfSentText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '600',
     color: SDO_COLORS.amberText,
@@ -224,6 +227,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   unlockHintText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '600',
     color: SDO_COLORS.emeraldText,
@@ -240,32 +244,36 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   rosePillText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '700',
     color: SDO_COLORS.roseText,
   },
   resultTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 15,
     fontWeight: '800',
     color: SDO_COLORS.textPrimary,
   },
   denyBody: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     color: SDO_COLORS.roseText,
   },
   trackingMono: {
     fontSize: 12,
     fontWeight: '800',
-    fontFamily: 'monospace',
+    fontFamily: SDO_FONTS.mono,
     color: SDO_COLORS.navy,
   },
   metaText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     color: SDO_COLORS.textSecondary,
   },
   hashMono: {
     fontSize: 11,
-    fontFamily: 'monospace',
+    fontFamily: SDO_FONTS.mono,
     color: SDO_COLORS.textMuted,
   },
   btnRow: {
@@ -284,6 +292,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   outlinePillText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '700',
     color: SDO_COLORS.navy,
@@ -300,6 +309,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   amberPillText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '800',
     color: SDO_COLORS.navyInk,
@@ -314,6 +324,7 @@ const styles = StyleSheet.create({
     borderTopColor: SDO_COLORS.border,
   },
   rescanText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.navy,

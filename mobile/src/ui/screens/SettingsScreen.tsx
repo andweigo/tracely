@@ -15,7 +15,7 @@ import {
 } from 'lucide-react-native';
 import { useAppServices } from '../../state/AppServiceContext';
 import { AppIconBadge } from '../components/AppIconBadge';
-import { SDO_COLORS } from '../theme/tokens';
+import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 
 const SYSTEM_CAPABILITIES: ReadonlyArray<{
   readonly title: string;
@@ -226,6 +226,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 16,
     fontWeight: '800',
     color: SDO_COLORS.textPrimary,
@@ -247,12 +248,14 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   brandName: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 20,
     fontWeight: '900',
     color: SDO_COLORS.navyInk,
     letterSpacing: -0.3,
   },
   brandTagline: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '600',
     color: SDO_COLORS.textSecondary,
@@ -270,6 +273,7 @@ const styles = StyleSheet.create({
     gap: 7,
   },
   sectionTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 14,
     fontWeight: '800',
     color: SDO_COLORS.textPrimary,
@@ -297,11 +301,13 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   infoLabel: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '600',
     color: SDO_COLORS.textSecondary,
   },
   infoValue: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.textPrimary,
@@ -309,6 +315,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   infoValueStrong: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12.5,
     fontWeight: '800',
     color: SDO_COLORS.navy,
@@ -317,7 +324,7 @@ const styles = StyleSheet.create({
   infoMono: {
     fontSize: 12,
     fontWeight: '700',
-    fontFamily: 'monospace',
+    fontFamily: SDO_FONTS.mono,
     color: SDO_COLORS.textPrimary,
   },
   capList: {
@@ -348,11 +355,13 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   capTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12.5,
     fontWeight: '800',
     color: SDO_COLORS.textPrimary,
   },
   capDetail: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11.5,
     lineHeight: 16,
     color: SDO_COLORS.textSecondary,
@@ -373,6 +382,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   footerCaption: {
+    fontFamily: SDO_FONTS.sans,
     textAlign: 'center',
     fontSize: 11,
     fontWeight: '600',

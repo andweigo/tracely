@@ -35,7 +35,7 @@ import { TrackingGroupedList } from '../components/TrackingLocationCard';
 import { formatHumanInboxStatus } from '../utils/sentFilter';
 import { ActionRemarksSheet } from '../sheets/ActionRemarksSheet';
 import { ForwardSheet } from '../sheets/ForwardSheet';
-import { SDO_COLORS } from '../theme/tokens';
+import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 import { formatRelativeTime } from '../utils/formatters';
 import {
   countSlaRisks,
@@ -739,6 +739,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '800',
     color: '#FFFFFF',
@@ -752,11 +753,13 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   greeting: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '800',
     color: SDO_COLORS.textPrimary,
   },
   subGreeting: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     color: SDO_COLORS.textSecondary,
   },
@@ -785,6 +788,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   searchInput: {
+    fontFamily: SDO_FONTS.sans,
     flex: 1,
     fontSize: 13,
     color: SDO_COLORS.textPrimary,
@@ -820,6 +824,7 @@ const styles = StyleSheet.create({
     gap: 7,
   },
   slaAlertText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '800',
     color: SDO_COLORS.amberText,
@@ -831,6 +836,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   slaReviewText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '800',
     color: SDO_COLORS.navyInk,
@@ -852,6 +858,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   bulkSelectLink: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '800',
     color: SDO_COLORS.navy,
@@ -867,6 +874,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   bulkAmberText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '800',
     color: SDO_COLORS.navyInk,
@@ -880,6 +888,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   bulkOutlineText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.navy,
@@ -903,6 +912,7 @@ const styles = StyleSheet.create({
     backgroundColor: SDO_COLORS.navy,
   },
   subFilterText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '700',
     color: SDO_COLORS.textSecondary,
@@ -922,6 +932,7 @@ const styles = StyleSheet.create({
     backgroundColor: SDO_COLORS.navyInk,
   },
   pillTabText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.textSecondary,
@@ -936,6 +947,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   sectionTitle: {
+    fontFamily: SDO_FONTS.sans,
     flex: 1,
     fontSize: 16,
     fontWeight: '800',
@@ -956,11 +968,13 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   trackCodeChipText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '700',
     color: SDO_COLORS.navy,
   },
   seeAll: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.navy,
@@ -983,16 +997,18 @@ const styles = StyleSheet.create({
   trackingCode: {
     fontSize: 12,
     fontWeight: '700',
-    fontFamily: 'monospace',
+    fontFamily: SDO_FONTS.mono,
     color: SDO_COLORS.textSecondary,
   },
   docTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 15,
     fontWeight: '800',
     color: SDO_COLORS.textPrimary,
     lineHeight: 21,
   },
   docSub: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     color: SDO_COLORS.textSecondary,
   },
@@ -1014,6 +1030,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   amberBtnText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '800',
     color: SDO_COLORS.navyInk,
@@ -1046,6 +1063,7 @@ const styles = StyleSheet.create({
     color: SDO_COLORS.amberText,
   },
   outlinePillText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '700',
     color: SDO_COLORS.navy,
@@ -1059,6 +1077,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   emptyActionText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '800',
     color: SDO_COLORS.navyInk,

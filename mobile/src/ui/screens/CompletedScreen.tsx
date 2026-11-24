@@ -4,7 +4,7 @@ import { Archive, CheckCircle2, Menu, Search } from 'lucide-react-native';
 import { DocumentLifecycleStatus } from '../../domain/enums/DomainEnums';
 import { useAppServices } from '../../state/AppServiceContext';
 import { EmptyState } from '../components/EmptyState';
-import { SDO_COLORS } from '../theme/tokens';
+import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 
 type CompletedFilter = 'all' | 'approved' | 'archived';
 const PAGE_SIZE = 15;
@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
-  headerTitle: { fontSize: 20, fontWeight: '800', color: SDO_COLORS.navyInk },
+  headerTitle: { fontFamily: SDO_FONTS.sans, fontSize: 20, fontWeight: '800', color: SDO_COLORS.navyInk },
   iconBtn: {
     width: 38,
     height: 38,
@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
     borderColor: SDO_COLORS.border,
   },
   chipActive: { backgroundColor: SDO_COLORS.navy, borderColor: SDO_COLORS.navy },
-  chipText: { fontSize: 12, fontWeight: '700', color: SDO_COLORS.textSecondary },
+  chipText: { fontFamily: SDO_FONTS.sans, fontSize: 12, fontWeight: '700', color: SDO_COLORS.textSecondary },
   chipTextActive: { color: '#FFFFFF' },
   searchBox: {
     flexDirection: 'row',
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 12,
   },
-  searchInput: { flex: 1, paddingVertical: 10, fontSize: 14, color: SDO_COLORS.textPrimary },
+  searchInput: { fontFamily: SDO_FONTS.sans, flex: 1, paddingVertical: 10, fontSize: 14, color: SDO_COLORS.textPrimary },
   card: {
     borderWidth: 1,
     borderColor: SDO_COLORS.border,
@@ -200,15 +200,15 @@ const styles = StyleSheet.create({
     backgroundColor: SDO_COLORS.surface,
   },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  code: { fontSize: 12, fontWeight: '700', color: SDO_COLORS.navy },
+  code: { fontFamily: SDO_FONTS.sans, fontSize: 12, fontWeight: '700', color: SDO_COLORS.navy },
   pill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 },
   pillApproved: { backgroundColor: SDO_COLORS.emeraldSoft },
   pillArchived: { backgroundColor: SDO_COLORS.surfaceSoft },
-  pillText: { fontSize: 10.5, fontWeight: '700' },
-  title: { fontSize: 15, fontWeight: '800', color: SDO_COLORS.textPrimary },
-  meta: { fontSize: 12, color: SDO_COLORS.textSecondary },
+  pillText: { fontFamily: SDO_FONTS.sans, fontSize: 10.5, fontWeight: '700' },
+  title: { fontFamily: SDO_FONTS.sans, fontSize: 15, fontWeight: '800', color: SDO_COLORS.textPrimary },
+  meta: { fontFamily: SDO_FONTS.sans, fontSize: 12, color: SDO_COLORS.textSecondary },
   pager: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 },
   pagerBtn: { paddingHorizontal: 12, paddingVertical: 8 },
-  pagerText: { fontSize: 13, fontWeight: '700', color: SDO_COLORS.navy },
+  pagerText: { fontFamily: SDO_FONTS.sans, fontSize: 13, fontWeight: '700', color: SDO_COLORS.navy },
   pagerDisabled: { color: SDO_COLORS.textMuted },
 });

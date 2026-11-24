@@ -30,7 +30,7 @@ import {
 import type { PresignedDownloadGrant } from '../../repositories/contracts/IDocumentRepository';
 import { useAppServices } from '../../state/AppServiceContext';
 import { ModalSheet } from '../components/ModalSheet';
-import { SDO_COLORS } from '../theme/tokens';
+import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 import { formatBytes } from '../utils/formatters';
 
 interface PresignedViewerModalProps {
@@ -466,6 +466,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   ttlLabel: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.emeraldText,
@@ -478,7 +479,7 @@ const styles = StyleSheet.create({
   ttlValue: {
     fontSize: 12,
     fontWeight: '800',
-    fontFamily: 'monospace',
+    fontFamily: SDO_FONTS.mono,
     color: SDO_COLORS.emeraldText,
   },
   previewCard: {
@@ -499,19 +500,21 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   fileTitle: {
+    fontFamily: SDO_FONTS.sans,
     flex: 1,
     fontSize: 13,
     fontWeight: '800',
     color: SDO_COLORS.textPrimary,
   },
   note: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     color: SDO_COLORS.textSecondary,
     textAlign: 'center',
   },
   mono: {
     fontSize: 10,
-    fontFamily: 'monospace',
+    fontFamily: SDO_FONTS.mono,
     color: SDO_COLORS.textMuted,
   },
   viewerFrame: {
@@ -550,6 +553,7 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   expandChipText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '700',
     color: '#FFFFFF',
@@ -574,11 +578,13 @@ const styles = StyleSheet.create({
     backgroundColor: SDO_COLORS.surfaceSoft,
   },
   pagerBtnText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.navy,
   },
   pagerLabel: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.textPrimary,
@@ -591,6 +597,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   emptyTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '800',
     color: SDO_COLORS.textPrimary,
@@ -609,6 +616,7 @@ const styles = StyleSheet.create({
     opacity: 0.45,
   },
   openBtnText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 14,
     fontWeight: '800',
     color: SDO_COLORS.navyInk,
@@ -647,6 +655,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   watermarkText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '800',
     letterSpacing: 1.2,

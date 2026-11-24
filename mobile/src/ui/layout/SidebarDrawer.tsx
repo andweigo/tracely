@@ -28,7 +28,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MobileTab, useAppServices } from '../../state/AppServiceContext';
 import { AppIconBadge } from '../components/AppIconBadge';
-import { SDO_COLORS } from '../theme/tokens';
+import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 import { selectSentDocuments } from '../utils/sentFilter';
 
 interface SidebarScreenItem {
@@ -331,11 +331,13 @@ const styles = StyleSheet.create({
     gap: 1,
   },
   userName: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 14,
     fontWeight: '700',
     color: SDO_COLORS.textPrimary,
   },
   userSub: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     color: SDO_COLORS.textMuted,
   },
@@ -346,6 +348,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   sectionLabel: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 10,
     fontWeight: '700',
     letterSpacing: 0.9,
@@ -368,6 +371,7 @@ const styles = StyleSheet.create({
     backgroundColor: SDO_COLORS.surfaceSoft,
   },
   navLabel: {
+    fontFamily: SDO_FONTS.sans,
     flex: 1,
     fontSize: 14,
     fontWeight: '600',
@@ -390,6 +394,7 @@ const styles = StyleSheet.create({
     backgroundColor: SDO_COLORS.navy,
   },
   badgeText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '700',
     color: SDO_COLORS.textSecondary,
@@ -413,6 +418,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   signOutLabel: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 14,
     fontWeight: '700',
     color: SDO_COLORS.rose,
@@ -438,13 +444,14 @@ const styles = StyleSheet.create({
     backgroundColor: SDO_COLORS.amber,
   },
   statusLabel: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '600',
     color: SDO_COLORS.textPrimary,
   },
   apiHost: {
     fontSize: 10,
-    fontFamily: 'monospace',
+    fontFamily: SDO_FONTS.mono,
     color: SDO_COLORS.textMuted,
   },
 });

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { AlertCircle, Camera, Keyboard, Lock } from 'lucide-react-native';
 import { ModalSheet } from '../components/ModalSheet';
-import { SDO_COLORS } from '../theme/tokens';
+import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 
 interface QrTokenEntryModalProps {
   open: boolean;
@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    fontFamily: 'monospace',
+    fontFamily: SDO_FONTS.mono,
     fontSize: 13,
     color: SDO_COLORS.textPrimary,
   },
@@ -155,6 +155,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   errorText: {
+    fontFamily: SDO_FONTS.sans,
     flex: 1,
     fontSize: 12,
     fontWeight: '600',
@@ -171,6 +172,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   securityNoteText: {
+    fontFamily: SDO_FONTS.sans,
     flex: 1,
     fontSize: 11,
     lineHeight: 16,
@@ -184,6 +186,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   submitBtnText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 14,
     fontWeight: '800',
     color: SDO_COLORS.navyInk,
@@ -200,6 +203,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   scannerBtnText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '700',
     color: SDO_COLORS.navy,

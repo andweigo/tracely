@@ -546,6 +546,10 @@ export const AppServiceProvider: React.FC<{
   const [sidebarOpen, setSidebarOpen] = useState(false);
   sidebarOpenRef.current = sidebarOpen;
   const lastNotifSyncKeyRef = useRef<string>('');
+  const [notificationsHydratedActorId, setNotificationsHydratedActorId] = useState<string | null>(
+    null,
+  );
+  const notifBaselineSyncedActorRef = useRef<string | null>(null);
 
   const navigateToTab = useCallback(
     (nextTab: MobileTab) => {
@@ -621,6 +625,10 @@ export const AppServiceProvider: React.FC<{
     setActor(null);
     setSessionMetadata(null);
     setDocuments([]);
+    setNotifications([]);
+    setNotificationsHydratedActorId(null);
+    notifBaselineSyncedActorRef.current = null;
+    lastNotifSyncKeyRef.current = '';
     setSelectedDocumentId(null);
     notify('error', 'Your session expired. Please sign in again.');
   }, [notify]);
@@ -655,6 +663,7 @@ export const AppServiceProvider: React.FC<{
         setDocuments(docs);
         setTrackedSnapshots(tracked);
         setNotifications(alerts);
+        setNotificationsHydratedActorId(currentActor.id);
         setCategories(cats);
         setOffices(officeList);
         setPersonnelDirectory(staffList);
@@ -840,20 +849,32 @@ export const AppServiceProvider: React.FC<{
   }, [services, actor, isOnline, hydrateWorkspace]);
 
   useEffect(() => {
+    // Do not wipe device notifications or announced history before session restoration finishes
+    if (bootstrapping) {
+      return;
+    }
     if (!actor) {
+      notifBaselineSyncedActorRef.current = null;
       if (lastNotifSyncKeyRef.current !== '__cleared__') {
         lastNotifSyncKeyRef.current = '__cleared__';
         DeviceNotificationBridge.clearNotifications();
       }
       return;
     }
+    if (notificationsHydratedActorId !== actor.id) {
+      return;
+    }
     const unread = notifications.filter((n) => !n.read);
     const showDetails = !securityPrefs.hideLockScreenTitles;
-    const syncKey = `${actor.id}:${showDetails ? '1' : '0'}:${unread.map((n) => n.id).join(',')}`;
+    const isInitialSessionSync = notifBaselineSyncedActorRef.current !== actor.id;
+    const syncKey = `${actor.id}:${showDetails ? '1' : '0'}:${isInitialSessionSync ? 'init' : 'live'}:${unread.map((n) => n.id).join(',')}`;
     if (syncKey === lastNotifSyncKeyRef.current) {
       return;
     }
     lastNotifSyncKeyRef.current = syncKey;
+    if (isInitialSessionSync) {
+      notifBaselineSyncedActorRef.current = actor.id;
+    }
     DeviceNotificationBridge.syncNotifications(
       unread.map((n) => ({
         id: n.id,
@@ -864,8 +885,15 @@ export const AppServiceProvider: React.FC<{
       })),
       unread.length,
       showDetails,
+      isInitialSessionSync,
     );
-  }, [actor, notifications, securityPrefs.hideLockScreenTitles]);
+  }, [
+    actor,
+    bootstrapping,
+    notifications,
+    notificationsHydratedActorId,
+    securityPrefs.hideLockScreenTitles,
+  ]);
 
   const runAsyncAction = useCallback(
     async <T,>(fn: () => Promise<T>, successMessage?: string): Promise<T> => {
@@ -1352,6 +1380,9 @@ export const AppServiceProvider: React.FC<{
           setDocuments([]);
           setTrackedSnapshots([]);
           setNotifications([]);
+          setNotificationsHydratedActorId(null);
+          notifBaselineSyncedActorRef.current = null;
+          lastNotifSyncKeyRef.current = '__cleared__';
           DeviceNotificationBridge.clearNotifications();
           setAuditLogs([]);
           setActiveSessions([]);

@@ -11,7 +11,7 @@ import { KeyRound, Laptop, LogOut, Smartphone } from 'lucide-react-native';
 import { AUTH_INPUT_LIMITS } from '../../domain/security/AuthInputPolicy';
 import { useAppServices } from '../../state/AppServiceContext';
 import { ModalSheet } from '../components/ModalSheet';
-import { SDO_COLORS } from '../theme/tokens';
+import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 import { formatShortTimestamp } from '../utils/formatters';
 
 interface SheetModalProps {
@@ -211,11 +211,13 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   sessionName: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '800',
     color: SDO_COLORS.textPrimary,
   },
   currentBadge: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 9,
     fontWeight: '800',
     color: SDO_COLORS.emeraldText,
@@ -226,6 +228,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   sessionMeta: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     color: SDO_COLORS.textSecondary,
     paddingLeft: 24,
@@ -241,6 +244,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   revokeBtnText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '800',
     color: '#FFFFFF',
@@ -252,16 +256,19 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   noticeTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '800',
     color: SDO_COLORS.navy,
   },
   noticeBody: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     lineHeight: 17,
     color: SDO_COLORS.textSecondary,
   },
   emptyText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     color: SDO_COLORS.textSecondary,
     textAlign: 'center',
@@ -274,11 +281,13 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   label: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.textPrimary,
   },
   input: {
+    fontFamily: SDO_FONTS.sans,
     minHeight: 44,
     borderRadius: 999,
     backgroundColor: SDO_COLORS.surfaceSoft,
@@ -297,6 +306,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   submitText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 14,
     fontWeight: '800',
     color: SDO_COLORS.navyInk,

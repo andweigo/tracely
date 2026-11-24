@@ -53,7 +53,7 @@ import { PasswordUnlockModal } from '../sheets/PasswordUnlockModal';
 import { PresignedViewerModal } from '../sheets/PresignedViewerModal';
 import { QrTokenEntryModal } from '../sheets/QrTokenEntryModal';
 import { RevisionUploadSheet } from '../sheets/RevisionUploadSheet';
-import { SDO_COLORS } from '../theme/tokens';
+import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 import { formatRelativeTime, formatShortTimestamp } from '../utils/formatters';
 
 interface DocumentDetailScreenProps {
@@ -1335,6 +1335,7 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   deniedText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     color: SDO_COLORS.roseText,
   },
@@ -1347,11 +1348,13 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   emptyDetailTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 16,
     fontWeight: '800',
     color: SDO_COLORS.textPrimary,
   },
   emptyDetailBody: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     lineHeight: 18,
     color: SDO_COLORS.textSecondary,
@@ -1374,6 +1377,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   emptyOutlineText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '700',
     color: SDO_COLORS.navy,
@@ -1387,6 +1391,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   emptyAmberText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '800',
     color: SDO_COLORS.navyInk,
@@ -1407,6 +1412,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 16,
     fontWeight: '800',
     color: SDO_COLORS.textPrimary,
@@ -1433,7 +1439,7 @@ const styles = StyleSheet.create({
   hashPillText: {
     fontSize: 11,
     fontWeight: '700',
-    fontFamily: 'monospace',
+    fontFamily: SDO_FONTS.mono,
     color: SDO_COLORS.emeraldText,
   },
   hardCopyPill: {
@@ -1446,6 +1452,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   hardCopyPillText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '800',
     color: SDO_COLORS.amberText,
@@ -1458,12 +1465,14 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   selfSentBannerText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '600',
     color: SDO_COLORS.amberText,
     lineHeight: 17,
   },
   physicalMeta: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '600',
     color: SDO_COLORS.textSecondary,
@@ -1486,6 +1495,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   qrActionText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: '#FFFFFF',
@@ -1503,6 +1513,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   scanActionText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.navy,
@@ -1524,16 +1535,18 @@ const styles = StyleSheet.create({
   trackingCode: {
     fontSize: 12,
     fontWeight: '700',
-    fontFamily: 'monospace',
+    fontFamily: SDO_FONTS.mono,
     color: SDO_COLORS.textSecondary,
   },
   docTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 18,
     fontWeight: '800',
     color: SDO_COLORS.textPrimary,
     lineHeight: 24,
   },
   docOriginLine: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     color: SDO_COLORS.textSecondary,
   },
@@ -1553,6 +1566,7 @@ const styles = StyleSheet.create({
     backgroundColor: SDO_COLORS.navyInk,
   },
   segmentText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.textSecondary,
@@ -1577,6 +1591,7 @@ const styles = StyleSheet.create({
     backgroundColor: SDO_COLORS.skySoft,
   },
   scopeChipText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '700',
     color: SDO_COLORS.textSecondary,
@@ -1604,15 +1619,18 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   timelineTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '800',
     color: SDO_COLORS.textPrimary,
   },
   timelineSub: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     color: SDO_COLORS.textSecondary,
   },
   timelineRemark: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     color: SDO_COLORS.textPrimary,
     marginTop: 2,
@@ -1628,6 +1646,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   proofInlineText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '600',
     color: SDO_COLORS.emeraldText,
@@ -1643,12 +1662,14 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
   },
   offlineBannerText: {
+    fontFamily: SDO_FONTS.sans,
     flex: 1,
     fontSize: 12,
     fontWeight: '600',
     color: SDO_COLORS.amberText,
   },
   retryLink: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '800',
     color: SDO_COLORS.amberText,
@@ -1661,6 +1682,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   fileTitle: {
+    fontFamily: SDO_FONTS.sans,
     flex: 1,
     fontSize: 13,
     fontWeight: '700',
@@ -1676,13 +1698,14 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   viewPillText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '700',
     color: '#FFFFFF',
   },
   monoSmall: {
     fontSize: 11,
-    fontFamily: 'monospace',
+    fontFamily: SDO_FONTS.mono,
     color: SDO_COLORS.textMuted,
   },
   badgeRow: {
@@ -1691,6 +1714,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   detailRow: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     color: SDO_COLORS.textPrimary,
   },
@@ -1701,6 +1725,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   schoolTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '800',
     color: SDO_COLORS.navy,
@@ -1735,6 +1760,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
   },
   outlineActionText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '700',
     color: SDO_COLORS.navy,
@@ -1751,6 +1777,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   primaryActionText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '800',
     color: SDO_COLORS.navyInk,
@@ -1765,6 +1792,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   menuText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 14,
     fontWeight: '700',
     color: SDO_COLORS.textPrimary,
@@ -1782,6 +1810,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   finalizedBannerText: {
+    fontFamily: SDO_FONTS.sans,
     flex: 1,
     fontSize: 12,
     fontWeight: '700',
@@ -1804,6 +1833,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   proofViewChipText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '700',
     color: SDO_COLORS.navy,
@@ -1815,6 +1845,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   commentInput: {
+    fontFamily: SDO_FONTS.sans,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: SDO_COLORS.border,
@@ -1837,6 +1868,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   commentSendText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '800',
     color: '#FFFFFF',
@@ -1854,6 +1886,7 @@ const styles = StyleSheet.create({
     borderColor: SDO_COLORS.amberBorder,
   },
   commentAuthor: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '800',
     color: SDO_COLORS.textPrimary,
@@ -1864,16 +1897,19 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   commentScopeLabel: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 10,
     fontWeight: '800',
     color: SDO_COLORS.navy,
   },
   commentBodyText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     lineHeight: 18,
     color: SDO_COLORS.textPrimary,
   },
   commentTime: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 10.5,
     color: SDO_COLORS.textMuted,
   },
@@ -1910,17 +1946,20 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   lockBadgeText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11.5,
     fontWeight: '800',
     color: SDO_COLORS.amberText,
   },
   lockGateTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 17,
     fontWeight: '800',
     color: SDO_COLORS.textPrimary,
     textAlign: 'center',
   },
   lockGateBody: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12.5,
     lineHeight: 18,
     color: SDO_COLORS.textSecondary,
@@ -1956,6 +1995,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   lockPasswordLinkText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.navy,

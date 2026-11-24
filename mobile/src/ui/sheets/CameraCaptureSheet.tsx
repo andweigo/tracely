@@ -6,7 +6,7 @@ import { SanitizedImageResult } from '../../domain/security/ImageSanitizer';
 import { useAppServices } from '../../state/AppServiceContext';
 import { ModalSheet } from '../components/ModalSheet';
 import { SanitizedCaptureCard } from '../components/SanitizedCaptureCard';
-import { SDO_COLORS } from '../theme/tokens';
+import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 
 interface CameraCaptureSheetProps {
   open: boolean;
@@ -144,11 +144,13 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   bannerTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '800',
     color: SDO_COLORS.emeraldText,
   },
   bannerBody: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     lineHeight: 17,
     color: SDO_COLORS.emeraldText,
@@ -170,6 +172,7 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   snapBtnText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '700',
     color: SDO_COLORS.navy,
@@ -188,6 +191,7 @@ const styles = StyleSheet.create({
     opacity: 0.45,
   },
   uploadBtnText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 14,
     fontWeight: '800',
     color: SDO_COLORS.navyInk,

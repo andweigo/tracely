@@ -3,7 +3,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { ShieldAlert } from 'lucide-react-native';
 import { useAppServices } from '../../state/AppServiceContext';
 import { ModalSheet } from '../components/ModalSheet';
-import { SDO_COLORS } from '../theme/tokens';
+import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 import { formatShortTimestamp } from '../utils/formatters';
 
 interface AuditInspectorSheetProps {
@@ -60,6 +60,7 @@ export const AuditInspectorSheet: React.FC<AuditInspectorSheetProps> = ({ open, 
 
 const styles = StyleSheet.create({
   emptyText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     color: SDO_COLORS.textSecondary,
     textAlign: 'center',
@@ -86,19 +87,22 @@ const styles = StyleSheet.create({
   actionText: {
     fontSize: 10,
     fontWeight: '700',
-    fontFamily: 'monospace',
+    fontFamily: SDO_FONTS.mono,
     color: '#FFFFFF',
   },
   time: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     color: SDO_COLORS.textMuted,
   },
   summary: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.textPrimary,
   },
   meta: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     color: SDO_COLORS.textSecondary,
   },
@@ -111,6 +115,7 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   footerText: {
+    fontFamily: SDO_FONTS.sans,
     flex: 1,
     fontSize: 11,
     color: SDO_COLORS.textSecondary,

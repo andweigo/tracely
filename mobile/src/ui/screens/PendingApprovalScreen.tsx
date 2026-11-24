@@ -20,7 +20,7 @@ import {
 import { useAppServices } from '../../state/AppServiceContext';
 import { AppIconBadge } from '../components/AppIconBadge';
 import { ServerEndpointModal } from '../sheets/ServerEndpointModal';
-import { SDO_COLORS } from '../theme/tokens';
+import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 
 const AUTO_POLL_MS = 15_000;
 
@@ -320,6 +320,7 @@ const styles = StyleSheet.create({
     borderColor: SDO_COLORS.roseBorder,
   },
   statusPillText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
   },
@@ -333,12 +334,14 @@ const styles = StyleSheet.create({
     color: SDO_COLORS.roseText,
   },
   brandTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 21,
     fontWeight: '800',
     color: SDO_COLORS.navyInk,
     textAlign: 'center',
   },
   brandSubtitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     lineHeight: 19,
     color: SDO_COLORS.textSecondary,
@@ -354,6 +357,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   sectionLabel: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.9,
@@ -367,11 +371,13 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   rowLabel: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12.5,
     fontWeight: '600',
     color: SDO_COLORS.textMuted,
   },
   rowValue: {
+    fontFamily: SDO_FONTS.sans,
     flex: 1,
     fontSize: 12.5,
     fontWeight: '700',
@@ -379,7 +385,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   monoValue: {
-    fontFamily: 'monospace',
+    fontFamily: SDO_FONTS.mono,
     color: SDO_COLORS.navy,
   },
   actionsWrap: {
@@ -396,6 +402,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   primaryBtnText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 14,
     fontWeight: '800',
     color: '#FFFFFF',
@@ -411,11 +418,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
   },
   secondaryBtnText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '700',
     color: SDO_COLORS.navy,
   },
   pollHint: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11.5,
     color: SDO_COLORS.textMuted,
     textAlign: 'center',
@@ -436,6 +445,7 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
   },
   serverLinkText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.navy,
@@ -448,6 +458,7 @@ const styles = StyleSheet.create({
     paddingTop: 4,
   },
   securityFooterText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11.5,
     color: SDO_COLORS.textMuted,
     fontWeight: '600',

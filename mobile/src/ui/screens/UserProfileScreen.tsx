@@ -40,7 +40,7 @@ import {
   ActiveSessionsModal,
   ChangePasswordModal,
 } from '../sheets/SecurityActionsSheet';
-import { SDO_COLORS } from '../theme/tokens';
+import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 import { formatShortTimestamp } from '../utils/formatters';
 
 type UserProfileTab = 'info' | 'preferences' | 'settings';
@@ -623,6 +623,7 @@ const styles = StyleSheet.create({
     height: 40,
   },
   headerTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 16,
     fontWeight: '800',
     color: SDO_COLORS.textPrimary,
@@ -651,6 +652,7 @@ const styles = StyleSheet.create({
     backgroundColor: SDO_COLORS.navy,
   },
   tabBtnText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11.5,
     fontWeight: '700',
     color: SDO_COLORS.textSecondary,
@@ -665,11 +667,13 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   cardHeading: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 14,
     fontWeight: '800',
     color: SDO_COLORS.textPrimary,
   },
   fieldLabel: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '800',
     textTransform: 'uppercase',
@@ -677,6 +681,7 @@ const styles = StyleSheet.create({
     color: SDO_COLORS.textMuted,
   },
   input: {
+    fontFamily: SDO_FONTS.sans,
     minHeight: 40,
     borderRadius: 12,
     borderWidth: 1,
@@ -713,6 +718,7 @@ const styles = StyleSheet.create({
     borderRadius: 5.5,
   },
   swatchLabel: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11.5,
     fontWeight: '700',
     color: SDO_COLORS.textSecondary,
@@ -731,6 +737,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   primaryBtnText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '800',
     color: '#FFFFFF',
@@ -757,16 +764,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   metaLabel: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     color: SDO_COLORS.textSecondary,
   },
   metaMono: {
     fontSize: 12,
     fontWeight: '700',
-    fontFamily: 'monospace',
+    fontFamily: SDO_FONTS.mono,
     color: SDO_COLORS.textPrimary,
   },
   metaVal: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.textPrimary,
@@ -791,6 +800,7 @@ const styles = StyleSheet.create({
     borderColor: SDO_COLORS.navy,
   },
   choiceText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11.5,
     fontWeight: '700',
     color: SDO_COLORS.textSecondary,
@@ -817,11 +827,13 @@ const styles = StyleSheet.create({
     gap: 1,
   },
   toggleTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12.5,
     fontWeight: '800',
     color: SDO_COLORS.textPrimary,
   },
   toggleSub: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     lineHeight: 15,
     color: SDO_COLORS.textSecondary,
@@ -837,6 +849,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   livePulseText: {
+    fontFamily: SDO_FONTS.sans,
     flex: 1,
     fontSize: 11.5,
     fontWeight: '700',
@@ -853,6 +866,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   whiteBtnText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.textPrimary,
@@ -860,7 +874,7 @@ const styles = StyleSheet.create({
   whiteBtnUrl: {
     flex: 1,
     fontSize: 11,
-    fontFamily: 'monospace',
+    fontFamily: SDO_FONTS.mono,
     color: SDO_COLORS.navy,
   },
   wipeBtn: {
@@ -873,6 +887,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   wipeBtnText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '800',
     color: '#FFFFFF',

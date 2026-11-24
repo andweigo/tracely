@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 import { Eye, EyeOff, Plus, Repeat } from 'lucide-react-native';
+import { SDO_FONTS } from '../theme/tokens';
 
 export interface MobileIdentityWalletCardProps {
   readonly fullName: string;
@@ -586,6 +587,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#7C3AED',
   },
   liveBadgeText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.4,
@@ -695,11 +697,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   innerNameText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 14.5,
     fontWeight: '800',
     color: '#FFFFFF',
   },
   innerIdText: {
+    fontFamily: SDO_FONTS.sans,
     marginTop: 4,
     fontSize: 10.5,
     fontWeight: '700',
@@ -710,6 +714,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   brandMarkText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 14.5,
     fontWeight: '900',
     fontStyle: 'italic',
@@ -717,6 +722,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   innerOfficeText: {
+    fontFamily: SDO_FONTS.sans,
     marginTop: 3,
     fontSize: 10,
     fontWeight: '700',
@@ -744,6 +750,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   pocketCaptionText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '600',
     color: 'rgba(233, 226, 255, 0.85)',
@@ -755,12 +762,14 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   pocketPositionText: {
+    fontFamily: SDO_FONTS.sans,
     flexShrink: 1,
     fontSize: 19,
     fontWeight: '800',
     color: '#FFFFFF',
   },
   pocketOfficeSuffix: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: 'rgba(220, 210, 255, 0.85)',
@@ -783,6 +792,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.14)',
   },
   actionPillText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: '#FFFFFF',
@@ -828,12 +838,14 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(255, 255, 255, 0.18)',
   },
   backFaceEyebrow: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 9.5,
     fontWeight: '800',
     letterSpacing: 0.7,
     color: '#C4B5FD',
   },
   backFaceBrand: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '900',
     fontStyle: 'italic',
@@ -843,17 +855,20 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   backFaceName: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 16,
     fontWeight: '800',
     color: '#FFFFFF',
   },
   backFaceRole: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '600',
     color: '#DDD6FE',
     marginTop: 2,
   },
   backFaceId: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 10.5,
     fontWeight: '700',
     color: '#A78BFA',
@@ -875,11 +890,13 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.22)',
   },
   backFaceStatLabel: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 9.5,
     fontWeight: '600',
     color: '#DDD6FE',
   },
   backFaceStatValue: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13.5,
     fontWeight: '800',
     color: '#FFFFFF',
@@ -892,6 +909,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   backFaceHint: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 10,
     fontWeight: '600',
     color: 'rgba(221, 214, 254, 0.85)',

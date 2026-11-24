@@ -4,7 +4,7 @@ import { ArrowLeft, Bell, CheckCheck, Lock, UploadCloud } from 'lucide-react-nat
 import { useAppServices } from '../../state/AppServiceContext';
 import { OfflineStatusBadge } from '../components/Badges';
 import { EmptyState } from '../components/EmptyState';
-import { SDO_COLORS } from '../theme/tokens';
+import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 import { formatBytes, formatRelativeTime } from '../utils/formatters';
 
 export const NotificationsScreen: React.FC = () => {
@@ -235,6 +235,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   headerTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 16,
     fontWeight: '800',
     color: SDO_COLORS.textPrimary,
@@ -249,6 +250,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerBadgeText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '800',
     color: '#FFFFFF',
@@ -274,6 +276,7 @@ const styles = StyleSheet.create({
     backgroundColor: SDO_COLORS.navyInk,
   },
   pillText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.textSecondary,
@@ -293,6 +296,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   tabUnreadBadgeText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 10,
     fontWeight: '800',
     color: '#FFFFFF',
@@ -310,6 +314,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   mintBannerText: {
+    fontFamily: SDO_FONTS.sans,
     flex: 1,
     fontSize: 11,
     fontWeight: '600',
@@ -326,12 +331,14 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   offlineBannerText: {
+    fontFamily: SDO_FONTS.sans,
     flex: 1,
     fontSize: 12,
     fontWeight: '600',
     color: SDO_COLORS.amberText,
   },
   retryLink: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '800',
     color: SDO_COLORS.amberText,
@@ -376,6 +383,7 @@ const styles = StyleSheet.create({
     backgroundColor: SDO_COLORS.amber,
   },
   statusBadgeText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 10,
     fontWeight: '700',
     color: SDO_COLORS.textMuted,
@@ -385,15 +393,18 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   alertTime: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     color: SDO_COLORS.textMuted,
   },
   alertTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 15,
     fontWeight: '800',
     color: SDO_COLORS.navyInk,
   },
   alertContent: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     lineHeight: 19,
     fontWeight: '500',
@@ -406,26 +417,30 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
   },
   lockBoxText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     color: SDO_COLORS.textSecondary,
   },
   queueTitle: {
+    fontFamily: SDO_FONTS.sans,
     flex: 1,
     fontSize: 13,
     fontWeight: '800',
     color: SDO_COLORS.textPrimary,
   },
   queueMeta: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     color: SDO_COLORS.textSecondary,
   },
   queueWarn: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     color: SDO_COLORS.amberText,
   },
   hashMono: {
     fontSize: 10,
-    fontFamily: 'monospace',
+    fontFamily: SDO_FONTS.mono,
     color: SDO_COLORS.textMuted,
   },
 });

@@ -3077,4 +3077,104 @@ describe('DocsTracker Web App', () => {
     const idInput = (await screen.findByLabelText('Employee ID or Work Email')) as HTMLInputElement;
     expect(idInput.value).toBe('elena.cruz@tracely.app');
   });
+
+  it('silently baselines pre-existing unread notifications on sign-in first render and only fires newly arriving ones', async () => {
+    const dispatchedNotifications: Array<{ title: string; body?: string }> = [];
+    class MockNotification {
+      public static permission: NotificationPermission = 'granted';
+      public onclick: (() => void) | null = null;
+      constructor(title: string, options?: NotificationOptions) {
+        dispatchedNotifications.push({ title, body: options?.body });
+      }
+    }
+    const prevNotification = window.Notification;
+    Object.defineProperty(window, 'Notification', {
+      configurable: true,
+      writable: true,
+      value: MockNotification,
+    });
+
+    try {
+      const actor: Personnel = {
+        id: 'usr-signin-notif-baseline',
+        fullName: 'Marco Villanueva',
+        employeeId: 'TRC-0204',
+        email: 'budget@tracely.app',
+        position: 'Budget Officer III',
+        role: 'staff',
+        roleLabel: 'Staff',
+        office: { id: 'off-budget', code: 'BUDGET', name: 'Budget Unit' },
+        availability: 'available',
+        initials: 'MV',
+      };
+
+      const serverNotifications = [
+        {
+          id: 'notif-preexisting-unread-1',
+          documentId: 'doc-101',
+          title: 'Pre-existing Unread Alert',
+          content: 'Already unread before signing in.',
+          lockScreenPreview: '1 unread alert.',
+          authenticatedDetail: 'Already unread before signing in.',
+          receivedAt: new Date(Date.now() - 3_600_000).toISOString(),
+          read: false,
+        },
+      ];
+
+      const gw = createMockGateway({
+        login: async () => ({
+          bearerToken: 'tok-baseline-1',
+          user: actor,
+        }),
+        listWorkspace: async () => ({
+          offices: [actor.office],
+          personnel: [actor],
+          documents: [],
+          trackedSnapshots: [],
+          categories: [],
+          notifications: [...serverNotifications],
+        }),
+      });
+
+      render(<App gateway={gw} requireAuth={true} firstVisitSkeletonMs={0} />);
+      fireEvent.change(screen.getByLabelText('Employee ID or Work Email'), {
+        target: { value: 'budget@tracely.app' },
+      });
+      fireEvent.change(screen.getByLabelText('Password'), {
+        target: { value: 'Tracely@2026!' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: /Sign In/i }));
+
+      await waitFor(() => {
+        expect(document.title).toBe('(1) Tracely');
+      });
+      // Pre-existing unread notification must NOT pop up on first render after sign-in
+      expect(dispatchedNotifications).toHaveLength(0);
+
+      // A genuinely new notification arriving on subsequent sync DOES fire once
+      serverNotifications.unshift({
+        id: 'notif-fresh-live-2',
+        documentId: 'doc-102',
+        title: 'Fresh Incoming Document',
+        content: 'New transfer routed just now.',
+        lockScreenPreview: '1 new custody alert.',
+        authenticatedDetail: 'New transfer routed just now.',
+        receivedAt: new Date().toISOString(),
+        read: false,
+      });
+      fireEvent.click(screen.getByRole('button', { name: /^Sync$/i }));
+
+      await waitFor(() => {
+        expect(dispatchedNotifications).toHaveLength(1);
+      });
+      expect(dispatchedNotifications[0].title).toBe('Fresh Incoming Document');
+      expect(document.title).toBe('(2) Tracely');
+    } finally {
+      Object.defineProperty(window, 'Notification', {
+        configurable: true,
+        writable: true,
+        value: prevNotification,
+      });
+    }
+  });
 });

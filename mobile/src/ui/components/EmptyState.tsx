@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { SDO_COLORS } from '../theme/tokens';
+import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 
 interface EmptyStateProps {
   icon: React.ReactNode;
@@ -45,12 +45,14 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   title: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 14,
     fontWeight: '700',
     color: SDO_COLORS.textPrimary,
     textAlign: 'center',
   },
   description: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     color: SDO_COLORS.textSecondary,
     textAlign: 'center',

@@ -11,7 +11,7 @@ import { DISPOSITION_REMARK_PRESETS } from '../../repositories/contracts/IDocume
 import { useAppServices } from '../../state/AppServiceContext';
 import { AvailabilityBadge } from '../components/Badges';
 import { ModalSheet } from '../components/ModalSheet';
-import { SDO_COLORS } from '../theme/tokens';
+import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 
 interface ForwardSheetProps {
   open: boolean;
@@ -367,7 +367,7 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   verifyBoxOn: { backgroundColor: SDO_COLORS.navy },
-  verifyText: { flex: 1, fontSize: 12.5, lineHeight: 18, color: SDO_COLORS.textPrimary },
+  verifyText: { fontFamily: SDO_FONTS.sans, flex: 1, fontSize: 12.5, lineHeight: 18, color: SDO_COLORS.textPrimary },
   segmentRow: {
     flexDirection: 'row',
     gap: 8,
@@ -387,6 +387,7 @@ const styles = StyleSheet.create({
     backgroundColor: SDO_COLORS.navyInk,
   },
   segmentText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.textPrimary,
@@ -398,6 +399,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   label: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '600',
     color: SDO_COLORS.textMuted,
@@ -413,6 +415,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   dropdownText: {
+    fontFamily: SDO_FONTS.sans,
     flex: 1,
     fontSize: 14,
     fontWeight: '700',
@@ -436,6 +439,7 @@ const styles = StyleSheet.create({
     backgroundColor: SDO_COLORS.surface,
   },
   officeMenuText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.textPrimary,
@@ -481,16 +485,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   personName: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '800',
     color: SDO_COLORS.textPrimary,
   },
   personPos: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     color: SDO_COLORS.textMuted,
     marginTop: 2,
   },
   emptyText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     color: SDO_COLORS.textMuted,
     padding: 10,
@@ -502,11 +509,13 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   leaveTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '800',
     color: SDO_COLORS.amberText,
   },
   leaveIntro: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     lineHeight: 16,
     color: SDO_COLORS.amberText,
@@ -523,11 +532,13 @@ const styles = StyleSheet.create({
     gap: 1,
   },
   delegateName: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '800',
     color: SDO_COLORS.textPrimary,
   },
   delegateSub: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '700',
     color: SDO_COLORS.emeraldText,
@@ -539,6 +550,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   remarksLabel: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '700',
     color: SDO_COLORS.textMuted,
@@ -561,6 +573,7 @@ const styles = StyleSheet.create({
     borderColor: SDO_COLORS.navy,
   },
   presetChipText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '700',
     color: SDO_COLORS.textSecondary,
@@ -569,6 +582,7 @@ const styles = StyleSheet.create({
     color: SDO_COLORS.navy,
   },
   remarksInput: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     color: SDO_COLORS.textPrimary,
     padding: 0,
@@ -587,11 +601,13 @@ const styles = StyleSheet.create({
     opacity: 0.45,
   },
   submitText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 14,
     fontWeight: '800',
     color: SDO_COLORS.navyInk,
   },
   footerNote: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     color: SDO_COLORS.textMuted,
     textAlign: 'center',
@@ -605,6 +621,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   warnBannerText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '600',
     color: SDO_COLORS.roseText,

@@ -29,7 +29,7 @@ import { useAppServices } from '../../state/AppServiceContext';
 import { CopyFormatBadge, SlaBadge } from '../components/Badges';
 import { EmptyState } from '../components/EmptyState';
 import { OpaqueQrModal } from '../sheets/OpaqueQrModal';
-import { SDO_COLORS } from '../theme/tokens';
+import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 import { formatClockTime, formatCompactDate, formatRelativeTime } from '../utils/formatters';
 import {
   filterAndSortSentDocuments,
@@ -520,11 +520,13 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   screenTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 22,
     fontWeight: '800',
     color: SDO_COLORS.navyInk,
   },
   screenSub: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     color: SDO_COLORS.textSecondary,
   },
@@ -554,11 +556,13 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   statVal: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 17,
     fontWeight: '800',
     color: SDO_COLORS.textPrimary,
   },
   statLabel: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 10,
     fontWeight: '700',
     color: SDO_COLORS.textMuted,
@@ -575,6 +579,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   searchInput: {
+    fontFamily: SDO_FONTS.sans,
     flex: 1,
     fontSize: 13,
     color: SDO_COLORS.textPrimary,
@@ -598,6 +603,7 @@ const styles = StyleSheet.create({
     borderColor: SDO_COLORS.navy,
   },
   filterPillText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.textSecondary,
@@ -620,6 +626,7 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   sortLabel: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '700',
     color: SDO_COLORS.textSecondary,
@@ -636,6 +643,7 @@ const styles = StyleSheet.create({
     borderColor: SDO_COLORS.navy,
   },
   sortChipText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11.5,
     fontWeight: '700',
     color: SDO_COLORS.textSecondary,
@@ -665,7 +673,7 @@ const styles = StyleSheet.create({
   trackingMono: {
     fontSize: 12,
     fontWeight: '800',
-    fontFamily: 'monospace',
+    fontFamily: SDO_FONTS.mono,
     color: SDO_COLORS.navy,
     flexShrink: 1,
   },
@@ -676,10 +684,12 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   statusBadgeText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 10.5,
     fontWeight: '800',
   },
   docTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 14.5,
     fontWeight: '800',
     color: SDO_COLORS.textPrimary,
@@ -690,11 +700,13 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   metaText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '600',
     color: SDO_COLORS.textPrimary,
   },
   metaSub: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     color: SDO_COLORS.textSecondary,
   },
@@ -705,6 +717,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   fileText: {
+    fontFamily: SDO_FONTS.sans,
     flex: 1,
     fontSize: 11.5,
     color: SDO_COLORS.textSecondary,
@@ -730,6 +743,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   openBtnText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12.5,
     fontWeight: '800',
     color: '#FFFFFF',
@@ -746,6 +760,7 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   outlineBtnText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.navy,
@@ -761,6 +776,7 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   recallBtnText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.roseText,
@@ -776,6 +792,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   paginationSummary: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '600',
     color: SDO_COLORS.textSecondary,
@@ -799,6 +816,7 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   pageNavText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.navy,
@@ -817,6 +835,7 @@ const styles = StyleSheet.create({
     borderColor: SDO_COLORS.navy,
   },
   pageNumText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '800',
     color: SDO_COLORS.textPrimary,
@@ -834,6 +853,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   ctaText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '800',
     color: SDO_COLORS.navyInk,
@@ -844,6 +864,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   statusSummaryText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.navy,
@@ -860,6 +881,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   transmittalChipText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '700',
     color: SDO_COLORS.navy,

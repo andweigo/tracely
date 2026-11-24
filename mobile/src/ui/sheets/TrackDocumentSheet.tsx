@@ -8,7 +8,7 @@ import {
   TrackingGroupedList,
   TrackingLocationCard,
 } from '../components/TrackingLocationCard';
-import { SDO_COLORS } from '../theme/tokens';
+import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 
 interface TrackDocumentSheetProps {
   open: boolean;
@@ -186,6 +186,7 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
   },
   backBtnText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.navy,
@@ -205,7 +206,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 13,
-    fontFamily: 'monospace',
+    fontFamily: SDO_FONTS.mono,
     color: SDO_COLORS.textPrimary,
   },
   scopeRow: {
@@ -225,6 +226,7 @@ const styles = StyleSheet.create({
     backgroundColor: SDO_COLORS.navyInk,
   },
   scopeText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '700',
     color: SDO_COLORS.textSecondary,
@@ -240,12 +242,14 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   emptyTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '800',
     color: SDO_COLORS.textPrimary,
     textAlign: 'center',
   },
   emptyBody: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     lineHeight: 17,
     color: SDO_COLORS.textSecondary,
@@ -261,6 +265,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   lookupBtnText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '800',
     color: SDO_COLORS.navyInk,

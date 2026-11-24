@@ -12,7 +12,7 @@ import { ArrowLeft, FolderKanban, Plus, Search, ShieldCheck } from 'lucide-react
 import { useAppServices } from '../../state/AppServiceContext';
 import { EmptyState } from '../components/EmptyState';
 import { CategoryDeclareSheet } from '../sheets/CategoryDeclareSheet';
-import { SDO_COLORS } from '../theme/tokens';
+import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 
 export const CategoriesScreen: React.FC = () => {
   const { actor, categories, goBack, refreshWorkspace, isRefreshing } = useAppServices();
@@ -168,6 +168,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 16,
     fontWeight: '800',
     color: SDO_COLORS.textPrimary,
@@ -187,6 +188,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   searchInput: {
+    fontFamily: SDO_FONTS.sans,
     flex: 1,
     fontSize: 13,
     color: SDO_COLORS.textPrimary,
@@ -207,6 +209,7 @@ const styles = StyleSheet.create({
     backgroundColor: SDO_COLORS.navyInk,
   },
   pillText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.textSecondary,
@@ -223,6 +226,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   amberPillText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '800',
     color: SDO_COLORS.navyInk,
@@ -244,7 +248,7 @@ const styles = StyleSheet.create({
   codeMono: {
     fontSize: 12,
     fontWeight: '800',
-    fontFamily: 'monospace',
+    fontFamily: SDO_FONTS.mono,
     color: SDO_COLORS.navy,
   },
   mintPill: {
@@ -257,16 +261,19 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   mintText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '700',
     color: SDO_COLORS.emeraldText,
   },
   catName: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 15,
     fontWeight: '800',
     color: SDO_COLORS.textPrimary,
   },
   catMeta: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     color: SDO_COLORS.textSecondary,
   },

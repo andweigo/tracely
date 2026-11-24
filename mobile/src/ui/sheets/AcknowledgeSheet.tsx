@@ -7,7 +7,7 @@ import { SanitizedImageResult } from '../../domain/security/ImageSanitizer';
 import { useAppServices } from '../../state/AppServiceContext';
 import { ModalSheet } from '../components/ModalSheet';
 import { SanitizedCaptureCard } from '../components/SanitizedCaptureCard';
-import { SDO_COLORS } from '../theme/tokens';
+import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 
 interface AcknowledgeSheetProps {
   open: boolean;
@@ -207,15 +207,17 @@ const styles = StyleSheet.create({
   trackingCode: {
     fontSize: 11,
     fontWeight: '700',
-    fontFamily: 'monospace',
+    fontFamily: SDO_FONTS.mono,
     color: SDO_COLORS.textMuted,
   },
   docTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 15,
     fontWeight: '800',
     color: SDO_COLORS.textPrimary,
   },
   routeLine: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     color: SDO_COLORS.textSecondary,
     marginTop: 1,
@@ -227,11 +229,13 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   mintTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '800',
     color: SDO_COLORS.emeraldText,
   },
   mintBody: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     lineHeight: 17,
     color: SDO_COLORS.emeraldText,
@@ -243,6 +247,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   photoLabel: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '700',
     color: SDO_COLORS.textPrimary,
@@ -254,6 +259,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   optionalText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 10,
     fontWeight: '800',
     color: SDO_COLORS.navy,
@@ -262,6 +268,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   removeLink: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.rose,
@@ -283,11 +290,13 @@ const styles = StyleSheet.create({
     backgroundColor: SDO_COLORS.surface,
   },
   addPhotoText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '700',
     color: SDO_COLORS.navy,
   },
   helperText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     lineHeight: 16,
     color: SDO_COLORS.textMuted,
@@ -306,11 +315,13 @@ const styles = StyleSheet.create({
     opacity: 0.45,
   },
   confirmBtnText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 14,
     fontWeight: '800',
     color: SDO_COLORS.navyInk,
   },
   offlineHint: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     color: SDO_COLORS.textMuted,
     textAlign: 'center',
@@ -320,6 +331,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   cancelText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '700',
     color: SDO_COLORS.navy,

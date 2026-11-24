@@ -14,7 +14,7 @@ import {
 } from 'lucide-react-native';
 import { DocumentCopyFormat, DocumentLifecycleStatus } from '../../domain/enums/DomainEnums';
 import type { DocumentTrackingSnapshot } from '../../domain/security/AccessPolicy';
-import { SDO_COLORS } from '../theme/tokens';
+import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 import { CopyFormatBadge } from './Badges';
 import { formatClockTime, formatCompactDate } from '../utils/formatters';
 
@@ -310,11 +310,13 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   activeSectionTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '800',
     color: SDO_COLORS.navy,
   },
   completedSectionTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '800',
     color: SDO_COLORS.textMuted,
@@ -346,10 +348,11 @@ const styles = StyleSheet.create({
   trackingCode: {
     fontSize: 11,
     fontWeight: '700',
-    fontFamily: 'monospace',
+    fontFamily: SDO_FONTS.mono,
     color: SDO_COLORS.textMuted,
   },
   internalPill: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 9,
     fontWeight: '800',
     color: SDO_COLORS.navy,
@@ -360,6 +363,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   title: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 15,
     fontWeight: '800',
     color: SDO_COLORS.textPrimary,
@@ -383,6 +387,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   endpointDate: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 10,
     fontWeight: '600',
     color: SDO_COLORS.textMuted,
@@ -394,6 +399,7 @@ const styles = StyleSheet.create({
     color: SDO_COLORS.amberText,
   },
   endpointCode: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 14,
     fontWeight: '800',
     color: SDO_COLORS.navy,
@@ -476,6 +482,7 @@ const styles = StyleSheet.create({
     paddingTop: 2,
   },
   officeStripText: {
+    fontFamily: SDO_FONTS.sans,
     flex: 1,
     fontSize: 12,
     fontWeight: '700',
@@ -501,11 +508,13 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   tlDate: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '700',
     color: SDO_COLORS.textPrimary,
   },
   tlClock: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 10,
     color: SDO_COLORS.textMuted,
   },
@@ -548,11 +557,13 @@ const styles = StyleSheet.create({
     gap: 1,
   },
   tlEventLabel: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '800',
     color: SDO_COLORS.textPrimary,
   },
   tlEventOffice: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     color: SDO_COLORS.textSecondary,
   },
@@ -567,6 +578,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   maskedNoticeText: {
+    fontFamily: SDO_FONTS.sans,
     flex: 1,
     fontSize: 11,
     lineHeight: 15,
@@ -584,6 +596,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   openBtnText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '800',
     color: SDO_COLORS.navyInk,

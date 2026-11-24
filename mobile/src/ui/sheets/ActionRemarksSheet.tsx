@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { AlertOctagon, RotateCcw } from 'lucide-react-native';
 import { ModalSheet } from '../components/ModalSheet';
-import { SDO_COLORS } from '../theme/tokens';
+import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 
 export type RemarksActionMode = 'return_revision' | 'decline_misrouted';
 
@@ -108,11 +108,13 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   label: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.textPrimary,
   },
   textarea: {
+    fontFamily: SDO_FONTS.sans,
     minHeight: 96,
     borderRadius: 16,
     backgroundColor: SDO_COLORS.surfaceSoft,
@@ -134,6 +136,7 @@ const styles = StyleSheet.create({
     opacity: 0.45,
   },
   submitText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 14,
     fontWeight: '800',
   },

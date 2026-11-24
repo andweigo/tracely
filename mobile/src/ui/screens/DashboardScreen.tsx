@@ -34,7 +34,7 @@ import { ConfidentialityBadge, SlaBadge } from '../components/Badges';
 import { MobileFolder, MobileFolderSheetItem } from '../components/MobileFolder';
 import { MobileIdentityWalletCard } from '../components/MobileIdentityWalletCard';
 import { MobileRoutingFlowMap } from '../components/MobileRoutingFlowMap';
-import { SDO_COLORS } from '../theme/tokens';
+import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 import { sortDocuments } from '../utils/inboxFilter';
 import { paginateSentItems } from '../utils/sentFilter';
 
@@ -1256,6 +1256,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '800',
     color: '#FFFFFF',
@@ -1269,11 +1270,13 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   greeting: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 15,
     fontWeight: '800',
     color: SDO_COLORS.navyInk,
   },
   subGreeting: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '600',
     color: SDO_COLORS.textMuted,
@@ -1321,12 +1324,14 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   eyebrowText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.6,
     color: SDO_COLORS.textMuted,
   },
   sectionTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 14,
     fontWeight: '800',
     color: SDO_COLORS.navyInk,
@@ -1350,6 +1355,7 @@ const styles = StyleSheet.create({
     backgroundColor: SDO_COLORS.navyInk,
   },
   segmentBtnText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '700',
     color: SDO_COLORS.textMuted,
@@ -1363,6 +1369,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   legendCaption: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '700',
     color: SDO_COLORS.textMuted,
@@ -1390,6 +1397,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F59E0B',
   },
   legendText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '600',
     color: SDO_COLORS.textSecondary,
@@ -1400,6 +1408,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   emptyFlowText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '600',
     color: SDO_COLORS.textMuted,
@@ -1424,11 +1433,13 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   inspectorRankCode: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '800',
     color: '#0284C7',
   },
   inspectorName: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13.5,
     fontWeight: '800',
     color: SDO_COLORS.navyInk,
@@ -1438,11 +1449,13 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   inspectorCountText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 15,
     fontWeight: '800',
     color: SDO_COLORS.navyInk,
   },
   inspectorShareText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 10.5,
     fontWeight: '600',
     color: SDO_COLORS.textMuted,
@@ -1462,26 +1475,31 @@ const styles = StyleSheet.create({
     borderLeftColor: SDO_COLORS.border,
   },
   metricValueAmber: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '800',
     color: '#D97706',
   },
   metricValueSky: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '800',
     color: '#0284C7',
   },
   metricValueEmerald: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '800',
     color: '#059669',
   },
   metricValueDark: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '800',
     color: SDO_COLORS.navyInk,
   },
   metricLabel: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 10,
     fontWeight: '600',
     color: SDO_COLORS.textMuted,
@@ -1493,11 +1511,13 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   recentHeaderLabel: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '700',
     color: SDO_COLORS.textMuted,
   },
   recentHeaderRatio: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 10.5,
     fontWeight: '700',
     color: SDO_COLORS.textMuted,
@@ -1515,17 +1535,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   recentDocTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.navyInk,
   },
   recentDocMeta: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 10.5,
     fontWeight: '600',
     color: SDO_COLORS.textMuted,
     marginTop: 1,
   },
   recentDocFormat: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 10.5,
     fontWeight: '700',
     color: SDO_COLORS.textSecondary,
@@ -1557,6 +1580,7 @@ const styles = StyleSheet.create({
     height: 36,
   },
   searchInput: {
+    fontFamily: SDO_FONTS.sans,
     flex: 1,
     fontSize: 12,
     color: SDO_COLORS.navyInk,
@@ -1568,6 +1592,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   shelfPagerText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '700',
     color: SDO_COLORS.textSecondary,
@@ -1602,11 +1627,13 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   selectedDocTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12.5,
     fontWeight: '800',
     color: SDO_COLORS.navyInk,
   },
   selectedDocMeta: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 10.5,
     fontWeight: '600',
     color: SDO_COLORS.textMuted,
@@ -1627,6 +1654,7 @@ const styles = StyleSheet.create({
     backgroundColor: SDO_COLORS.navyInk,
   },
   openDocBtnText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '700',
     color: '#FFFFFF',
@@ -1639,6 +1667,7 @@ const styles = StyleSheet.create({
     borderColor: SDO_COLORS.border,
   },
   dismissDocBtnText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '700',
     color: SDO_COLORS.textSecondary,
@@ -1657,6 +1686,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   folderCellTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '800',
     color: SDO_COLORS.navyInk,
@@ -1664,6 +1694,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   folderCellSub: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 10.5,
     fontWeight: '600',
     color: SDO_COLORS.textMuted,
@@ -1677,6 +1708,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
   },
   browseLedgerBtnText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '800',
     color: '#0284C7',
@@ -1697,12 +1729,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   ledgerEyebrow: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 10,
     fontWeight: '800',
     color: '#0284C7',
     letterSpacing: 0.4,
   },
   ledgerTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '800',
     color: SDO_COLORS.navyInk,
@@ -1719,6 +1753,7 @@ const styles = StyleSheet.create({
     borderColor: SDO_COLORS.border,
   },
   closeLedgerBtnText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '700',
     color: SDO_COLORS.navyInk,
@@ -1740,6 +1775,7 @@ const styles = StyleSheet.create({
     borderColor: SDO_COLORS.navyInk,
   },
   filterChipText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 10.5,
     fontWeight: '700',
     color: SDO_COLORS.textSecondary,
@@ -1748,6 +1784,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   emptyLedgerText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     color: SDO_COLORS.textMuted,
     paddingVertical: 12,
@@ -1769,11 +1806,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   ledgerRowTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12.5,
     fontWeight: '700',
     color: SDO_COLORS.navyInk,
   },
   ledgerRowMeta: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 10.5,
     fontWeight: '600',
     color: SDO_COLORS.textMuted,
@@ -1791,6 +1830,7 @@ const styles = StyleSheet.create({
     paddingTop: 4,
   },
   ledgerPagerInfo: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '600',
     color: SDO_COLORS.textMuted,
@@ -1807,6 +1847,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   footerTipText: {
+    fontFamily: SDO_FONTS.sans,
     flex: 1,
     fontSize: 11,
     fontWeight: '600',
@@ -1829,6 +1870,7 @@ const styles = StyleSheet.create({
     borderColor: SDO_COLORS.border,
   },
   footerSecondaryBtnText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11.5,
     fontWeight: '700',
     color: SDO_COLORS.navyInk,

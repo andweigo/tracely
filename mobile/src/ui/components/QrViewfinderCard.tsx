@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Flashlight, Keyboard, Pause, QrCode } from 'lucide-react-native';
-import { SDO_COLORS } from '../theme/tokens';
+import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 
 interface QrViewfinderCardProps {
   title?: string;
@@ -201,11 +201,13 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   title: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 18,
     fontWeight: '800',
     color: '#FFFFFF',
   },
   subtitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     lineHeight: 17,
     color: '#CBD5E1',
@@ -235,6 +237,7 @@ const styles = StyleSheet.create({
     backgroundColor: SDO_COLORS.amber,
   },
   batchBtnText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '800',
     color: '#FFFFFF',
@@ -321,6 +324,7 @@ const styles = StyleSheet.create({
     opacity: 1,
   },
   frameCaption: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     color: '#CBD5E1',
   },
@@ -348,6 +352,7 @@ const styles = StyleSheet.create({
     gap: 7,
   },
   scanBtnText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '800',
     color: SDO_COLORS.navyInk,
@@ -365,6 +370,7 @@ const styles = StyleSheet.create({
     gap: 7,
   },
   codeBtnText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '700',
     color: '#FFFFFF',

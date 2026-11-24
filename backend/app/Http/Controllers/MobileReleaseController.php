@@ -30,7 +30,6 @@ class MobileReleaseController extends Controller
             'available' => $apkExists,
             'meta' => $meta,
             'downloadUrl' => route('mobile.download.apk'),
-            'apiBaseUrl' => rtrim((string) config('app.url'), '/').'/api/v1',
             'webAppUrl' => $this->primaryWebOrigin(),
         ]);
     }

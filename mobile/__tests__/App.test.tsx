@@ -1273,9 +1273,13 @@ describe('DocsTracker React Native App', () => {
   test('renders notification title, content, in-app badges, device sync counts, and mark-read updates', async () => {
     const { DeviceNotificationBridge } = require('../src/domain/security/DeviceNotificationBridge') as typeof import('../src/domain/security/DeviceNotificationBridge');
     const syncSpy = jest.spyOn(DeviceNotificationBridge, 'syncNotifications');
+    const clearSpy = jest.spyOn(DeviceNotificationBridge, 'clearNotifications');
 
     const { deps, bundle } = createTestAppDependencies({ authenticatedUserId: 'usr-budget-1' });
     const renderer = await mountApp(<App dependencies={deps} />);
+
+    // Booting an authenticated session must NEVER wipe device notification history before hydration
+    expect(clearSpy).not.toHaveBeenCalled();
 
     // Sidebar menu button should NOT render a badge count; BottomNav Alerts badge reflects unread + pending offline alerts (1 + 1 = 2)
     expect(renderer.root.findAllByProps({ testID: 'inbox-alert-badge' })).toHaveLength(0);
@@ -1290,6 +1294,7 @@ describe('DocsTracker React Native App', () => {
     expect(
       extractInstanceText(renderer.root.findByProps({ testID: 'bottom-nav-alerts-badge' })),
     ).toBe('2');
+    // Initial first-render sync silently baselines pre-existing unread alerts (silentBaseline = true)
     expect(syncSpy).toHaveBeenCalledWith(
       expect.arrayContaining([
         expect.objectContaining({
@@ -1300,6 +1305,7 @@ describe('DocsTracker React Native App', () => {
       ]),
       1,
       false,
+      true,
     );
 
     const alertsTab = renderer.root.findAll(
@@ -1329,8 +1335,44 @@ describe('DocsTracker React Native App', () => {
     });
 
     expect(bundle.notifications[0].read).toBe(true);
-    expect(syncSpy).toHaveBeenLastCalledWith([], 0, false);
+    expect(syncSpy).toHaveBeenLastCalledWith([], 0, false, false);
+
+    // A genuinely new unread notification arriving after first render notifies live (silentBaseline = false)
+    bundle.notifications.unshift({
+      id: 'notif-live-2',
+      targetUserId: 'usr-budget-1',
+      targetOfficeId: 'off-budget',
+      documentId: 'doc-142',
+      title: 'Live Custody Alert · SDO-OM-2026-000142',
+      content: 'Fresh routing update arrived after boot.',
+      lockScreenPreview: '1 new custody update awaits review.',
+      authenticatedDetail: 'Fresh routing update arrived after boot.',
+      receivedAt: new Date().toISOString(),
+      read: false,
+    });
+    const refreshAlertsTab = renderer.root.findAll(
+      (node) => node.props.accessibilityLabel === 'Alerts' && typeof node.props.onPress === 'function',
+    )[0];
+    await ReactTestRenderer.act(async () => {
+      refreshAlertsTab.props.onPress();
+    });
+    const refreshScroll = renderer.root.findAll(
+      (node) => node.props.refreshControl && typeof node.props.refreshControl.props.onRefresh === 'function',
+    )[0];
+    await ReactTestRenderer.act(async () => {
+      await refreshScroll.props.refreshControl.props.onRefresh();
+    });
+    expect(syncSpy).toHaveBeenLastCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'notif-live-2' }),
+      ]),
+      1,
+      false,
+      false,
+    );
+
     syncSpy.mockRestore();
+    clearSpy.mockRestore();
   });
 
   test('separates UserProfileScreen (Personal Info, Preferences, Settings) from ProfileScreen', async () => {
@@ -2125,5 +2167,47 @@ describe('DocsTracker React Native App', () => {
     );
     expect(idInputs.length).toBeGreaterThan(0);
     expect(idInputs[idInputs.length - 1].props.value).toBe('elena.cruz@tracely.app');
+  });
+
+  test('applies web typography (Inter and JetBrains Mono) across rendered Text and TextInput elements', async () => {
+    const { StyleSheet } = require('react-native') as typeof import('react-native');
+    const { deps } = createTestAppDependencies({ authenticatedUserId: 'usr-budget-1' });
+    const renderer = await mountApp(<App dependencies={deps} firstVisitSkeletonMs={0} />);
+
+    const collectFontFamilies = (
+      node: ReactTestRendererJSON | ReactTestRendererJSON[] | null,
+      out: Set<string>,
+      missing: string[],
+    ) => {
+      if (!node) return;
+      if (Array.isArray(node)) {
+        node.forEach((child) => collectFontFamilies(child, out, missing));
+        return;
+      }
+      if (node.type === 'Text' || node.type === 'TextInput') {
+        const flat = StyleSheet.flatten(node.props?.style) as { fontFamily?: string } | undefined;
+        if (flat?.fontFamily) {
+          out.add(flat.fontFamily);
+        } else {
+          missing.push(`${node.type}:${extractRenderedText(node).slice(0, 32)}`);
+        }
+      }
+      if (node.children) {
+        node.children.forEach((child) => {
+          if (typeof child !== 'string' && typeof child !== 'number') {
+            collectFontFamilies(child, out, missing);
+          }
+        });
+      }
+    };
+
+    const families = new Set<string>();
+    const missing: string[] = [];
+    collectFontFamilies(renderer.toJSON(), families, missing);
+
+    expect(missing).toEqual([]);
+    expect(families.has('Inter')).toBe(true);
+    expect(families.has('JetBrains Mono')).toBe(true);
+    expect(families.has('monospace')).toBe(false);
   });
 });

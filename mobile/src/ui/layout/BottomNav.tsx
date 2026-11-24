@@ -2,7 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Bell, Home, MapPin, Scan, Send } from 'lucide-react-native';
 import { MobileTab, useAppServices } from '../../state/AppServiceContext';
-import { SDO_COLORS } from '../theme/tokens';
+import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 
 interface NavItemSpec {
   readonly id: MobileTab;
@@ -159,6 +159,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   tabLabel: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 10,
     fontWeight: '600',
     color: '#94A3B8',
@@ -195,6 +196,7 @@ const styles = StyleSheet.create({
     borderColor: SDO_COLORS.amberSoft,
   },
   centerLabel: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 10,
     fontWeight: '800',
     color: SDO_COLORS.navy,
@@ -220,6 +222,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   badgeText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 9,
     fontWeight: '800',
     color: '#FFFFFF',

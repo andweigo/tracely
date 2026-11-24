@@ -1,7 +1,7 @@
 import React from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import { SanitizedImageResult } from '../../domain/security/ImageSanitizer';
-import { SDO_COLORS } from '../theme/tokens';
+import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 import { formatBytes } from '../utils/formatters';
 
 interface SanitizedCaptureCardProps {
@@ -56,11 +56,13 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   fileName: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '700',
     color: SDO_COLORS.textPrimary,
   },
   metaText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     color: SDO_COLORS.textSecondary,
   },
@@ -72,13 +74,14 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   exifText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 10,
     fontWeight: '700',
     color: SDO_COLORS.emeraldText,
   },
   hashText: {
     fontSize: 10,
-    fontFamily: 'monospace',
+    fontFamily: SDO_FONTS.mono,
     color: SDO_COLORS.textMuted,
   },
 });

@@ -4,7 +4,7 @@ import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { ChevronRight, Lock, QrCode } from 'lucide-react-native';
 import { Document } from '../../domain/entities/Document';
 import { ConfidentialityTier, DocumentCopyFormat } from '../../domain/enums/DomainEnums';
-import { SDO_COLORS } from '../theme/tokens';
+import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 import { formatRelativeTime } from '../utils/formatters';
 import { SlaBadge } from './Badges';
 
@@ -236,16 +236,18 @@ const styles = StyleSheet.create({
   maskedCode: {
     fontSize: 11,
     fontWeight: '700',
-    fontFamily: 'monospace',
+    fontFamily: SDO_FONTS.mono,
     color: SDO_COLORS.textMuted,
     flexShrink: 1,
   },
   title: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 14.5,
     fontWeight: '800',
     color: SDO_COLORS.textPrimary,
   },
   meta: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     color: SDO_COLORS.textSecondary,
     lineHeight: 16,
@@ -272,6 +274,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   scanBtnText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '800',
     color: SDO_COLORS.navyInk,
@@ -295,6 +298,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   hintText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11.5,
     fontWeight: '700',
     color: SDO_COLORS.navy,
@@ -309,6 +313,7 @@ const styles = StyleSheet.create({
     borderColor: SDO_COLORS.border,
   },
   declineLinkText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11.5,
     fontWeight: '700',
     color: SDO_COLORS.textSecondary,

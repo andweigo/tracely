@@ -35,7 +35,7 @@ import { DISPOSITION_REMARK_PRESETS } from '../../repositories/contracts/IDocume
 import { useAppServices } from '../../state/AppServiceContext';
 import { AvailabilityBadge } from '../components/Badges';
 import { OpaqueQrModal } from '../sheets/OpaqueQrModal';
-import { SDO_COLORS } from '../theme/tokens';
+import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 import {
   buildBatchItemTitle,
   formatBytes,
@@ -1237,11 +1237,13 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   screenTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 22,
     fontWeight: '800',
     color: SDO_COLORS.textPrimary,
   },
   screenSub: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     color: SDO_COLORS.textMuted,
   },
@@ -1270,10 +1272,11 @@ const styles = StyleSheet.create({
   issuedCode: {
     fontSize: 11,
     fontWeight: '800',
-    fontFamily: 'monospace',
+    fontFamily: SDO_FONTS.mono,
     color: SDO_COLORS.navy,
   },
   issuedTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 14,
     fontWeight: '700',
     color: SDO_COLORS.textPrimary,
@@ -1293,6 +1296,7 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
   },
   issuedQrText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: '#FFFFFF',
@@ -1306,6 +1310,7 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
   },
   issuedOpenText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.textPrimary,
@@ -1340,6 +1345,7 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   segmentText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '600',
     color: SDO_COLORS.textMuted,
@@ -1349,6 +1355,7 @@ const styles = StyleSheet.create({
     color: SDO_COLORS.navy,
   },
   modeHelper: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     lineHeight: 17,
     color: SDO_COLORS.textMuted,
@@ -1362,6 +1369,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   errorText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '600',
     color: SDO_COLORS.roseText,
@@ -1375,20 +1383,24 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   label: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '700',
     color: SDO_COLORS.textPrimary,
   },
   subLabel: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '600',
     color: SDO_COLORS.textSecondary,
   },
   counter: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     color: SDO_COLORS.textMuted,
   },
   input: {
+    fontFamily: SDO_FONTS.sans,
     minHeight: 46,
     borderRadius: 12,
     borderWidth: 1,
@@ -1411,6 +1423,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   uploadText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '700',
     color: SDO_COLORS.navy,
@@ -1433,6 +1446,7 @@ const styles = StyleSheet.create({
     borderTopColor: SDO_COLORS.border,
   },
   batchIssuedTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.textPrimary,
@@ -1460,11 +1474,13 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   renameLabel: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '700',
     color: SDO_COLORS.textSecondary,
   },
   fileTitleInput: {
+    fontFamily: SDO_FONTS.sans,
     minHeight: 38,
     borderRadius: 10,
     borderWidth: 1,
@@ -1480,11 +1496,13 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   fileName: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '700',
     color: SDO_COLORS.textPrimary,
   },
   fileMeta: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     color: SDO_COLORS.emeraldText,
   },
@@ -1522,6 +1540,7 @@ const styles = StyleSheet.create({
     backgroundColor: SDO_COLORS.navy,
   },
   chipText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '600',
     color: SDO_COLORS.textSecondary,
@@ -1543,11 +1562,13 @@ const styles = StyleSheet.create({
     gap: 1,
   },
   recipientName: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '700',
     color: SDO_COLORS.textPrimary,
   },
   recipientMeta: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     color: SDO_COLORS.textMuted,
   },
@@ -1558,6 +1579,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   delegateText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '600',
     color: SDO_COLORS.amberText,
@@ -1582,11 +1604,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   optionsSummaryText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '600',
     color: SDO_COLORS.textSecondary,
   },
   optionsLink: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.navy,
@@ -1611,11 +1635,13 @@ const styles = StyleSheet.create({
     opacity: 0.45,
   },
   primaryBtnText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 14,
     fontWeight: '700',
     color: '#FFFFFF',
   },
   preAuthHint: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     textAlign: 'center',
     color: SDO_COLORS.textMuted,
@@ -1639,6 +1665,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   recentLabel: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '700',
     color: SDO_COLORS.textMuted,
@@ -1656,6 +1683,7 @@ const styles = StyleSheet.create({
     borderColor: SDO_COLORS.navy,
   },
   recentChipText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '700',
     color: SDO_COLORS.textSecondary,
@@ -1673,6 +1701,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   inlineAddCatText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '700',
     color: SDO_COLORS.navy,
@@ -1687,11 +1716,13 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   customCatTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '800',
     color: SDO_COLORS.navy,
   },
   customCatInput: {
+    fontFamily: SDO_FONTS.sans,
     minHeight: 40,
     borderRadius: 10,
     borderWidth: 1,
@@ -1702,13 +1733,14 @@ const styles = StyleSheet.create({
     color: SDO_COLORS.textPrimary,
   },
   customCatCodeInput: {
-    fontFamily: 'monospace',
+    fontFamily: SDO_FONTS.mono,
     fontSize: 12,
   },
   similarWrap: {
     gap: 4,
   },
   similarHint: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '700',
     color: SDO_COLORS.amberText,
@@ -1729,6 +1761,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   customCatCancelText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.textSecondary,
@@ -1744,6 +1777,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   customCatSaveText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '800',
     color: SDO_COLORS.navyInk,
@@ -1758,6 +1792,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   qrFirstNoticeText: {
+    fontFamily: SDO_FONTS.sans,
     flex: 1,
     fontSize: 11.5,
     lineHeight: 16,

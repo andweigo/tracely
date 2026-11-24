@@ -36,3 +36,8 @@ export const SDO_COLORS = {
   textSecondary: '#475569',
   textMuted: '#64748B',
 } as const;
+
+export const SDO_FONTS = {
+  sans: 'Inter',
+  mono: 'JetBrains Mono',
+} as const;

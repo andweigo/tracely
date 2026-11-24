@@ -515,8 +515,11 @@ export const WebAppProvider: React.FC<WebAppProviderProps> = ({
   const [actor, setActor] = useState<Personnel | null>(restoredSession.user);
   const apiBaseUrlRef = useRef<string>(apiBaseUrl);
   const bearerTokenRef = useRef<string | null>(restoredSession.token);
+  const actorIdRef = useRef<string | null>(restoredSession.user?.id ?? null);
+  actorIdRef.current = actor?.id ?? null;
   const initialBootDoneRef = useRef<boolean>(!shouldBootstrap);
   const announcedNotifIdsRef = useRef<Set<string>>(new Set());
+  const loadedAnnouncedActorIdRef = useRef<string | null>(null);
   const openedScreensRef = useRef<Set<WebRoute>>(new Set());
   const hasScreenBeenOpened = useCallback(
     (screen: WebRoute) => openedScreensRef.current.has(screen),
@@ -620,6 +623,8 @@ export const WebAppProvider: React.FC<WebAppProviderProps> = ({
 
   const wipeLocalSession = useCallback(() => {
     bearerTokenRef.current = null;
+    actorIdRef.current = null;
+    loadedAnnouncedActorIdRef.current = null;
     announcedNotifIdsRef.current.clear();
     setActor(null);
     setDocuments([]);
@@ -634,44 +639,60 @@ export const WebAppProvider: React.FC<WebAppProviderProps> = ({
     clearStoredWebSession();
   }, []);
 
-  const hydrateWorkspace = useCallback(async () => {
-    try {
-      const data = await activeGateway.listWorkspace();
-      setOffices(data.offices);
-      setPersonnelDirectory(data.personnel);
-      setDocuments(data.documents);
-      setTrackedSnapshots(data.trackedSnapshots);
-      setCategories(data.categories);
-      setNotifications(data.notifications);
-      setActor((prev) => {
-        if (!prev) return prev;
-        const fresh = data.personnel.find((p) => p.id === prev.id);
-        if (!fresh) return prev;
-        const savedColor = loadStoredAvatarColor(fresh.id);
-        const mergedFresh =
-          savedColor && (!fresh.avatarColor || fresh.avatarColor === '#0D3472')
-            ? { ...fresh, avatarColor: savedColor }
-            : fresh;
-        if (mergedFresh.avatarColor && mergedFresh.avatarColor !== '#0D3472') {
-          saveStoredAvatarColor(mergedFresh.id, mergedFresh.avatarColor);
+  const hydrateWorkspace = useCallback(
+    async (options?: { silentNotifications?: boolean; actorIdOverride?: string }) => {
+      try {
+        const data = await activeGateway.listWorkspace();
+        const silentActorId = options?.actorIdOverride ?? actorIdRef.current;
+        if (options?.silentNotifications && silentActorId) {
+          const unreadIds = data.notifications.filter((n) => !n.read).map((n) => n.id);
+          if (unreadIds.length > 0) {
+            const existing = loadAnnouncedNotifIds(silentActorId);
+            for (const id of unreadIds) {
+              existing.add(id);
+              announcedNotifIdsRef.current.add(id);
+            }
+            loadedAnnouncedActorIdRef.current = silentActorId;
+            saveAnnouncedNotifIds(silentActorId, existing, unreadIds);
+          }
         }
-        if (mergedFresh.preferences) {
-          setUserPreferences(mergedFresh.preferences);
-          saveStoredUserPrefs(mergedFresh.preferences);
+        setOffices(data.offices);
+        setPersonnelDirectory(data.personnel);
+        setDocuments(data.documents);
+        setTrackedSnapshots(data.trackedSnapshots);
+        setCategories(data.categories);
+        setNotifications(data.notifications);
+        setActor((prev) => {
+          if (!prev) return prev;
+          const fresh = data.personnel.find((p) => p.id === prev.id);
+          if (!fresh) return prev;
+          const savedColor = loadStoredAvatarColor(fresh.id);
+          const mergedFresh =
+            savedColor && (!fresh.avatarColor || fresh.avatarColor === '#0D3472')
+              ? { ...fresh, avatarColor: savedColor }
+              : fresh;
+          if (mergedFresh.avatarColor && mergedFresh.avatarColor !== '#0D3472') {
+            saveStoredAvatarColor(mergedFresh.id, mergedFresh.avatarColor);
+          }
+          if (mergedFresh.preferences) {
+            setUserPreferences(mergedFresh.preferences);
+            saveStoredUserPrefs(mergedFresh.preferences);
+          }
+          if (!gateway && bearerTokenRef.current) {
+            saveStoredWebSession(bearerTokenRef.current, mergedFresh);
+          }
+          return mergedFresh;
+        });
+      } catch (err) {
+        const status = (err as { status?: number } | null)?.status;
+        if (status === 401 && bearerTokenRef.current) {
+          wipeLocalSession();
         }
-        if (!gateway && bearerTokenRef.current) {
-          saveStoredWebSession(bearerTokenRef.current, mergedFresh);
-        }
-        return mergedFresh;
-      });
-    } catch (err) {
-      const status = (err as { status?: number } | null)?.status;
-      if (status === 401 && bearerTokenRef.current) {
-        wipeLocalSession();
+        throw err;
       }
-      throw err;
-    }
-  }, [activeGateway, gateway, wipeLocalSession]);
+    },
+    [activeGateway, gateway, wipeLocalSession],
+  );
 
   const applyRoute = useCallback((nextRoute: WebRoute, nextDocId: string | null) => {
     setSelectedDocumentId(nextDocId);
@@ -737,10 +758,14 @@ export const WebAppProvider: React.FC<WebAppProviderProps> = ({
 
   useEffect(() => {
     if (!actor) {
+      loadedAnnouncedActorIdRef.current = null;
       announcedNotifIdsRef.current.clear();
       return;
     }
-    announcedNotifIdsRef.current = loadAnnouncedNotifIds(actor.id);
+    if (loadedAnnouncedActorIdRef.current !== actor.id) {
+      loadedAnnouncedActorIdRef.current = actor.id;
+      announcedNotifIdsRef.current = loadAnnouncedNotifIds(actor.id);
+    }
   }, [actor]);
 
   useEffect(() => {
@@ -809,7 +834,7 @@ export const WebAppProvider: React.FC<WebAppProviderProps> = ({
   useEffect(() => {
     if (!shouldBootstrap || initialBootDoneRef.current) return;
     let mounted = true;
-    hydrateWorkspace()
+    hydrateWorkspace({ silentNotifications: true })
       .catch(() => {})
       .finally(() => {
         initialBootDoneRef.current = true;
@@ -1286,7 +1311,7 @@ export const WebAppProvider: React.FC<WebAppProviderProps> = ({
           ? 'inbox'
           : 'dashboard';
       applyRoute(targetLanding, null);
-      await hydrateWorkspace();
+      await hydrateWorkspace({ silentNotifications: true, actorIdOverride: res.user.id });
       notify('success', 'Signed in securely.');
     } catch (err) {
       const typedErr = err as Error & {
@@ -1515,7 +1540,10 @@ export const WebAppProvider: React.FC<WebAppProviderProps> = ({
               ? 'inbox'
               : 'dashboard';
           applyRoute(targetLanding, null);
-          await hydrateWorkspace();
+          await hydrateWorkspace({
+            silentNotifications: true,
+            actorIdOverride: outcome.user.id,
+          });
         } else if (outcome.pendingApproval) {
           const matchedOffice = offices.find(
             (o) => o.code.toUpperCase() === clean.officeCode.toUpperCase(),

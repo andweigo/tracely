@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { PRODUCTION_API_BASE_URL } from '../../config/ApiConfig';
 import { useAppServices } from '../../state/AppServiceContext';
 import { ModalSheet } from '../components/ModalSheet';
-import { SDO_COLORS } from '../theme/tokens';
+import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 
 interface ServerEndpointModalProps {
   open: boolean;
@@ -91,6 +91,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   label: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.textPrimary,
@@ -101,7 +102,7 @@ const styles = StyleSheet.create({
     backgroundColor: SDO_COLORS.surfaceSoft,
     paddingHorizontal: 16,
     fontSize: 12,
-    fontFamily: 'monospace',
+    fontFamily: SDO_FONTS.mono,
     color: SDO_COLORS.textPrimary,
   },
   saveBtn: {
@@ -113,6 +114,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   saveBtnText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 14,
     fontWeight: '800',
     color: SDO_COLORS.navyInk,
@@ -134,6 +136,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   presetChipText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '700',
     color: SDO_COLORS.navy,

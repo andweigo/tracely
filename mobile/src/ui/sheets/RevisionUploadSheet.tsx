@@ -5,7 +5,7 @@ import { FileText, FileUp, Pencil } from 'lucide-react-native';
 import { Document } from '../../domain/entities/Document';
 import { useAppServices } from '../../state/AppServiceContext';
 import { ModalSheet } from '../components/ModalSheet';
-import { SDO_COLORS } from '../theme/tokens';
+import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 import { formatBytes, normalizeUploadFileName } from '../utils/formatters';
 
 interface RevisionUploadSheetProps {
@@ -174,6 +174,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   label: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.textPrimary,
@@ -191,6 +192,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   filePickerText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '700',
     color: SDO_COLORS.navy,
@@ -202,6 +204,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   fileName: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.textPrimary,
@@ -213,11 +216,13 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   renameLabel: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '700',
     color: SDO_COLORS.textSecondary,
   },
   renameInput: {
+    fontFamily: SDO_FONTS.sans,
     minHeight: 38,
     borderRadius: 10,
     borderWidth: 1,
@@ -229,10 +234,11 @@ const styles = StyleSheet.create({
   },
   hashText: {
     fontSize: 10,
-    fontFamily: 'monospace',
+    fontFamily: SDO_FONTS.mono,
     color: SDO_COLORS.textMuted,
   },
   textarea: {
+    fontFamily: SDO_FONTS.sans,
     minHeight: 84,
     borderRadius: 16,
     backgroundColor: SDO_COLORS.surfaceSoft,
@@ -254,6 +260,7 @@ const styles = StyleSheet.create({
     opacity: 0.45,
   },
   submitText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 14,
     fontWeight: '800',
     color: SDO_COLORS.navyInk,

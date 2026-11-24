@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { AlertCircle, KeyRound, ShieldCheck } from 'lucide-react-native';
 import { ModalSheet } from '../components/ModalSheet';
-import { SDO_COLORS } from '../theme/tokens';
+import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 
 interface PasswordUnlockModalProps {
   open: boolean;
@@ -126,6 +126,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   input: {
+    fontFamily: SDO_FONTS.sans,
     flex: 1,
     fontSize: 13.5,
     color: SDO_COLORS.textPrimary,
@@ -140,6 +141,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   errorText: {
+    fontFamily: SDO_FONTS.sans,
     flex: 1,
     fontSize: 12,
     fontWeight: '600',
@@ -156,6 +158,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   auditNoteText: {
+    fontFamily: SDO_FONTS.sans,
     flex: 1,
     fontSize: 11.5,
     lineHeight: 16,
@@ -169,6 +172,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   submitBtnText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 14,
     fontWeight: '800',
     color: SDO_COLORS.navyInk,

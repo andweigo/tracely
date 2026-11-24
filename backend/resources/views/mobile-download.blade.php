@@ -188,22 +188,12 @@
           <span class="meta-label">Size</span>
           <span class="meta-value">{{ $meta['size_mb'] ?? '—' }} MB</span>
         </div>
-        <div class="meta-row">
-          <span class="meta-label">Cloud API</span>
-          <span class="meta-value">{{ $apiBaseUrl }}</span>
-        </div>
-        @if (!empty($meta['sha256']))
-          <div class="meta-row">
-            <span class="meta-label">SHA-256</span>
-            <span class="meta-value">{{ substr($meta['sha256'], 0, 24) }}…</span>
-          </div>
-        @endif
       </div>
 
       <ol class="steps">
         <li>Tap <strong>Download Tracely APK</strong> above on your Android phone.</li>
         <li>Open the downloaded <code>tracely.apk</code> file. If prompted, enable <strong>Install unknown apps</strong> for your browser.</li>
-        <li>Launch <strong>Tracely</strong> — it connects automatically to your hosted Railway backend.</li>
+        <li>Launch <strong>Tracely</strong> and sign in with your account.</li>
       </ol>
     @else
       <div class="unavailable">

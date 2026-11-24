@@ -5,7 +5,7 @@ import { useAppServices } from '../../state/AppServiceContext';
 import { useQrScanner } from '../hooks/useQrScanner';
 import { CameraCaptureSheet } from '../sheets/CameraCaptureSheet';
 import { QrTokenEntryModal } from '../sheets/QrTokenEntryModal';
-import { SDO_COLORS } from '../theme/tokens';
+import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 import { QrCameraPreview } from './QrCameraPreview';
 import { QrScanResultCard } from './QrScanResultCard';
 import { QrViewfinderCard } from './QrViewfinderCard';
@@ -220,11 +220,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   batchTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '800',
     color: SDO_COLORS.textPrimary,
   },
   batchClearText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.navy,
@@ -245,10 +247,11 @@ const styles = StyleSheet.create({
   batchCode: {
     fontSize: 11,
     fontWeight: '800',
-    fontFamily: 'monospace',
+    fontFamily: SDO_FONTS.mono,
     color: SDO_COLORS.navy,
   },
   batchLabel: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '600',
     color: SDO_COLORS.textPrimary,
@@ -266,6 +269,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   batchConfirmText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '800',
     color: SDO_COLORS.navyInk,

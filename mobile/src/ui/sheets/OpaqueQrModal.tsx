@@ -5,7 +5,7 @@ import type { Document } from '../../domain/entities/Document';
 import { ConfidentialityTier, DocumentCopyFormat } from '../../domain/enums/DomainEnums';
 import { DocumentViewerBridge } from '../../domain/security/DocumentViewerBridge';
 import { QrCodeGraphic } from '../components/QrCodeGraphic';
-import { SDO_COLORS } from '../theme/tokens';
+import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 import { formatCompactDate } from '../utils/formatters';
 
 interface OpaqueQrModalProps {
@@ -280,11 +280,13 @@ const styles = StyleSheet.create({
     paddingBottom: 2,
   },
   title: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 17,
     fontWeight: '800',
     color: SDO_COLORS.textPrimary,
   },
   subtitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '600',
     color: SDO_COLORS.tealDot,
@@ -312,6 +314,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   slipRepublic: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 9,
     fontWeight: '700',
     letterSpacing: 0.9,
@@ -323,12 +326,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   slipTag: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.9,
     color: SDO_COLORS.amber,
   },
   slipDate: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 10,
     fontWeight: '700',
     color: '#FFFFFF',
@@ -346,6 +351,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   codeLabel: {
+    fontFamily: SDO_FONTS.sans,
     marginTop: 4,
     fontSize: 9,
     fontWeight: '800',
@@ -355,10 +361,11 @@ const styles = StyleSheet.create({
   codeValue: {
     fontSize: 14,
     fontWeight: '800',
-    fontFamily: 'monospace',
+    fontFamily: SDO_FONTS.mono,
     color: SDO_COLORS.navyInk,
   },
   slipTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '800',
     color: SDO_COLORS.textPrimary,
@@ -380,12 +387,14 @@ const styles = StyleSheet.create({
     gap: 1,
   },
   metaLabel: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 8.5,
     fontWeight: '800',
     letterSpacing: 0.6,
     color: SDO_COLORS.textMuted,
   },
   metaValue: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '700',
     color: SDO_COLORS.textPrimary,
@@ -412,6 +421,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   receiptHeading: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 8.5,
     fontWeight: '800',
     letterSpacing: 0.5,
@@ -426,6 +436,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   slipFooterText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 9.5,
     fontWeight: '600',
     color: SDO_COLORS.textSecondary,
@@ -451,6 +462,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   secondaryText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.navy,
@@ -466,6 +478,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   doneText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '800',
     color: SDO_COLORS.navyInk,

@@ -18,7 +18,7 @@ import { SealedQrCard } from '../components/SealedQrCard';
 import { ActionRemarksSheet } from '../sheets/ActionRemarksSheet';
 import { PasswordUnlockModal } from '../sheets/PasswordUnlockModal';
 import { TrackDocumentSheet } from '../sheets/TrackDocumentSheet';
-import { SDO_COLORS } from '../theme/tokens';
+import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 import { formatClockTime } from '../utils/formatters';
 
 export const ScannerScreen: React.FC = () => {
@@ -274,6 +274,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 16,
     fontWeight: '800',
     color: SDO_COLORS.textPrimary,
@@ -309,6 +310,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   passwordFallbackText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.navy,
@@ -326,11 +328,13 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   targetTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12.5,
     fontWeight: '800',
     color: SDO_COLORS.navyInk,
   },
   targetSub: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11.5,
     lineHeight: 16,
     color: SDO_COLORS.textSecondary,
@@ -346,10 +350,11 @@ const styles = StyleSheet.create({
   trackingMono: {
     fontSize: 12,
     fontWeight: '800',
-    fontFamily: 'monospace',
+    fontFamily: SDO_FONTS.mono,
     color: SDO_COLORS.navy,
   },
   metaText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     color: SDO_COLORS.textSecondary,
   },
@@ -399,15 +404,18 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   sectionHeading: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 14,
     fontWeight: '800',
     color: SDO_COLORS.textPrimary,
   },
   sectionHint: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     color: SDO_COLORS.textMuted,
   },
   clearLink: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.navy,
@@ -422,6 +430,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   trackChipText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '700',
     color: SDO_COLORS.navy,
@@ -456,11 +465,13 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   emptyTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '800',
     color: SDO_COLORS.textPrimary,
   },
   emptyBody: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     lineHeight: 17,
     color: SDO_COLORS.textSecondary,
@@ -483,6 +494,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   whiteChipText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.navy,
@@ -494,11 +506,13 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   historyTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '800',
     color: SDO_COLORS.textPrimary,
   },
   timeMeta: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     color: SDO_COLORS.textMuted,
   },

@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { AlertCircle, Check, Info, X } from 'lucide-react-native';
 import type { ToastMessage } from '../../state/AppServiceContext';
-import { SDO_COLORS } from '../theme/tokens';
+import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 
 interface CustomToastProps {
   toast: ToastMessage | null;
@@ -148,6 +148,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   messageText: {
+    fontFamily: SDO_FONTS.sans,
     flex: 1,
     fontSize: 12.5,
     lineHeight: 17.5,
@@ -163,6 +164,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   actionBtnText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11.5,
     fontWeight: '800',
     color: '#FFFFFF',

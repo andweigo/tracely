@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { ArrowUpRight, X } from 'lucide-react-native';
-import { SDO_COLORS } from '../theme/tokens';
+import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 
 export interface MobileFolderSheetItem {
   readonly id?: string;
@@ -649,6 +649,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   tabLabelText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 8.5,
     fontWeight: '800',
     color: '#FFFFFF',
@@ -676,6 +677,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   shelfSheetTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 7.5,
     fontWeight: '800',
     color: SDO_COLORS.navyInk,
@@ -753,6 +755,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.18)',
   },
   modalHeaderTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 13,
     fontWeight: '800',
     color: '#FFFFFF',
@@ -806,6 +809,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
   },
   expandedTabLabelText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 10.5,
     fontWeight: '800',
     color: '#FFFFFF',
@@ -843,6 +847,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   stageSheetTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 9.5,
     fontWeight: '800',
     color: SDO_COLORS.navyInk,
@@ -850,6 +855,7 @@ const styles = StyleSheet.create({
     marginBottom: 3,
   },
   stageSheetDesc: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 7.5,
     fontWeight: '600',
     color: SDO_COLORS.textSecondary,
@@ -914,6 +920,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   zoomCardEyebrow: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.6,
@@ -928,12 +935,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   zoomCardTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 15,
     fontWeight: '800',
     color: SDO_COLORS.navyInk,
     lineHeight: 20,
   },
   zoomCardDesc: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '600',
     color: SDO_COLORS.textSecondary,
@@ -974,6 +983,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   zoomPrimaryBtnText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12.5,
     fontWeight: '800',
     color: '#FFFFFF',
@@ -988,6 +998,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   zoomSecondaryBtnText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.textSecondary,

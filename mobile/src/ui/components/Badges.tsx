@@ -9,7 +9,7 @@ import {
   ReceiptStatus,
   SlaState,
 } from '../../domain/enums/DomainEnums';
-import { SDO_COLORS } from '../theme/tokens';
+import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 
 interface BadgeSpec {
   readonly label: string;
@@ -229,6 +229,7 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   text: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '700',
   },

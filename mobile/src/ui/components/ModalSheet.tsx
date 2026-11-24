@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { X } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { SDO_COLORS } from '../theme/tokens';
+import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 
 interface ModalSheetProps {
   open: boolean;
@@ -110,11 +110,13 @@ const styles = StyleSheet.create({
     paddingRight: 10,
   },
   title: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 18,
     fontWeight: '800',
     color: SDO_COLORS.textPrimary,
   },
   subtitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     lineHeight: 17,
     color: SDO_COLORS.textSecondary,

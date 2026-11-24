@@ -14,6 +14,7 @@ interface DocsTrackNotificationsNative {
     notifications: ReadonlyArray<DeviceNotificationPayload>,
     unreadCount: number,
     showLockScreenDetails: boolean,
+    silentBaseline?: boolean,
   ) => void;
   clearDeviceNotifications?: () => void;
 }
@@ -43,12 +44,14 @@ export const DeviceNotificationBridge = {
     unreadNotifications: ReadonlyArray<DeviceNotificationPayload>,
     unreadCount: number,
     showLockScreenDetails: boolean,
+    silentBaseline = false,
   ): void {
     try {
       getNativeNotificationsModule()?.syncDeviceNotifications?.(
         unreadNotifications,
         unreadCount,
         showLockScreenDetails,
+        silentBaseline,
       );
     } catch {
       // Ignore native notification failures cleanly

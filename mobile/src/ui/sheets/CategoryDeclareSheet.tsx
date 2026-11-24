@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { AlertTriangle, PlusCircle } from 'lucide-react-native';
 import { useAppServices } from '../../state/AppServiceContext';
 import { ModalSheet } from '../components/ModalSheet';
-import { SDO_COLORS } from '../theme/tokens';
+import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 
 interface CategoryDeclareSheetProps {
   open: boolean;
@@ -95,11 +95,13 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   label: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.textPrimary,
   },
   input: {
+    fontFamily: SDO_FONTS.sans,
     minHeight: 44,
     borderRadius: 999,
     backgroundColor: SDO_COLORS.surfaceSoft,
@@ -108,7 +110,7 @@ const styles = StyleSheet.create({
     color: SDO_COLORS.textPrimary,
   },
   monoInput: {
-    fontFamily: 'monospace',
+    fontFamily: SDO_FONTS.mono,
   },
   warnCard: {
     borderRadius: 16,
@@ -122,6 +124,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   warnTitle: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.amberText,
@@ -132,13 +135,14 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   warnName: {
+    fontFamily: SDO_FONTS.sans,
     flex: 1,
     fontSize: 12,
     color: SDO_COLORS.amberText,
   },
   warnCode: {
     fontSize: 11,
-    fontFamily: 'monospace',
+    fontFamily: SDO_FONTS.mono,
     color: SDO_COLORS.amberText,
   },
   submitBtn: {
@@ -154,6 +158,7 @@ const styles = StyleSheet.create({
     opacity: 0.45,
   },
   submitText: {
+    fontFamily: SDO_FONTS.sans,
     fontSize: 14,
     fontWeight: '800',
     color: SDO_COLORS.navyInk,
