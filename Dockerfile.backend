@@ -1,0 +1,71 @@
+FROM php:8.4-apache
+
+# Install system dependencies and required PHP extensions for Laravel 13 + MySQL
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    git \
+    unzip \
+    libfreetype6-dev \
+    libicu-dev \
+    libjpeg62-turbo-dev \
+    libonig-dev \
+    libpng-dev \
+    libzip-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j"$(nproc)" \
+        bcmath \
+        exif \
+        gd \
+        intl \
+        mbstring \
+        opcache \
+        pcntl \
+        pdo_mysql \
+        zip \
+    && a2enmod rewrite headers \
+    && echo "ServerName localhost" > /etc/apache2/conf-available/servername.conf \
+    && a2enconf servername \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Composer 2
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+WORKDIR /var/www/html/backend
+
+# Install PHP dependencies first for Docker layer caching
+COPY backend/composer.json backend/composer.lock ./
+RUN composer install \
+    --no-dev \
+    --no-interaction \
+    --no-progress \
+    --prefer-dist \
+    --no-scripts \
+    --optimize-autoloader
+
+# Copy Laravel backend and sibling admin Blade views (referenced via base_path('../admin/views'))
+COPY backend/ /var/www/html/backend/
+COPY admin/ /var/www/html/admin/
+
+# Prepare directories, run optimized autoloader & Laravel package discovery
+RUN mkdir -p \
+        storage/app/private \
+        storage/app/public \
+        storage/framework/cache/data \
+        storage/framework/sessions \
+        storage/framework/views \
+        storage/logs \
+        bootstrap/cache \
+    && composer dump-autoload --optimize --no-dev --no-interaction \
+    && php artisan package:discover --ansi --no-interaction \
+    && chown -R www-data:www-data /var/www/html/backend/storage /var/www/html/backend/bootstrap/cache
+
+# Apply PHP production config and entrypoint
+COPY docker/php-production.ini /usr/local/etc/php/conf.d/99-tracely.ini
+COPY docker/backend-entrypoint.sh /usr/local/bin/backend-entrypoint.sh
+RUN sed -i 's/\r$//' /usr/local/bin/backend-entrypoint.sh \
+    && chmod +x /usr/local/bin/backend-entrypoint.sh
+
+EXPOSE 8080
+
+ENTRYPOINT ["/usr/local/bin/backend-entrypoint.sh"]

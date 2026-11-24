@@ -1,6 +1,14 @@
 import { QrResolutionResult } from './types';
 
-export const PRODUCTION_API_BASE_URL = 'https://api.tracely.app/api/v1';
+const ENV_API_BASE_URL = (
+  typeof import.meta !== 'undefined'
+    ? ((import.meta as { env?: { VITE_API_BASE_URL?: string } }).env?.VITE_API_BASE_URL ?? '')
+    : ''
+)
+  .trim()
+  .replace(/\/+$/, '');
+
+export const PRODUCTION_API_BASE_URL = ENV_API_BASE_URL || 'https://api.tracely.app/api/v1';
 export const LOCAL_DEV_API_BASE_URL = 'http://127.0.0.1:8000/api/v1';
 const IS_VITE_DEV =
   typeof import.meta !== 'undefined' &&
