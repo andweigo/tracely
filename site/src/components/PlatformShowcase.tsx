@@ -71,14 +71,9 @@ export const PlatformShowcase: React.FC = () => {
                 <span>Open Web App</span>
                 <ArrowUpRight size={16} />
               </a>
-              <a
-                href={SITE_CONFIG.adminUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-outline"
-              >
+              <a href="#security" className="btn btn-outline">
                 <ShieldCheck size={15} />
-                <span>Admin Portal</span>
+                <span>Security Specs</span>
               </a>
             </div>
           </article>

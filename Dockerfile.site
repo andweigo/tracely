@@ -9,10 +9,8 @@ COPY site/ ./
 
 ARG VITE_WEB_APP_URL=https://tracely-web.up.railway.app
 ARG VITE_DOWNLOAD_URL=https://tracely-web.up.railway.app/download
-ARG VITE_ADMIN_URL=https://backend-production-43015d9a.up.railway.app/admin/login
 ENV VITE_WEB_APP_URL=$VITE_WEB_APP_URL
 ENV VITE_DOWNLOAD_URL=$VITE_DOWNLOAD_URL
-ENV VITE_ADMIN_URL=$VITE_ADMIN_URL
 
 RUN npm run build
 

@@ -69,13 +69,15 @@ class MobileReleaseTest extends TestCase
             ->assertJsonPath('release.version', '1.0.0')
             ->assertJsonPath('release.sha256', hash('sha256', $fakeApkBytes));
 
-        // Download landing page shows ready state and download CTA without exposing Cloud API URL or SHA-256
+        // Download landing page shows ready state and download CTA without exposing Cloud API URL, SHA-256, or Admin Portal
         $this->get('/download')
             ->assertOk()
             ->assertSee('Download Tracely APK (v1.0.0)')
             ->assertSee('/download/tracely.apk')
             ->assertDontSee('Cloud API')
             ->assertDontSee('SHA-256')
+            ->assertDontSee('Admin Portal')
+            ->assertDontSee('/admin/login')
             ->assertDontSee(substr(hash('sha256', $fakeApkBytes), 0, 24));
 
         // Direct APK download serves Android package MIME type and exact bytes

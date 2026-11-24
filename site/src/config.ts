@@ -5,7 +5,5 @@ export const SITE_CONFIG = {
     import.meta.env.VITE_DOWNLOAD_URL || 'https://tracely-web.up.railway.app/download',
   directApkUrl:
     import.meta.env.VITE_DIRECT_APK_URL || 'https://tracely-web.up.railway.app/download/tracely.apk',
-  adminUrl:
-    import.meta.env.VITE_ADMIN_URL || 'https://backend-production-43015d9a.up.railway.app/admin/login',
   androidVersion: '1.0.3',
 } as const;

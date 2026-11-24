@@ -201,12 +201,11 @@
       </div>
     @endif
 
-    <div class="footer-links">
-      @if ($webAppUrl)
-        <a href="{{ $webAppUrl }}">Open Web App →</a>
-      @endif
-      <a href="{{ route('admin.login') }}">Admin Portal →</a>
-    </div>
+    @if ($webAppUrl)
+      <div class="footer-links">
+        <a href="{{ $webAppUrl }}">Open Tracely Web App →</a>
+      </div>
+    @endif
   </main>
 </body>
 </html>

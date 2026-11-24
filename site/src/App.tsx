@@ -286,52 +286,23 @@ export const App: React.FC = () => {
           </div>
         </section>
 
-        {/* Interactive Live Custody-Timeline Simulator Showcase */}
+        {/* Interactive Live Custody-Road Visual Presentation */}
         <section id="simulator" className="section section-editorial-band">
           <div className="container">
-            <div className="simulator-layout">
-              <div className="simulator-copy">
-                <span className="eyebrow">
-                  <ScanLine size={13} /> Interactive Custody Demo
-                </span>
-                <h2 className="editorial-heading">
-                  Follow every handoff <em>in real time.</em>
-                </h2>
-                <p>
-                  Switch between a physical hard-copy folder and a SHA-256 verified digital bundle.
-                  Step through registration, sealed transit, QR scan unlock, and final approval to
-                  see how Tracely enforces accountability at every desk.
-                </p>
-
-                <div className="simulator-points">
-                  <div className="sim-point">
-                    <CheckCircle2 size={16} className="sim-point-icon" />
-                    <div>
-                      <strong>Sealed Until Scanned</strong>
-                      <span>Transfers stay locked until the actual destination office scans in.</span>
-                    </div>
-                  </div>
-                  <div className="sim-point">
-                    <CheckCircle2 size={16} className="sim-point-icon" />
-                    <div>
-                      <strong>Zero Self-Receipt Loopholes</strong>
-                      <span>Senders cannot forge or self-acknowledge their own dispatches.</span>
-                    </div>
-                  </div>
-                  <div className="sim-point">
-                    <CheckCircle2 size={16} className="sim-point-icon" />
-                    <div>
-                      <strong>Live SLA &amp; SHA-256 Integrity</strong>
-                      <span>Every transfer logs timestamps, checksums, and turnaround health.</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="simulator-stage">
-                <HeroCustodyDemo />
-              </div>
+            <div className="section-header center">
+              <span className="eyebrow">
+                <ScanLine size={13} /> Visual Custody Presentation
+              </span>
+              <h2 className="editorial-heading">
+                Watch every document <em>pass the torch.</em>
+              </h2>
+              <p>
+                Follow a physical folder or SHA-256 digital bundle along its luminous custody road
+                from intake to executive archive—click any office beacon or let the tour play live.
+              </p>
             </div>
+
+            <HeroCustodyDemo />
           </div>
         </section>
 
@@ -547,12 +518,12 @@ export const App: React.FC = () => {
                 <span>Admin-gated staff onboarding with live Pending Approval status tracking</span>
               </div>
               <a
-                href={SITE_CONFIG.adminUrl}
+                href={SITE_CONFIG.webAppUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="security-link"
               >
-                <span>Explore Admin Portal</span>
+                <span>Launch Web Workspace</span>
                 <ArrowUpRight size={15} />
               </a>
             </div>
@@ -624,7 +595,7 @@ export const App: React.FC = () => {
             <div className="footer-col">
               <h4>Product</h4>
               <a href="#features">Core Features</a>
-              <a href="#simulator">Live Simulator</a>
+              <a href="#simulator">Custody Presentation</a>
               <a href="#how-it-works">How It Works</a>
               <a href="#security">Security</a>
             </div>
@@ -636,9 +607,7 @@ export const App: React.FC = () => {
               <a href={SITE_CONFIG.downloadUrl} target="_blank" rel="noopener noreferrer">
                 Android APK (v{SITE_CONFIG.androidVersion})
               </a>
-              <a href={SITE_CONFIG.adminUrl} target="_blank" rel="noopener noreferrer">
-                Admin Governance Portal
-              </a>
+              <a href="#platforms">Install via QR Code</a>
               <a href="#faq">FAQ</a>
             </div>
           </div>
