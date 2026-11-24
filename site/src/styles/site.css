@@ -1754,78 +1754,84 @@ button {
   .mobile-menu-btn {
     display: inline-flex;
   }
-  .hero-stamp,
-  .orbital-arcs,
+  .hero-stamp {
+    top: 4px;
+    right: 12px;
+    width: 66px;
+    height: 66px;
+    opacity: 0.72;
+  }
+  .stamp-ring {
+    width: 66px;
+    height: 66px;
+  }
+  .stamp-star {
+    width: 16px;
+    height: 16px;
+  }
   .editorial-corner {
     display: none;
   }
+  /* Preserve desktop orbital floating hero composition around the person on tablet & mobile */
   .orbital-stage {
-    min-height: auto;
-    margin-top: 28px;
-    padding-bottom: 32px;
+    min-height: 340px;
+    margin-top: 14px;
     display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 14px;
-    place-items: stretch;
+    place-items: end center;
   }
   .orbital-center {
-    order: 1;
     width: 100%;
-    height: auto;
-    min-height: 300px;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-end;
-    padding-top: 10px;
+    max-width: 540px;
+    height: 326px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
   }
   .orbital-portrait {
-    height: 290px;
-  }
-  .orbit-ring {
-    position: relative;
-    inset: auto;
-    width: 100%;
-    margin-top: -28px;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
-  }
-  .orbit-card,
-  .orbit-card:hover,
-  .orbit-card.is-selected {
-    position: relative;
-    top: auto;
-    left: auto;
-    right: auto;
-    bottom: auto;
-    transform: none;
-    opacity: 1;
-    width: 100%;
-    min-width: 0;
-  }
-  .orbit-back-right {
-    grid-column: span 2;
-  }
-  .orbit-tooltip {
-    position: relative;
-    bottom: auto;
-    left: auto;
-    transform: none;
-    margin-top: 10px;
-    width: 100%;
+    height: 296px;
   }
   .float-card {
-    position: relative;
-    left: auto;
-    right: auto;
-    top: auto;
-    width: 100%;
-    transform: none;
-    order: 2;
+    width: 152px;
+    padding: 12px 12px;
+    border-radius: 18px;
   }
-  .float-card-left:hover,
-  .float-card-right:hover {
-    transform: none;
+  .float-card h3 {
+    margin: 8px 0 4px;
+    font-size: 12px;
+  }
+  .float-card p {
+    font-size: 10.5px;
+    line-height: 1.38;
+  }
+  .float-card-left {
+    left: 4px;
+    top: -12px;
+    transform: rotate(-5deg);
+  }
+  .float-card-right {
+    right: 4px;
+    top: 4px;
+    transform: rotate(5deg);
+  }
+  .orbit-top-left {
+    top: 38px;
+    left: 24px;
+  }
+  .orbit-back-left {
+    top: 126px;
+    left: 4px;
+  }
+  .orbit-front-left {
+    bottom: 52px;
+    left: 30px;
+  }
+  .orbit-right {
+    top: 108px;
+    right: 14px;
+  }
+  .orbit-back-right {
+    bottom: 42px;
+    right: 6px;
   }
   .role-panel,
   .platforms-grid,
@@ -1846,19 +1852,148 @@ button {
     padding: 0 16px;
   }
   .hero-editorial {
-    padding: 36px 0 0;
+    padding: 26px 0 0;
+  }
+  .hero-stamp {
+    top: 0;
+    right: 8px;
+    width: 54px;
+    height: 54px;
+    opacity: 0.65;
+  }
+  .stamp-ring {
+    width: 54px;
+    height: 54px;
+  }
+  .stamp-star {
+    width: 13px;
+    height: 13px;
   }
   .hero-serif-title {
-    font-size: 46px;
+    font-size: 42px;
   }
-  .hero-pill-ctas .btn {
+  .hero-serif-sub {
+    font-size: 13.5px;
+    margin-top: 10px;
+  }
+  .hero-pill-ctas {
+    margin-top: 16px;
+    gap: 8px;
+  }
+  .hero-pill-ctas .btn-lg {
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+  /* Exact proportional desktop floating-around-the-person layout on 390px screens */
+  .orbital-stage {
+    min-height: 338px;
+    margin-top: 14px;
+  }
+  .orbital-center {
     width: 100%;
+    max-width: 100%;
+    height: 330px;
   }
-  .orbit-ring {
-    grid-template-columns: minmax(0, 1fr);
+  .portrait-halo {
+    width: 220px;
+    height: 220px;
+    bottom: 12px;
+  }
+  .orbital-portrait {
+    height: 242px;
+  }
+  .float-card {
+    width: 112px;
+    padding: 8px 9px;
+    border-radius: 14px;
+  }
+  .float-icon-badge {
+    width: 22px;
+    height: 22px;
+    border-radius: 7px;
+  }
+  .float-icon-badge svg {
+    width: 12px;
+    height: 12px;
+  }
+  .unit-avatar {
+    width: 20px;
+    height: 20px;
+    font-size: 7px;
+    margin-left: -5px;
+    border-width: 1.5px;
+  }
+  .float-card h3 {
+    margin: 5px 0 2px;
+    font-size: 10px;
+    line-height: 1.2;
+  }
+  .float-card p {
+    font-size: 8.5px;
+    line-height: 1.3;
+  }
+  .float-card-left {
+    left: 0;
+    top: 0;
+    transform: rotate(-5deg);
+  }
+  .float-card-right {
+    right: 0;
+    top: 2px;
+    transform: rotate(5deg);
+  }
+  .orbit-card {
+    gap: 6px;
+    padding: 6px 8px;
+    border-radius: 11px;
+    max-width: 128px;
+  }
+  .orbit-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+  }
+  .orbit-icon svg {
+    width: 11px;
+    height: 11px;
+  }
+  .orbit-copy strong {
+    font-size: 9.5px;
+  }
+  .orbit-copy span {
+    font-size: 7.8px;
+    line-height: 1.18;
+  }
+  .orbit-top-left {
+    top: 116px;
+    left: 2px;
+    transform: perspective(600px) rotateY(18deg) rotateZ(-4deg);
+  }
+  .orbit-back-left {
+    top: 176px;
+    left: 0;
+    transform: perspective(600px) rotateY(22deg) rotateZ(-5deg) scale(0.92);
+  }
+  .orbit-front-left {
+    bottom: 14px;
+    left: 6px;
+    transform: perspective(600px) rotateY(12deg) rotateZ(-3deg);
+  }
+  .orbit-right {
+    top: 126px;
+    right: 2px;
+    transform: perspective(600px) rotateY(-18deg) rotateZ(4deg);
   }
   .orbit-back-right {
-    grid-column: span 1;
+    bottom: 20px;
+    right: 2px;
+    transform: perspective(600px) rotateY(-20deg) rotateZ(4deg) scale(0.92);
+  }
+  .orbit-tooltip {
+    bottom: 8px;
+    width: calc(100% - 12px);
+    padding: 8px 10px;
+    font-size: 11px;
   }
   .section {
     padding: 60px 0;

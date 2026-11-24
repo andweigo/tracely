@@ -82,6 +82,7 @@ export const ProfileScreen: React.FC = () => {
   const [showAudit, setShowAudit] = useState(false);
   const [showSessionsModal, setShowSessionsModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [lanyardDragging, setLanyardDragging] = useState(false);
   const [adminTab, setAdminTab] = useState<'approvals' | 'personnel' | 'offices'>('approvals');
   const [personnelQuery, setPersonnelQuery] = useState('');
   const [newOfficeCode, setNewOfficeCode] = useState('');
@@ -147,9 +148,11 @@ export const ProfileScreen: React.FC = () => {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         automaticallyAdjustKeyboardInsets
+        scrollEnabled={!lanyardDragging}
       >
         <MobileIdentityWalletCard
           testID="mobile-profile-wallet-card"
+          onDragChange={setLanyardDragging}
           fullName={actor?.fullName ?? 'Tracely Workspace'}
           employeeId={actor?.employeeId ?? 'EMP-2026-0001'}
           position={actor?.position ?? 'Records Officer'}

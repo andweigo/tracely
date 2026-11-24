@@ -32,15 +32,15 @@ const ROLES: ReadonlyArray<RoleConfig> = [
     label: 'Records & Receiving',
     title: 'Process incoming batches in seconds, not spreadsheets',
     summary:
-      'Replace handwritten logbooks with printable QR routing slips, high-speed USB 2D scanner batch receiving, and instant transmittal manifests.',
+      'Replace handwritten logbooks with printable QR routing slips, rapid mobile QR camera receiving, and instant transmittal manifests.',
     icon: <QrCode size={16} />,
     bullets: [
       'Generate crisp printable QR slips for physical folders and packets',
-      'Receive dozens of physical folders consecutively via USB barcode/QR scanner',
+      'Receive physical folders consecutively using the native Android QR camera scanner',
       'Recall misrouted dispatches safely with built-in FuseButton Undo protection',
       'Issue public QR verification links for external stakeholders and citizens',
     ],
-    previewTitle: 'USB Batch Receiving Queue',
+    previewTitle: 'Incoming QR Receiving Queue',
     previewBadge: '12 Scanned',
     previewRows: [
       { label: 'TRC-2026-00418 · Budget Proposal', value: 'Verified · 09:28', status: 'emerald' },

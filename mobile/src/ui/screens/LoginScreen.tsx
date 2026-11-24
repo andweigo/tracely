@@ -168,6 +168,7 @@ export const LoginScreen: React.FC = () => {
 
   const [authMode, setAuthMode] = useState<AuthMode>('signin');
   const [serverModalOpen, setServerModalOpen] = useState(false);
+  const [lanyardDragging, setLanyardDragging] = useState(false);
   const [identifier, setIdentifier] = useState(prefillLoginIdentifier);
 
   useEffect(() => {
@@ -313,6 +314,7 @@ export const LoginScreen: React.FC = () => {
         keyboardDismissMode="on-drag"
         automaticallyAdjustKeyboardInsets
         showsVerticalScrollIndicator={false}
+        scrollEnabled={!lanyardDragging}
       >
         <View style={styles.topRow}>
           {!requireAuth ? (
@@ -560,6 +562,8 @@ export const LoginScreen: React.FC = () => {
           <View style={styles.card}>
             <MobileIdentityWalletCard
               testID="mobile-register-live-card"
+              compact
+              onDragChange={setLanyardDragging}
               fullName={fullName}
               employeeId={employeeId}
               position={position}

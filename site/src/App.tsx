@@ -70,7 +70,7 @@ const WORKFLOW_STEPS = [
     title: 'Route & Scan to Unlock',
     badge: 'Zero Self-Receipt',
     icon: <ScanLine size={19} />,
-    body: 'Dispatch to the destination unit. Custody stays sealed in transit until the receiving officer scans the QR via Android camera or USB desk scanner.',
+    body: 'Dispatch to the destination unit. Custody stays sealed in transit until the receiving officer scans the QR via the Android camera or enters the unlock code.',
   },
   {
     num: '03',
@@ -386,12 +386,12 @@ export const App: React.FC = () => {
                 <h3>QR-Gated Custody &amp; Zero Self-Receipt</h3>
                 <p>
                   Transfers stay sealed in transit until the destination office scans the QR code on
-                  Android or via USB desk scanner (with 6-character code or password fallback).
-                  Senders can never self-receive their own handoffs.
+                  Android or enters the 6-character code or password fallback. Senders can never
+                  self-receive their own handoffs.
                 </p>
                 <div className="bento-chip-row">
                   <span className="bento-chip">Android Camera Scan</span>
-                  <span className="bento-chip">USB 2D Batch Scan</span>
+                  <span className="bento-chip">Mobile QR Unlock</span>
                   <span className="bento-chip">Recall / Undo Safety</span>
                   <span className="bento-chip">Decline Misrouted</span>
                 </div>

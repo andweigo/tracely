@@ -113,6 +113,7 @@ export const DashboardScreen: React.FC = () => {
 
   const [flowScope, setFlowScope] = useState<RoutingScopeFilter>('office');
   const [selectedOfficeId, setSelectedOfficeId] = useState<string | null>(null);
+  const [lanyardDragging, setLanyardDragging] = useState(false);
 
   const [folderGroupMode, setFolderGroupMode] = useState<FolderGroupingMode>('stage');
   const [folderMode, setFolderMode] = useState<'flap' | 'book'>('flap');
@@ -583,6 +584,7 @@ export const DashboardScreen: React.FC = () => {
       <ScrollView
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
+        scrollEnabled={!lanyardDragging}
         refreshControl={
           <RefreshControl refreshing={isRefreshing} onRefresh={refreshWorkspace} />
         }
@@ -591,6 +593,7 @@ export const DashboardScreen: React.FC = () => {
         <View style={styles.sectionBlock}>
           <MobileIdentityWalletCard
             testID="mobile-dashboard-wallet-card"
+            onDragChange={setLanyardDragging}
             fullName={actor?.fullName ?? 'Tracely Operator'}
             employeeId={actor?.employeeId ?? 'EMP-2026-0001'}
             position={actor?.position ?? 'Records Officer'}

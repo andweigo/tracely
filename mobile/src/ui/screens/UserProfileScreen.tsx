@@ -93,6 +93,7 @@ export const UserProfileScreen: React.FC = () => {
   const [showAudit, setShowAudit] = useState(false);
   const [showSessionsModal, setShowSessionsModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [lanyardDragging, setLanyardDragging] = useState(false);
 
   useEffect(() => {
     if (!actor) return;
@@ -155,9 +156,11 @@ export const UserProfileScreen: React.FC = () => {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         automaticallyAdjustKeyboardInsets
+        scrollEnabled={!lanyardDragging}
       >
         <MobileIdentityWalletCard
           testID="mobile-user-profile-wallet-card"
+          onDragChange={setLanyardDragging}
           liveSyncBadge="Live Personnel Pass · Synced With Your Profile"
           fullName={fullName || actor?.fullName || 'User Profile'}
           employeeId={actor?.employeeId ?? 'EMP-2026-0001'}

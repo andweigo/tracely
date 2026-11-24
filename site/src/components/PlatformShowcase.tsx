@@ -56,7 +56,7 @@ export const PlatformShowcase: React.FC = () => {
               desktop, laptop, or tablet browsers.
             </p>
             <ul className="platform-list">
-              <li>USB 2D barcode &amp; QR scanner batch receiving</li>
+              <li>Instant 6-character code &amp; mobile-synced QR receiving</li>
               <li>Printable QR routing slips &amp; A4 transmittal manifests</li>
               <li>Multi-file soft-copy bundles &amp; separate batch dispatch</li>
               <li>Live turnaround analytics, CSV exports &amp; desktop alerts</li>
