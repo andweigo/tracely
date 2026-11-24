@@ -1,195 +1,94 @@
 import React, { useEffect, useRef, useState } from 'react';
-import {
-  CheckCircle2,
-  Clock,
-  FileCheck2,
-  FileStack,
-  FolderClosed,
-  Lock,
-  Pause,
-  Play,
-  QrCode,
-  RotateCcw,
-  ScanLine,
-  ShieldCheck,
-  Sparkles,
-  Unlock,
-} from 'lucide-react';
-import { QrMatrixSvg } from './QrMatrixSvg';
+import { Pause, Play } from 'lucide-react';
 
-type FormatMode = 'hard_copy' | 'digital';
-
-interface VestigeStage {
+interface OfficeNode {
   readonly id: number;
-  readonly key: string;
-  readonly stepCode: string;
-  readonly office: string;
-  readonly shortOffice: string;
-  readonly custodian: string;
-  readonly roleTitle: string;
-  readonly timestamp: string;
-  readonly statusPill: string;
-  readonly statusTone: 'sky' | 'amber' | 'teal' | 'emerald';
+  readonly code: string;
+  readonly label: string;
   readonly accentHex: string;
   readonly glowRgba: string;
-  readonly slaLabel: string;
-  readonly headline: string;
-  readonly detailHardCopy: string;
-  readonly detailDigital: string;
-  readonly securityNote: string;
-  readonly nextActionLabel: string;
-  readonly sealed: boolean;
-  // Exact anchor coordinates along the 1000x300 SVG energy road
   readonly cx: number;
   readonly cy: number;
   readonly pathFraction: number;
 }
 
-// Sinuous sweeping "One For All" energy road curving through all 4 office vestiges
 const MAIN_ROAD_PATH =
-  'M 110 212 C 215 212, 265 92, 370 98 C 475 104, 525 218, 635 206 C 745 194, 795 92, 892 98';
+  'M 110 218 C 215 218, 265 96, 370 102 C 475 108, 525 224, 635 212 C 745 200, 795 96, 892 102';
 const UPPER_FILAMENT_PATH =
-  'M 110 202 C 218 186, 260 76, 370 88 C 482 100, 522 204, 635 192 C 748 180, 792 78, 892 89';
+  'M 110 208 C 218 192, 260 80, 370 92 C 482 104, 522 210, 635 198 C 748 186, 792 82, 892 93';
 const LOWER_FILAMENT_PATH =
-  'M 110 222 C 212 234, 270 112, 370 110 C 468 108, 528 232, 635 218 C 742 204, 798 108, 892 108';
+  'M 110 228 C 212 240, 270 116, 370 114 C 468 112, 528 238, 635 224 C 742 210, 798 112, 892 112';
 
 const AMBIENT_SPARKS = [
-  { cx: 168, cy: 142, r: 1.8, delay: '0s' },
-  { cx: 245, cy: 64, r: 2.2, delay: '0.6s' },
-  { cx: 312, cy: 168, r: 1.5, delay: '1.1s' },
-  { cx: 458, cy: 76, r: 2.0, delay: '0.3s' },
-  { cx: 518, cy: 248, r: 1.9, delay: '1.5s' },
-  { cx: 695, cy: 132, r: 2.3, delay: '0.9s' },
-  { cx: 778, cy: 224, r: 1.6, delay: '1.8s' },
-  { cx: 842, cy: 52, r: 2.1, delay: '0.4s' },
-  { cx: 944, cy: 160, r: 1.7, delay: '1.3s' },
-  { cx: 68, cy: 112, r: 1.5, delay: '0.8s' },
+  { cx: 168, cy: 144, r: 1.7, delay: '0s' },
+  { cx: 245, cy: 66, r: 2.1, delay: '0.6s' },
+  { cx: 312, cy: 174, r: 1.4, delay: '1.1s' },
+  { cx: 458, cy: 78, r: 1.9, delay: '0.3s' },
+  { cx: 518, cy: 254, r: 1.8, delay: '1.5s' },
+  { cx: 695, cy: 136, r: 2.1, delay: '0.9s' },
+  { cx: 778, cy: 230, r: 1.5, delay: '1.8s' },
+  { cx: 842, cy: 56, r: 2.0, delay: '0.4s' },
+  { cx: 940, cy: 166, r: 1.6, delay: '1.3s' },
 ] as const;
 
-const VESTIGE_STAGES: ReadonlyArray<VestigeStage> = [
+const OFFICE_NODES: ReadonlyArray<OfficeNode> = [
   {
     id: 0,
-    key: 'records',
-    stepCode: '01',
-    office: 'Records Unit',
-    shortOffice: 'Records',
-    custodian: 'Elena Santos',
-    roleTitle: 'Records Officer',
-    timestamp: '09:04 AM',
-    statusPill: 'Origin Sealed',
-    statusTone: 'sky',
+    code: '01',
+    label: 'Office 1',
     accentHex: '#60A5FA',
     glowRgba: 'rgba(96, 165, 250, 0.52)',
-    slaLabel: 'SLA · 24h Window Started',
-    headline: 'First spark ignited — Document registered & QR token forged',
-    detailHardCopy:
-      'Printable QR transmittal slip generated and fastened to the physical folder (14 pages). Custody chain anchored at Records Unit.',
-    detailDigital:
-      '3 PDF attachments bundled under one tracking code with cryptographic SHA-256 fingerprint verified at intake.',
-    securityNote: 'Opaque QR token issued · Zero sensitive metadata encoded in plain QR text',
-    nextActionLabel: 'Pass Torch to Finance →',
-    sealed: false,
     cx: 110,
-    cy: 212,
+    cy: 218,
     pathFraction: 0,
   },
   {
     id: 1,
-    key: 'finance',
-    stepCode: '02',
-    office: 'Finance & Budget',
-    shortOffice: 'Finance',
-    custodian: 'Marco Villanueva',
-    roleTitle: 'Budget Officer',
-    timestamp: '09:18 AM',
-    statusPill: 'Sealed in Transit',
-    statusTone: 'amber',
+    code: '02',
+    label: 'Office 2',
     accentHex: '#F3B32A',
     glowRgba: 'rgba(243, 179, 42, 0.56)',
-    slaLabel: 'SLA · 23h 46m Remaining',
-    headline: 'Transfer surging in transit — Sealed until destination scans QR',
-    detailHardCopy:
-      'Physical folder dispatched along the routing chain. Custody stays locked until Finance scans the QR slip with Android or USB scanner.',
-    detailDigital:
-      'Digital bundle sealed in transit. Attachment previews stay locked until Finance scans QR or enters the 6-char unlock code.',
-    securityNote: 'Sender self-receipt blocked at API layer · Destination verification enforced',
-    nextActionLabel: 'Scan QR & Route to Legal →',
-    sealed: true,
     cx: 370,
-    cy: 98,
+    cy: 102,
     pathFraction: 0.335,
   },
   {
     id: 2,
-    key: 'legal',
-    stepCode: '03',
-    office: 'Legal & Compliance',
-    shortOffice: 'Legal',
-    custodian: 'Atty. Daniel Cruz',
-    roleTitle: 'Compliance Reviewer',
-    timestamp: '10:32 AM',
-    statusPill: 'Custody Verified',
-    statusTone: 'teal',
+    code: '03',
+    label: 'Office 3',
     accentHex: '#2DD4BF',
     glowRgba: 'rgba(45, 212, 191, 0.54)',
-    slaLabel: 'On Track · 22h 32m Left',
-    headline: 'QR unlocked & verified — Review logged with full integrity proof',
-    detailHardCopy:
-      'QR receipt confirmed with EXIF-stripped proof photo. Prior custodian notified automatically and compliance remarks appended.',
-    detailDigital:
-      'Unlocked via mobile QR scan and mirrored to desktop browser. SHA-256 integrity verified with zero alteration across hops.',
-    securityNote: 'Immutable audit milestone written · Lock-screen-safe alert dispatched',
-    nextActionLabel: 'Pass to Executive Office →',
-    sealed: false,
     cx: 635,
-    cy: 206,
+    cy: 212,
     pathFraction: 0.67,
   },
   {
     id: 3,
-    key: 'executive',
-    stepCode: '04',
-    office: 'Executive Office',
-    shortOffice: 'Executive',
-    custodian: 'Clara Reyes',
-    roleTitle: 'Division Director',
-    timestamp: '11:45 AM',
-    statusPill: 'Approved & Archived',
-    statusTone: 'emerald',
+    code: '04',
+    label: 'Office 4',
     accentHex: '#34D399',
     glowRgba: 'rgba(52, 211, 153, 0.56)',
-    slaLabel: 'Completed in 2h 41m',
-    headline: 'Full custody constellation lit — Signed, archived & verifiable',
-    detailHardCopy:
-      'Final executive approval recorded. Complete physical handoff trail archived for A4 executive SLA reports and audit exports.',
-    detailDigital:
-      'Final digital approval sealed with full version history, cryptographic integrity pass, and privacy-safe public QR verification.',
-    securityNote: 'All 4 custody links verified · Public QR authenticity badge active',
-    nextActionLabel: 'Replay Custody Road',
-    sealed: false,
     cx: 892,
-    cy: 98,
+    cy: 102,
     pathFraction: 1,
   },
 ];
 
 export const HeroCustodyDemo: React.FC = () => {
-  const [format, setFormat] = useState<FormatMode>('hard_copy');
   const [stageIndex, setStageIndex] = useState<number>(1);
   const [autoPlay, setAutoPlay] = useState<boolean>(true);
-  const [progress, setProgress] = useState<number>(VESTIGE_STAGES[1].pathFraction);
+  const [progress, setProgress] = useState<number>(OFFICE_NODES[1].pathFraction);
   const [cometPos, setCometPos] = useState<{ x: number; y: number }>({
-    x: VESTIGE_STAGES[1].cx,
-    y: VESTIGE_STAGES[1].cy,
+    x: OFFICE_NODES[1].cx,
+    y: OFFICE_NODES[1].cy,
   });
   const [isTraveling, setIsTraveling] = useState<boolean>(false);
   const [pulseStageId, setPulseStageId] = useState<number>(1);
 
   const mainPathRef = useRef<SVGPathElement | null>(null);
   const pathLengthRef = useRef<number>(1000);
-  const currentProgressRef = useRef<number>(VESTIGE_STAGES[1].pathFraction);
+  const currentProgressRef = useRef<number>(OFFICE_NODES[1].pathFraction);
 
-  // Measure SVG path length once mounted
   useEffect(() => {
     const pathEl = mainPathRef.current;
     if (!pathEl) return;
@@ -201,17 +100,15 @@ export const HeroCustodyDemo: React.FC = () => {
         setCometPos({ x: pt.x, y: pt.y });
       }
     } catch {
-      // Fallback safely in non-SVG environments
+      // Fallback safely
     }
   }, []);
 
-  // Animate the blazing document comet smoothly along the sinuous SVG energy road
   useEffect(() => {
-    const targetStage = VESTIGE_STAGES[stageIndex];
-    const targetFrac = targetStage.pathFraction;
+    const targetNode = OFFICE_NODES[stageIndex];
+    const targetFrac = targetNode.pathFraction;
     const startFrac = currentProgressRef.current;
 
-    // Respect reduced motion preference
     const prefersReduced =
       typeof window !== 'undefined' &&
       window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
@@ -219,31 +116,29 @@ export const HeroCustodyDemo: React.FC = () => {
     if (prefersReduced || Math.abs(targetFrac - startFrac) < 0.001) {
       currentProgressRef.current = targetFrac;
       setProgress(targetFrac);
-      setCometPos({ x: targetStage.cx, y: targetStage.cy });
+      setCometPos({ x: targetNode.cx, y: targetNode.cy });
       setPulseStageId(stageIndex);
       setIsTraveling(false);
       return;
     }
 
-    // If replaying from end -> start, reset cleanly to stage 0 spark
     if (targetFrac < startFrac && stageIndex === 0) {
       currentProgressRef.current = 0;
       setProgress(0);
-      setCometPos({ x: targetStage.cx, y: targetStage.cy });
+      setCometPos({ x: targetNode.cx, y: targetNode.cy });
       setPulseStageId(0);
       setIsTraveling(false);
       return;
     }
 
     let rafId = 0;
-    const durationMs = 920;
+    const durationMs = 950;
     const startTime = performance.now();
     setIsTraveling(true);
 
     const tick = (now: number) => {
       const elapsed = now - startTime;
       const rawT = Math.min(1, elapsed / durationMs);
-      // Smooth anime-style ease-out quintic surge
       const eased = 1 - Math.pow(1 - rawT, 3.2);
       const frac = startFrac + (targetFrac - startFrac) * eased;
       currentProgressRef.current = frac;
@@ -255,10 +150,10 @@ export const HeroCustodyDemo: React.FC = () => {
           const pt = pathEl.getPointAtLength(frac * pathLengthRef.current);
           setCometPos({ x: pt.x, y: pt.y });
         } catch {
-          setCometPos({ x: targetStage.cx, y: targetStage.cy });
+          setCometPos({ x: targetNode.cx, y: targetNode.cy });
         }
       } else {
-        setCometPos({ x: targetStage.cx, y: targetStage.cy });
+        setCometPos({ x: targetNode.cx, y: targetNode.cy });
       }
 
       if (rawT < 1) {
@@ -273,22 +168,15 @@ export const HeroCustodyDemo: React.FC = () => {
     return () => window.cancelAnimationFrame(rafId);
   }, [stageIndex]);
 
-  // Automatic cinematic presentation cadence
   useEffect(() => {
     if (!autoPlay) return;
     const timer = window.setInterval(() => {
-      setStageIndex((prev) => (prev + 1) % VESTIGE_STAGES.length);
-    }, 3800);
+      setStageIndex((prev) => (prev + 1) % OFFICE_NODES.length);
+    }, 2800);
     return () => window.clearInterval(timer);
   }, [autoPlay]);
 
-  const current = VESTIGE_STAGES[stageIndex];
-  const trackingCode = format === 'hard_copy' ? 'TRC-2026-00418' : 'TRC-2026-00419';
-  const docTitle =
-    format === 'hard_copy'
-      ? 'Q4 Infrastructure & Operations Budget Request'
-      : 'Vendor Procurement Specification Bundle (3 PDFs)';
-
+  const current = OFFICE_NODES[stageIndex];
   const totalLen = pathLengthRef.current;
   const activeDashOffset = Math.max(0, totalLen * (1 - progress));
 
@@ -297,70 +185,31 @@ export const HeroCustodyDemo: React.FC = () => {
     setStageIndex(idx);
   };
 
-  const handleAdvance = () => {
-    setAutoPlay(false);
-    setStageIndex((prev) => (prev + 1) % VESTIGE_STAGES.length);
-  };
-
   return (
     <div
       className="vestige-cinema"
-      aria-label="Interactive Tracely document custody visual presentation"
+      aria-label="Document custody road simulation across Office 1 through Office 4"
     >
-      {/* Top Cinema HUD Bar */}
-      <div className="vestige-topbar">
-        <div className="vestige-topbar-left">
-          <span className="vestige-live-beacon" aria-hidden="true" />
-          <div className="vestige-doc-ident">
-            <div className="vestige-code-row">
-              <span className="vestige-code">{trackingCode}</span>
-              <span className={`vestige-status tone-${current.statusTone}`}>
-                {current.sealed ? <Lock size={11} /> : <CheckCircle2 size={11} />}
-                {current.statusPill}
-              </span>
-            </div>
-            <h3 className="vestige-doc-title">{docTitle}</h3>
-          </div>
-        </div>
-
-        <div className="vestige-topbar-right">
-          <div className="vestige-format-toggle" role="tablist" aria-label="Document format">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={format === 'hard_copy'}
-              className={`vestige-format-btn ${format === 'hard_copy' ? 'is-active' : ''}`}
-              onClick={() => setFormat('hard_copy')}
-            >
-              <FolderClosed size={13} />
-              <span>Hard Copy</span>
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={format === 'digital'}
-              className={`vestige-format-btn ${format === 'digital' ? 'is-active' : ''}`}
-              onClick={() => setFormat('digital')}
-            >
-              <FileStack size={13} />
-              <span>Digital Bundle</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Widescreen "One For All Vestiges" Luminous Energy Road Stage */}
       <div className="vestige-stage">
         <div className="vestige-nebula" aria-hidden="true" />
 
+        <button
+          type="button"
+          className="vestige-play-fab"
+          onClick={() => setAutoPlay((v) => !v)}
+          aria-label={autoPlay ? 'Pause simulation' : 'Play simulation'}
+          aria-pressed={autoPlay}
+        >
+          {autoPlay ? <Pause size={14} /> : <Play size={14} />}
+        </button>
+
         <svg
           className="vestige-svg"
-          viewBox="0 0 1000 300"
+          viewBox="0 0 1000 320"
           role="img"
-          aria-label={`Document ${trackingCode} energy path currently at ${current.office}`}
+          aria-label={`Document currently at ${current.label}`}
         >
           <defs>
-            {/* Multi-office luminous energy gradient (Sky -> Amber Gold -> Teal -> Emerald) */}
             <linearGradient id="vestigeRoadGrad" x1="0%" y1="0%" x2="100%" y2="0%">
               <stop offset="0%" stopColor="#60A5FA" />
               <stop offset="35%" stopColor="#F3B32A" />
@@ -399,11 +248,11 @@ export const HeroCustodyDemo: React.FC = () => {
             </filter>
 
             <clipPath id="vestigeProgressClip">
-              <rect x="0" y="0" width={Math.max(0, cometPos.x + 8)} height="300" />
+              <rect x="0" y="0" width={Math.max(0, cometPos.x + 8)} height="320" />
             </clipPath>
           </defs>
 
-          {/* Subtle drifting cosmic motes */}
+          {/* Subtle ambient motes */}
           {AMBIENT_SPARKS.map((sp, i) => (
             <circle
               key={i}
@@ -416,19 +265,19 @@ export const HeroCustodyDemo: React.FC = () => {
             />
           ))}
 
-          {/* Dormant unlit custody road track */}
+          {/* Dormant unlit custody road */}
           <path
             d={MAIN_ROAD_PATH}
             fill="none"
-            stroke="rgba(148, 163, 184, 0.2)"
+            stroke="rgba(148, 163, 184, 0.16)"
             strokeWidth="12"
             strokeLinecap="round"
           />
           <path
             d={MAIN_ROAD_PATH}
             fill="none"
-            stroke="rgba(148, 163, 184, 0.34)"
-            strokeWidth="2"
+            stroke="rgba(148, 163, 184, 0.3)"
+            strokeWidth="1.8"
             strokeDasharray="6 8"
             strokeLinecap="round"
           />
@@ -446,7 +295,7 @@ export const HeroCustodyDemo: React.FC = () => {
             strokeDashoffset={activeDashOffset}
           />
 
-          {/* Intertwined braided energy filaments (One For All light-strands!) */}
+          {/* Braided energy strands */}
           <path
             d={UPPER_FILAMENT_PATH}
             fill="none"
@@ -470,7 +319,7 @@ export const HeroCustodyDemo: React.FC = () => {
             strokeDashoffset={activeDashOffset}
           />
 
-          {/* Core blazing road filament (measured via ref for exact comet path) */}
+          {/* Core luminous road */}
           <path
             ref={mainPathRef}
             d={MAIN_ROAD_PATH}
@@ -483,7 +332,7 @@ export const HeroCustodyDemo: React.FC = () => {
             strokeDashoffset={activeDashOffset}
           />
 
-          {/* High-velocity flowing light stream inside ignited road */}
+          {/* Flowing white core stream inside ignited portion */}
           <path
             d={MAIN_ROAD_PATH}
             fill="none"
@@ -498,22 +347,22 @@ export const HeroCustodyDemo: React.FC = () => {
             }}
           />
 
-          {/* 4 Office Vestige Orbs along the road */}
-          {VESTIGE_STAGES.map((stage, idx) => {
+          {/* 4 Minimal Office Vestige Orbs */}
+          {OFFICE_NODES.map((node, idx) => {
             const isLit = idx <= stageIndex;
             const isCurrent = idx === stageIndex;
             const isPulsing = idx === pulseStageId && !isTraveling;
-            const labelAbove = stage.cy > 150;
+            const labelAbove = node.cy > 160;
 
             return (
               <g
-                key={stage.key}
+                key={node.code}
                 className={`vestige-node ${isLit ? 'is-lit' : ''} ${isCurrent ? 'is-current' : ''}`}
                 onClick={() => handleSelectStage(idx)}
                 style={{ cursor: 'pointer' }}
                 role="button"
                 tabIndex={0}
-                aria-label={`Jump to stage ${stage.stepCode}: ${stage.office}`}
+                aria-label={node.label}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
@@ -521,100 +370,84 @@ export const HeroCustodyDemo: React.FC = () => {
                   }
                 }}
               >
-                {/* Expanding shockwave burst when the document torch awakens this office */}
                 {isPulsing ? (
                   <>
                     <circle
-                      cx={stage.cx}
-                      cy={stage.cy}
+                      cx={node.cx}
+                      cy={node.cy}
                       r="26"
                       fill="none"
-                      stroke={stage.accentHex}
-                      strokeWidth="2.5"
+                      stroke={node.accentHex}
+                      strokeWidth="2.4"
                       className="vestige-shockwave"
                     />
                     <circle
-                      cx={stage.cx}
-                      cy={stage.cy}
+                      cx={node.cx}
+                      cy={node.cy}
                       r="22"
                       fill="none"
                       stroke="#FFFFFF"
-                      strokeWidth="1.5"
+                      strokeWidth="1.4"
                       className="vestige-shockwave delayed"
                     />
                   </>
                 ) : null}
 
-                {/* Outer soft aura glow */}
                 {isLit ? (
                   <circle
-                    cx={stage.cx}
-                    cy={stage.cy}
-                    r={isCurrent ? 38 : 28}
-                    fill={stage.glowRgba}
+                    cx={node.cx}
+                    cy={node.cy}
+                    r={isCurrent ? 40 : 28}
+                    fill={node.glowRgba}
                     opacity={isCurrent ? 0.36 : 0.2}
                     filter="url(#vestigeSoftGlow)"
                   />
                 ) : null}
 
-                {/* Concentric orbital ring */}
                 <circle
-                  cx={stage.cx}
-                  cy={stage.cy}
+                  cx={node.cx}
+                  cy={node.cy}
                   r={isCurrent ? 27 : 21}
                   fill="none"
-                  stroke={isLit ? stage.accentHex : 'rgba(148, 163, 184, 0.32)'}
+                  stroke={isLit ? node.accentHex : 'rgba(148, 163, 184, 0.3)'}
                   strokeWidth={isCurrent ? 2 : 1.3}
-                  strokeDasharray={stage.sealed && isCurrent ? '5 4' : 'none'}
                   className={isCurrent ? 'vestige-orbit-ring' : undefined}
                 />
 
-                {/* Core glowing vestige sphere */}
                 <circle
-                  cx={stage.cx}
-                  cy={stage.cy}
+                  cx={node.cx}
+                  cy={node.cy}
                   r={isCurrent ? 18 : 15}
-                  fill={isLit ? stage.accentHex : '#0F254A'}
-                  stroke={isLit ? '#FFFFFF' : 'rgba(148, 163, 184, 0.4)'}
+                  fill={isLit ? node.accentHex : '#0F254A'}
+                  stroke={isLit ? '#FFFFFF' : 'rgba(148, 163, 184, 0.38)'}
                   strokeWidth={isCurrent ? 2.4 : 1.5}
                   filter={isLit ? 'url(#vestigeGlow)' : undefined}
                 />
 
-                {/* Step code inside orb */}
                 <text
-                  x={stage.cx}
-                  y={stage.cy + 4}
+                  x={node.cx}
+                  y={node.cy + 4}
                   textAnchor="middle"
                   className="vestige-orb-code"
                   fill={isLit ? '#06142E' : '#94A3B8'}
                 >
-                  {stage.stepCode}
+                  {node.code}
                 </text>
 
-                {/* Office Name & Timestamp Floating Label */}
                 <text
-                  x={stage.cx}
-                  y={labelAbove ? stage.cy - 44 : stage.cy + 46}
+                  x={node.cx}
+                  y={labelAbove ? node.cy - 38 : node.cy + 48}
                   textAnchor="middle"
                   className="vestige-node-title"
                   fill={isLit ? '#FFFFFF' : '#94A3B8'}
                 >
-                  {stage.office}
-                </text>
-                <text
-                  x={stage.cx}
-                  y={labelAbove ? stage.cy - 28 : stage.cy + 62}
-                  textAnchor="middle"
-                  className="vestige-node-sub"
-                  fill={isCurrent ? stage.accentHex : '#94A3B8'}
-                >
-                  {idx <= stageIndex ? `${stage.timestamp} · ${stage.statusPill}` : 'Awaiting Torch'}
+                  {node.label}
                 </text>
               </g>
             );
           })}
 
-          {/* Blazing Traveling Document Torch Comet moving along the SVG road */}
+          {/* Traveling light torch */}
           <g transform={`translate(${cometPos.x}, ${cometPos.y})`} className="vestige-comet">
             <circle r={isTraveling ? 30 : 22} fill="url(#cometGlowGrad)" />
             <circle
@@ -626,99 +459,6 @@ export const HeroCustodyDemo: React.FC = () => {
             />
           </g>
         </svg>
-
-        {/* Interactive Stage Stepper Pills underneath the road */}
-        <div className="vestige-step-pills" role="list" aria-label="Office custody stops">
-          {VESTIGE_STAGES.map((stage, idx) => {
-            const isLit = idx <= stageIndex;
-            const isCurrent = idx === stageIndex;
-            return (
-              <button
-                key={stage.key}
-                type="button"
-                role="listitem"
-                aria-current={isCurrent ? 'step' : undefined}
-                className={`vestige-pill-btn ${isLit ? 'is-lit' : ''} ${isCurrent ? 'is-current' : ''}`}
-                onClick={() => handleSelectStage(idx)}
-              >
-                <span
-                  className="vestige-pill-dot"
-                  style={{ background: isLit ? stage.accentHex : 'rgba(148,163,184,0.4)' }}
-                />
-                <span className="vestige-pill-text">
-                  <strong>{stage.shortOffice}</strong>
-                  <span>{idx <= stageIndex ? stage.timestamp : 'Pending'}</span>
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Bottom Cinematic Custody Story + QR Token + Playback Bar */}
-      <div className="vestige-hud-bottom">
-        <div className="vestige-story">
-          <div className="vestige-story-kicker">
-            <Sparkles size={13} style={{ color: current.accentHex }} />
-            <span style={{ color: current.accentHex }}>
-              STOP {current.stepCode} · {current.office.toUpperCase()}
-            </span>
-            <span className="vestige-sep">·</span>
-            <span className="vestige-sla-inline">
-              <Clock size={12} /> {current.slaLabel}
-            </span>
-          </div>
-          <h4>{current.headline}</h4>
-          <p>{format === 'hard_copy' ? current.detailHardCopy : current.detailDigital}</p>
-          <div className="vestige-story-meta">
-            <span className="vestige-custodian-chip">
-              {current.sealed ? <Lock size={12} /> : stageIndex === 3 ? <FileCheck2 size={12} /> : <Unlock size={12} />}
-              {current.custodian} · {current.roleTitle}
-            </span>
-            <span className="vestige-sec-chip">
-              <ShieldCheck size={12} />
-              {current.securityNote}
-            </span>
-          </div>
-        </div>
-
-        <div className="vestige-controls-col">
-          <div className="vestige-qr-mini">
-            <QrMatrixSvg
-              value={`https://tracely-web.up.railway.app/#/verify/${trackingCode}`}
-              size={64}
-              label={`QR custody token for ${trackingCode}`}
-            />
-            <div className="vestige-qr-meta">
-              <span className="vestige-qr-tag">
-                <QrCode size={11} /> Opaque QR
-              </span>
-              <span className="vestige-qr-hash">
-                {format === 'hard_copy' ? '14 physical pages' : 'SHA-256 · e3b0c4…9a1f'}
-              </span>
-            </div>
-          </div>
-
-          <div className="vestige-action-row">
-            <button
-              type="button"
-              className="vestige-btn-secondary"
-              onClick={() => setAutoPlay((v) => !v)}
-              aria-pressed={autoPlay}
-            >
-              {autoPlay ? <Pause size={13} /> : <Play size={13} />}
-              <span>{autoPlay ? 'Pause Tour' : 'Auto-Play'}</span>
-            </button>
-            <button type="button" className="vestige-btn-primary" onClick={handleAdvance}>
-              {stageIndex === VESTIGE_STAGES.length - 1 ? (
-                <RotateCcw size={14} />
-              ) : (
-                <ScanLine size={14} />
-              )}
-              <span>{current.nextActionLabel}</span>
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   );

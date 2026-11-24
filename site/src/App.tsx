@@ -286,20 +286,13 @@ export const App: React.FC = () => {
           </div>
         </section>
 
-        {/* Interactive Live Custody-Road Visual Presentation */}
+        {/* Minimalist Custody-Road Visual Presentation */}
         <section id="simulator" className="section section-editorial-band">
           <div className="container">
-            <div className="section-header center">
-              <span className="eyebrow">
-                <ScanLine size={13} /> Visual Custody Presentation
-              </span>
+            <div className="section-header center simulator-minimal-header">
               <h2 className="editorial-heading">
-                Watch every document <em>pass the torch.</em>
+                From one office <em>to the next.</em>
               </h2>
-              <p>
-                Follow a physical folder or SHA-256 digital bundle along its luminous custody road
-                from intake to executive archive—click any office beacon or let the tour play live.
-              </p>
             </div>
 
             <HeroCustodyDemo />
