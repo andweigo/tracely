@@ -227,6 +227,8 @@ class StorageIntegrityService
 
         usort($officeUsage, fn (array $a, array $b) => $b['total_bytes'] <=> $a['total_bytes']);
 
+        $auditChain = $this->audit->verifyChain();
+
         $snapshot = [
             'audited_at' => now()->format('Y-m-d H:i:s'),
             'summary' => [
@@ -237,7 +239,10 @@ class StorageIntegrityService
                 'total_bytes' => $totalBytes,
                 'total_size_label' => $this->formatBytes($totalBytes),
                 'health_rate' => $healthRate,
+                'audit_chain_valid' => $auditChain['valid'],
+                'audit_chain_count' => $auditChain['chained_logs'],
             ],
+            'audit_chain' => $auditChain,
             'office_usage' => $officeUsage,
             'artifacts' => $artifacts,
         ];

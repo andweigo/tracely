@@ -96,8 +96,8 @@ export const BatchUsbReceiveModal: React.FC = () => {
     <ModalDialog
       open={batchUsbReceiveOpen}
       onClose={closeBatchUsbReceive}
-      title="USB Batch Receive"
-      subtitle="Scan printed routing slips continuously with a USB QR scanner or type Tracking Codes"
+      title="Batch Code Receive"
+      subtitle="Enter or paste Tracking Codes from printed routing slips to confirm multiple receipts at once"
     >
       <div
         data-testid="web-batch-usb-receive-modal"
@@ -109,7 +109,7 @@ export const BatchUsbReceiveModal: React.FC = () => {
           style={{ display: 'flex', gap: 8 }}
         >
           <input
-            aria-label="USB Batch Scanner Input"
+            aria-label="Batch Tracking Code Input"
             className="input mono"
             autoFocus
             value={scanInput}
@@ -117,7 +117,7 @@ export const BatchUsbReceiveModal: React.FC = () => {
               setScanInput(e.target.value);
               if (errorMsg) setErrorMsg(null);
             }}
-            placeholder="Scan slip QR or enter TRC-2026-000142..."
+            placeholder="Enter Tracking Code (e.g. TRC-2026-000142)..."
             style={{ flex: 1 }}
           />
           <button

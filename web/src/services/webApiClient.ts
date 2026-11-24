@@ -398,6 +398,52 @@ export function getWebDevFallbackBaseUrls(
   return candidates.filter((url, idx) => url !== normalized && candidates.indexOf(url) === idx);
 }
 
+export const NO_INTERNET_ERROR_MESSAGE = 'No internet connection. Please try again.';
+
+const NETWORK_ERROR_PATTERN =
+  /failed to fetch|networkerror|network request failed|load failed|err_internet_disconnected|err_name_not_resolved|err_connection|timed out|unable to reach|no internet|fetch failed/i;
+
+export function isWebNetworkError(err: unknown): boolean {
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    return true;
+  }
+  if (!(err instanceof Error)) {
+    return false;
+  }
+  const tagged = err as Error & { isHttpError?: boolean; isNetworkError?: boolean; code?: string };
+  if (tagged.isNetworkError || tagged.code === 'NO_INTERNET') {
+    return true;
+  }
+  if (tagged.isHttpError) {
+    return false;
+  }
+  return (
+    err.name === 'AbortError' ||
+    err instanceof TypeError ||
+    NETWORK_ERROR_PATTERN.test(err.message)
+  );
+}
+
+export function normalizeWebErrorMessage(err: unknown, fallback = 'Request failed.'): string {
+  if (isWebNetworkError(err)) {
+    return NO_INTERNET_ERROR_MESSAGE;
+  }
+  if (err instanceof Error && err.message.trim()) {
+    return err.message;
+  }
+  return fallback;
+}
+
+function createNoInternetError(): Error & { isNetworkError: boolean; code: string } {
+  const err = new Error(NO_INTERNET_ERROR_MESSAGE) as Error & {
+    isNetworkError: boolean;
+    code: string;
+  };
+  err.isNetworkError = true;
+  err.code = 'NO_INTERNET';
+  return err;
+}
+
 /**
  * Connects directly to the same REST v1 endpoints used by the React Native companion app.
  */
@@ -418,6 +464,10 @@ export class LaravelSanctumGateway implements WebBackendGateway {
   }
 
   private async request<T>(path: string, init: RequestInit = {}): Promise<T> {
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      throw createNoInternetError();
+    }
+
     const primaryBaseUrl = this.getBaseUrl();
     const effectiveBaseUrl = this.resolvedDevProxyUrl ?? primaryBaseUrl;
     const token = this.getToken();
@@ -439,28 +489,43 @@ export class LaravelSanctumGateway implements WebBackendGateway {
           signal: controller.signal,
         });
         const text = await response.text();
-        const parsed = text
-          ? (JSON.parse(text) as {
-              code?: string;
-              message?: string;
-              data?: unknown;
-              approval_status?: string;
-              status_token?: string;
-              submitted?: {
-                full_name?: string;
-                employee_id?: string;
-                email?: string;
-                position?: string;
-                office_code?: string;
-                office_name?: string;
-                submitted_at?: string;
-              } | null;
-            })
-          : {};
+        let parsed: {
+          code?: string;
+          message?: string;
+          data?: unknown;
+          approval_status?: string;
+          status_token?: string;
+          submitted?: {
+            full_name?: string;
+            employee_id?: string;
+            email?: string;
+            position?: string;
+            office_code?: string;
+            office_name?: string;
+            submitted_at?: string;
+          } | null;
+        } = {};
+        if (text) {
+          try {
+            parsed = JSON.parse(text);
+          } catch {
+            if (!response.ok && response.status >= 500) {
+              parsed = { message: 'Service temporarily unavailable. Please try again shortly.' };
+            } else if (!response.ok && response.status === 429) {
+              parsed = { message: 'Too many requests. Please wait a moment and try again.' };
+            } else {
+              throw new SyntaxError('Non-JSON server response');
+            }
+          }
+        }
         if (!response.ok) {
-          const httpErr = new Error(
-            parsed.message ?? `Server responded with HTTP ${response.status}.`,
-          ) as Error & {
+          const fallbackHttpMessage =
+            response.status === 429
+              ? 'Too many requests. Please wait a moment and try again.'
+              : response.status >= 502 && response.status <= 504
+                ? 'Service temporarily unavailable. Please try again shortly.'
+                : `Server responded with HTTP ${response.status}.`;
+          const httpErr = new Error(parsed.message ?? fallbackHttpMessage) as Error & {
             isHttpError?: boolean;
             status?: number;
             code?: string;
@@ -506,13 +571,13 @@ export class LaravelSanctumGateway implements WebBackendGateway {
       return await sendOnce(effectiveBaseUrl);
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') {
-        throw new Error(`Request timed out connecting to ${effectiveBaseUrl}.`);
+        throw createNoInternetError();
       }
       if (err instanceof Error && (err as Error & { isHttpError?: boolean }).isHttpError) {
         throw err;
       }
       if (err instanceof SyntaxError) {
-        throw new Error('Server returned an unexpected non-JSON response.');
+        throw new Error('Server returned an unexpected response. Please try again.');
       }
 
       const origin = typeof window !== 'undefined' ? window.location.origin : undefined;
@@ -542,9 +607,7 @@ export class LaravelSanctumGateway implements WebBackendGateway {
         }
       }
 
-      throw new Error(
-        `Unable to reach Tracely server (${primaryBaseUrl}). Configure or connect your API v1 server first.`,
-      );
+      throw createNoInternetError();
     }
   }
 

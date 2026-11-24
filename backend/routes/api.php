@@ -20,6 +20,9 @@ Route::prefix('v1')->group(function (): void {
         ]);
     });
 
+    Route::get('/mobile-release/latest', [MobileReleaseController::class, 'latestRelease'])
+        ->middleware('throttle:mobile-download-page');
+
     Route::post('/auth/login', [AuthController::class, 'login'])
         ->middleware('throttle:auth-login');
     Route::post('/auth/register', [AuthController::class, 'register'])
@@ -39,7 +42,7 @@ Route::prefix('v1')->group(function (): void {
     Route::get('/documents/{id}/transactions/{transactionId}/proof-stream', [DocumentController::class, 'streamProofPhoto'])
         ->name('api.v1.documents.proof-stream');
 
-    Route::middleware('auth:sanctum')->group(function (): void {
+    Route::middleware(['auth:sanctum', 'throttle:api-global'])->group(function (): void {
         // Authentication, profile & active sessions
         Route::get('/auth/me', [AuthController::class, 'me']);
         Route::patch('/auth/profile', [AuthController::class, 'updateProfile']);
@@ -66,7 +69,8 @@ Route::prefix('v1')->group(function (): void {
 
         // Real-time workspace pulse, SSE stream & push device token registration
         Route::get('/events/pulse', [RealtimeController::class, 'pulse']);
-        Route::get('/events/stream', [RealtimeController::class, 'stream']);
+        Route::get('/events/stream', [RealtimeController::class, 'stream'])
+            ->middleware('throttle:realtime-stream');
         Route::post('/devices/push-token', [RealtimeController::class, 'registerPushToken']);
         Route::delete('/devices/push-token', [RealtimeController::class, 'unregisterPushToken']);
 
@@ -87,19 +91,25 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/documents/track/{code}', [DocumentController::class, 'trackByCode']);
         Route::get('/documents/{id}', [DocumentController::class, 'show']);
         Route::patch('/documents/{id}', [DocumentController::class, 'update']);
-        Route::post('/documents', [DocumentController::class, 'storeDigital']);
-        Route::post('/documents/digital', [DocumentController::class, 'storeDigital']);
-        Route::post('/documents/hard-copy', [DocumentController::class, 'storeHardCopy']);
+        Route::post('/documents', [DocumentController::class, 'storeDigital'])
+            ->middleware('throttle:document-write');
+        Route::post('/documents/digital', [DocumentController::class, 'storeDigital'])
+            ->middleware('throttle:document-write');
+        Route::post('/documents/hard-copy', [DocumentController::class, 'storeHardCopy'])
+            ->middleware('throttle:document-write');
         Route::post('/documents/{id}/acknowledge', [DocumentController::class, 'acknowledge'])
             ->middleware('throttle:document-acknowledge');
         Route::post('/documents/{id}/unlock-challenge', [DocumentController::class, 'createUnlockChallenge']);
-        Route::post('/documents/{id}/forward', [DocumentController::class, 'forward']);
+        Route::post('/documents/{id}/forward', [DocumentController::class, 'forward'])
+            ->middleware('throttle:document-write');
         Route::post('/documents/{id}/recall', [DocumentController::class, 'recall']);
         Route::post('/documents/{id}/decline', [DocumentController::class, 'decline']);
         Route::post('/documents/{id}/return-revision', [DocumentController::class, 'returnForRevision']);
         Route::post('/documents/{id}/return', [DocumentController::class, 'returnForRevision']);
-        Route::post('/documents/{id}/versions', [DocumentController::class, 'uploadRevision']);
-        Route::post('/documents/{id}/revisions', [DocumentController::class, 'uploadRevision']);
+        Route::post('/documents/{id}/versions', [DocumentController::class, 'uploadRevision'])
+            ->middleware('throttle:document-write');
+        Route::post('/documents/{id}/revisions', [DocumentController::class, 'uploadRevision'])
+            ->middleware('throttle:document-write');
         Route::post('/documents/{id}/complete', [DocumentController::class, 'complete']);
         Route::get('/documents/{id}/comments', [DocumentController::class, 'comments']);
         Route::post('/documents/{id}/comments', [DocumentController::class, 'storeComment']);

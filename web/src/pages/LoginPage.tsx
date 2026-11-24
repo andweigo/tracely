@@ -3,6 +3,7 @@ import { ArrowLeft, Clock, Eye, EyeOff, KeyRound, Lock, ShieldCheck, Smartphone 
 import { AUTH_INPUT_LIMITS, AuthInputPolicy } from '../domain/authPolicy';
 import { OfficeSummary } from '../domain/types';
 import { useWebApp } from '../state/WebAppContext';
+import { normalizeWebErrorMessage } from '../services/webApiClient';
 import { AppIconBadge } from '../components/AppIconBadge';
 import { IdentityWalletCard } from '../components/IdentityWalletCard';
 
@@ -79,7 +80,7 @@ export const LoginPage: React.FC = () => {
     try {
       await signIn(identifier, password);
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Unable to sign in.');
+      setFormError(normalizeWebErrorMessage(err, 'Unable to sign in.'));
     }
   };
 
@@ -100,7 +101,7 @@ export const LoginPage: React.FC = () => {
       );
       setResetStep('confirm');
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Unable to request password reset.');
+      setFormError(normalizeWebErrorMessage(err, 'Unable to request password reset.'));
     }
   };
 
@@ -131,7 +132,7 @@ export const LoginPage: React.FC = () => {
       setResetStep('request');
       setMode('signin');
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Unable to reset password.');
+      setFormError(normalizeWebErrorMessage(err, 'Unable to reset password.'));
     }
   };
 
@@ -157,7 +158,7 @@ export const LoginPage: React.FC = () => {
         setConfirmPassword('');
       }
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Unable to submit registration.');
+      setFormError(normalizeWebErrorMessage(err, 'Unable to submit registration.'));
     }
   };
 

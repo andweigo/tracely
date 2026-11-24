@@ -1,7 +1,12 @@
 /* eslint-env jest */
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ApiConfig } from '../src/config/ApiConfig';
-import { ApiClient, ApiError } from '../src/network/ApiClient';
+import { ApiConfig, isNewerAppVersion } from '../src/config/ApiConfig';
+import {
+  ApiClient,
+  ApiError,
+  NO_INTERNET_ERROR_MESSAGE,
+  normalizeMobileErrorMessage,
+} from '../src/network/ApiClient';
 import { AUTH_INPUT_LIMITS } from '../src/domain/security/AuthInputPolicy';
 import { DomainRuleError } from '../src/domain/base/DomainRuleError';
 import {
@@ -682,11 +687,11 @@ describe('Production OOP Domain & RA 10173 Security Rules', () => {
     expect(res.data).toEqual(['ok']);
     expect(fetchSpy).toHaveBeenCalledTimes(2);
 
-    // POST requests must never retry on network error
+    // POST requests must never retry on network error and show clean offline message
     fetchSpy.mockClear();
     fetchSpy.mockRejectedValueOnce(new TypeError('Network request failed'));
     await expect(client.post('/documents', { title: 'Test' })).rejects.toThrow(
-      'Unable to reach Tracely server',
+      'No internet connection. Please try again.',
     );
     expect(fetchSpy).toHaveBeenCalledTimes(1);
 
@@ -1153,5 +1158,23 @@ describe('Production OOP Domain & RA 10173 Security Rules', () => {
       'StrongReset#2026!',
     );
     expect(msg).toContain('Password reset successful');
+  });
+
+  test('normalizes offline/network errors cleanly and compares mobile app semver updates accurately', () => {
+    expect(normalizeMobileErrorMessage(new TypeError('Network request failed'))).toBe(
+      NO_INTERNET_ERROR_MESSAGE,
+    );
+    expect(normalizeMobileErrorMessage(new ApiError(0, 'REQUEST_TIMEOUT', 'timed out'))).toBe(
+      NO_INTERNET_ERROR_MESSAGE,
+    );
+    expect(normalizeMobileErrorMessage(new ApiError(401, 'INVALID_CREDENTIALS', 'Invalid password.'))).toBe(
+      'Invalid password.',
+    );
+
+    expect(isNewerAppVersion('1.0.5', '1.0.4')).toBe(true);
+    expect(isNewerAppVersion('1.1.0', '1.0.9')).toBe(true);
+    expect(isNewerAppVersion('2.0.0', '1.9.9')).toBe(true);
+    expect(isNewerAppVersion('1.0.5', '1.0.5')).toBe(false);
+    expect(isNewerAppVersion('1.0.3', '1.0.5')).toBe(false);
   });
 });

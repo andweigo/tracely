@@ -138,12 +138,12 @@ export const HardCopyReceiveModal: React.FC = () => {
         >
           <label className="field-label" htmlFor="hard-copy-receive-code-input">
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <Keyboard size={13} /> Or confirm with USB Scanner / Tracking Code
+              <Keyboard size={13} /> Or confirm with Tracking Code
             </span>
           </label>
           <input
             id="hard-copy-receive-code-input"
-            aria-label="Tracking Code or USB Scanner Input"
+            aria-label="Tracking Code Input"
             className="input mono"
             autoFocus
             value={codeInput}
@@ -151,11 +151,11 @@ export const HardCopyReceiveModal: React.FC = () => {
               setCodeInput(e.target.value);
               if (errorMsg) setErrorMsg(null);
             }}
-            placeholder="Scan with USB scanner or enter TRC-2026-000142"
+            placeholder="Enter Tracking Code (e.g. TRC-2026-000142)"
           />
           <span className="field-hint">
-            USB handheld QR scanners submit automatically on scan, or type the Tracking Code printed
-            on the routing slip.
+            Type or paste the Tracking Code printed on the physical routing slip, or scan its QR
+            with Tracely Mobile.
           </span>
 
           {errorMsg ? (

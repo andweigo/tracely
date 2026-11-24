@@ -338,7 +338,7 @@ describe('DocsTracker Web App', () => {
     fireEvent.click(trigger);
 
     expect(await screen.findByTestId('web-hard-copy-receive-modal')).toBeTruthy();
-    const usbInput = screen.getByLabelText('Tracking Code or USB Scanner Input');
+    const usbInput = screen.getByLabelText('Tracking Code Input');
     fireEvent.change(usbInput, { target: { value: 'TRC-QR:DOC:tok-142' } });
     fireEvent.submit(screen.getByTestId('web-hard-copy-code-form'));
 
@@ -2288,7 +2288,7 @@ describe('DocsTracker Web App', () => {
 
     fireEvent.click(screen.getByTestId('sealed-detail-qr-trigger-doc-locked-hard'));
     expect(await screen.findByTestId('web-hard-copy-receive-modal')).toBeTruthy();
-    const hardCopyInput = screen.getByLabelText('Tracking Code or USB Scanner Input');
+    const hardCopyInput = screen.getByLabelText('Tracking Code Input');
     fireEvent.change(hardCopyInput, { target: { value: 'trc-2026-000779' } });
     fireEvent.click(screen.getByTestId('web-hard-copy-code-submit'));
 
@@ -2933,7 +2933,7 @@ describe('DocsTracker Web App', () => {
     });
     fireEvent.click(screen.getByTestId('web-open-usb-batch-btn'));
     expect(await screen.findByTestId('web-batch-usb-receive-modal')).toBeTruthy();
-    fireEvent.change(screen.getByLabelText('USB Batch Scanner Input'), {
+    fireEvent.change(screen.getByLabelText('Batch Tracking Code Input'), {
       target: { value: 'TRC-2026-001001' },
     });
     fireEvent.submit(screen.getByTestId('web-batch-usb-form'));
@@ -3176,5 +3176,108 @@ describe('DocsTracker Web App', () => {
         value: prevNotification,
       });
     }
+  });
+
+  it('shows simplified no internet connection message on offline login/registration and supports Ctrl+K Quick Search', async () => {
+    const offlineGw = createMockGateway({
+      login: async () => {
+        throw new TypeError('Failed to fetch');
+      },
+      register: async () => {
+        throw new TypeError('Failed to fetch');
+      },
+    });
+
+    const { unmount } = render(<App gateway={offlineGw} requireAuth={true} firstVisitSkeletonMs={0} />);
+    fireEvent.change(screen.getByLabelText('Employee ID or Work Email'), {
+      target: { value: 'records@tracely.app' },
+    });
+    fireEvent.change(screen.getByLabelText('Password'), {
+      target: { value: 'Tracely@2026!' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Sign In/i }));
+
+    expect(await screen.findAllByText('No internet connection. Please try again.')).toBeTruthy();
+
+    // Switch to Create Account tab and trigger offline registration
+    fireEvent.click(screen.getByRole('tab', { name: /Create Account/i }));
+    fireEvent.change(screen.getByLabelText('Full Name'), { target: { value: 'Maria Santos' } });
+    fireEvent.change(screen.getByLabelText('Employee ID'), { target: { value: 'TRC-8801' } });
+    fireEvent.change(screen.getByLabelText('Work Email'), { target: { value: 'maria.santos@tracely.app' } });
+    fireEvent.change(screen.getByLabelText('Designation / Position'), { target: { value: 'Records Clerk' } });
+    fireEvent.change(screen.getByLabelText('Create Password'), { target: { value: 'Tracely#2026!' } });
+    fireEvent.change(screen.getByLabelText('Confirm Password'), { target: { value: 'Tracely#2026!' } });
+    fireEvent.click(screen.getByRole('button', { name: /Submit Registration/i }));
+
+    expect((await screen.findAllByText('No internet connection. Please try again.')).length).toBeGreaterThan(0);
+    unmount();
+
+    // Authenticated workspace Ctrl+K Global Quick Search opens and navigates to matching document
+    const actor: Personnel = {
+      id: 'usr-quick-search',
+      fullName: 'Clarissa Mendoza',
+      employeeId: 'TRC-0101',
+      email: 'records@tracely.app',
+      position: 'Records Officer',
+      role: 'records_officer',
+      roleLabel: 'Records Officer',
+      office: { id: 'off-records', code: 'RECORDS', name: 'Records & Registry' },
+      availability: 'available',
+      initials: 'CM',
+    };
+    const gw = createMockGateway({
+      login: async () => ({ bearerToken: 'tok-qs-1', user: actor }),
+      listWorkspace: async () => ({
+        offices: [actor.office],
+        personnel: [actor],
+        documents: [
+          {
+            id: 'doc-qs-1',
+            trackingCode: 'TRC-2026-9901',
+            qrToken: 'tok-qs-doc',
+            title: 'Annual Procurement Plan FY 2026',
+            categoryId: 'cat-1',
+            categoryName: 'Procurement',
+            confidentialityTier: 'standard_internal',
+            copyFormat: 'digital',
+            lifecycleStatus: 'in_transit',
+            slaState: 'on_track',
+            slaDueAt: null,
+            originOffice: actor.office,
+            currentOffice: actor.office,
+            submittedSchoolName: null,
+            submittedSchoolId: null,
+            physicalReference: null,
+            physicalPageCount: null,
+            versions: [],
+            transactions: [],
+            createdAt: new Date().toISOString(),
+          },
+        ],
+        trackedSnapshots: [],
+        categories: [],
+        notifications: [],
+      }),
+    });
+
+    render(<App gateway={gw} requireAuth={true} firstVisitSkeletonMs={0} />);
+    fireEvent.change(screen.getByLabelText('Employee ID or Work Email'), {
+      target: { value: 'records@tracely.app' },
+    });
+    fireEvent.change(screen.getByLabelText('Password'), {
+      target: { value: 'Tracely@2026!' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Sign In/i }));
+
+    expect(await screen.findByTestId('web-quick-search-trigger')).toBeTruthy();
+    fireEvent.keyDown(window, { key: 'k', ctrlKey: true });
+    const qsModal = await screen.findByTestId('web-quick-search-modal');
+    expect(qsModal).toBeTruthy();
+    fireEvent.change(screen.getByLabelText('Quick search documents and screens'), {
+      target: { value: 'TRC-2026-9901' },
+    });
+    await waitFor(() => {
+      expect(qsModal.textContent).toContain('Annual Procurement Plan FY 2026');
+    });
   });
 });

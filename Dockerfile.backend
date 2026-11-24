@@ -22,7 +22,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         pcntl \
         pdo_mysql \
         zip \
-    && a2enmod rewrite headers \
+    && a2enmod rewrite headers reqtimeout \
     && echo "ServerName localhost" > /etc/apache2/conf-available/servername.conf \
     && a2enconf servername \
     && apt-get clean \

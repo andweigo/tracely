@@ -8,12 +8,18 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/download', [MobileReleaseController::class, 'showDownloadPage'])->name('mobile.download.page');
-Route::get('/download/tracely.apk', [MobileReleaseController::class, 'downloadApk'])->name('mobile.download.apk');
+Route::get('/download', [MobileReleaseController::class, 'showDownloadPage'])
+    ->middleware('throttle:mobile-download-page')
+    ->name('mobile.download.page');
+Route::get('/download/tracely.apk', [MobileReleaseController::class, 'downloadApk'])
+    ->middleware('throttle:mobile-download-apk')
+    ->name('mobile.download.apk');
 
 Route::prefix('admin')->name('admin.')->group(function (): void {
     Route::get('/login', [AdminPortalController::class, 'showLogin'])->name('login');
-    Route::post('/login', [AdminPortalController::class, 'login'])->name('login.submit');
+    Route::post('/login', [AdminPortalController::class, 'login'])
+        ->middleware('throttle:admin-login')
+        ->name('login.submit');
     Route::post('/logout', [AdminPortalController::class, 'logout'])->name('logout');
 
     Route::get('/', [AdminPortalController::class, 'dashboard'])->name('dashboard');

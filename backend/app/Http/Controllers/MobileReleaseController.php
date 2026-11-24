@@ -34,6 +34,31 @@ class MobileReleaseController extends Controller
         ]);
     }
 
+    public function latestRelease(): JsonResponse
+    {
+        $meta = $this->readReleaseMeta();
+        $apkExists = is_file($this->apkFullPath());
+
+        if (! $apkExists || ! is_array($meta)) {
+            return response()->json([
+                'available' => false,
+                'version' => null,
+                'download_page_url' => route('mobile.download.page'),
+                'apk_url' => route('mobile.download.apk'),
+            ]);
+        }
+
+        return response()->json([
+            'available' => true,
+            'version' => (string) ($meta['version'] ?? '1.0.0'),
+            'size_mb' => $meta['size_mb'] ?? null,
+            'notes' => (string) ($meta['notes'] ?? ''),
+            'uploaded_at' => $meta['uploaded_at'] ?? null,
+            'download_page_url' => route('mobile.download.page'),
+            'apk_url' => route('mobile.download.apk'),
+        ]);
+    }
+
     public function downloadApk(): BinaryFileResponse|JsonResponse
     {
         $path = $this->apkFullPath();

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   BarChart3,
   Bell,
@@ -13,6 +13,7 @@ import {
   MapPin,
   Menu,
   RefreshCw,
+  Search,
   Send,
   Settings,
   UserCheck,
@@ -22,6 +23,7 @@ import {
 import { WebRoute } from '../domain/types';
 import { useWebApp } from '../state/WebAppContext';
 import { AppIconBadge } from '../components/AppIconBadge';
+import { QuickSearchModal } from '../components/QuickSearchModal';
 
 interface NavEntry {
   readonly id: WebRoute;
@@ -67,6 +69,18 @@ export const WebShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
   } = useWebApp();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [quickSearchOpen, setQuickSearchOpen] = useState(false);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setQuickSearchOpen((open) => !open);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   const navItems: NavEntry[] = [
     {
@@ -229,6 +243,18 @@ export const WebShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
           <div className="topbar-right">
             <button
               type="button"
+              className="topbar-search-btn"
+              data-testid="web-quick-search-trigger"
+              aria-label="Quick search (Ctrl+K)"
+              onClick={() => setQuickSearchOpen(true)}
+            >
+              <Search size={14} />
+              <span className="topbar-search-label">Quick search...</span>
+              <kbd className="topbar-search-kbd">Ctrl K</kbd>
+            </button>
+
+            <button
+              type="button"
               className="topbar-alert-btn"
               aria-label="Open notifications"
               onClick={() => handleNav('alerts')}
@@ -376,6 +402,7 @@ export const WebShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
           </button>
         </div>
       ) : null}
+      <QuickSearchModal open={quickSearchOpen} onClose={() => setQuickSearchOpen(false)} />
     </div>
   );
 };

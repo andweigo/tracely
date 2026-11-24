@@ -44,7 +44,10 @@ import {
   WebBackendGateway,
 } from '../domain/qrPolicy';
 import { AuthInputPolicy, RegistrationValidationInput } from '../domain/authPolicy';
-import { LaravelSanctumGateway } from '../services/webApiClient';
+import {
+  LaravelSanctumGateway,
+  normalizeWebErrorMessage,
+} from '../services/webApiClient';
 import { buildBatchItemTitle } from '../utils/formatters';
 import { formatWebHash, parseWebHash } from '../utils/hashRouter';
 import { isPendingReceiptForActor, isPendingSentByActor, selectSentDocuments } from '../utils/sentFilter';
@@ -602,7 +605,7 @@ export const WebAppProvider: React.FC<WebAppProviderProps> = ({
         if (successMessage) notify('success', successMessage);
         return result;
       } catch (err) {
-        notify('error', err instanceof Error ? err.message : 'Request failed.');
+        notify('error', normalizeWebErrorMessage(err, 'Request failed.'));
         throw err;
       } finally {
         setIsBusy(false);
@@ -1264,7 +1267,7 @@ export const WebAppProvider: React.FC<WebAppProviderProps> = ({
         if (!silent) {
           notify(
             'error',
-            err instanceof Error ? err.message : 'Unable to check registration status.',
+            normalizeWebErrorMessage(err, 'Unable to check registration status.'),
           );
         }
         return null;
@@ -1348,7 +1351,7 @@ export const WebAppProvider: React.FC<WebAppProviderProps> = ({
         notify(status === 'rejected' ? 'error' : 'info', typedErr.message);
         return;
       }
-      notify('error', err instanceof Error ? err.message : 'Request failed.');
+      notify('error', normalizeWebErrorMessage(err, 'Request failed.'));
       throw err;
     } finally {
       setIsBusy(false);
@@ -1603,7 +1606,7 @@ export const WebAppProvider: React.FC<WebAppProviderProps> = ({
         await hydrateWorkspace();
         notify('success', 'Workspace synced.');
       } catch (err) {
-        notify('error', err instanceof Error ? err.message : 'Unable to sync workspace.');
+        notify('error', normalizeWebErrorMessage(err, 'Unable to sync workspace.'));
       } finally {
         setIsRefreshing(false);
       }

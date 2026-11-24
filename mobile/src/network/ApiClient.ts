@@ -4,6 +4,39 @@ import type { ISecureTokenStore } from '../repositories/contracts/ISecureTokenSt
 const MAX_OUTBOUND_JSON_BYTES = 256 * 1024;
 const MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
 
+export const NO_INTERNET_ERROR_MESSAGE = 'No internet connection. Please try again.';
+
+const MOBILE_NETWORK_ERROR_PATTERN =
+  /network request failed|failed to fetch|timed out|unable to reach|no internet|internet connection|econnrefused|enotfound|etimedout/i;
+
+export function isMobileNetworkError(err: unknown): boolean {
+  if (err instanceof ApiError) {
+    return (
+      err.status === 0 ||
+      err.code === 'NETWORK_UNREACHABLE' ||
+      err.code === 'REQUEST_TIMEOUT' ||
+      err.code === 'NO_INTERNET'
+    );
+  }
+  if (err instanceof Error) {
+    return err.name === 'AbortError' || MOBILE_NETWORK_ERROR_PATTERN.test(err.message);
+  }
+  return false;
+}
+
+export function normalizeMobileErrorMessage(
+  err: unknown,
+  fallback = 'Request failed. Please try again.',
+): string {
+  if (isMobileNetworkError(err)) {
+    return NO_INTERNET_ERROR_MESSAGE;
+  }
+  if (err instanceof Error && err.message.trim()) {
+    return err.message;
+  }
+  return fallback;
+}
+
 export class ApiError extends Error {
   public readonly status: number;
   public readonly code: string;
@@ -154,7 +187,9 @@ export class ApiClient {
               : null) ??
             (response.status === 429
               ? `Too many requests. Please wait ${retryAfterSeconds}s before retrying.`
-              : `Server responded with HTTP ${response.status}.`);
+              : response.status >= 502 && response.status <= 504
+                ? 'Service temporarily unavailable. Please try again shortly.'
+                : `Server responded with HTTP ${response.status}.`);
           const code =
             (parsed && typeof parsed === 'object' && 'code' in parsed && typeof parsed.code === 'string'
               ? parsed.code
@@ -174,13 +209,9 @@ export class ApiClient {
           throw error;
         }
         if (error instanceof Error && error.name === 'AbortError') {
-          throw new ApiError(0, 'REQUEST_TIMEOUT', `Request timed out connecting to ${targetBaseUrl}.`);
+          throw new ApiError(0, 'REQUEST_TIMEOUT', NO_INTERNET_ERROR_MESSAGE);
         }
-        throw new ApiError(
-          0,
-          'NETWORK_UNREACHABLE',
-          `Unable to reach Tracely server (${targetBaseUrl}). Check connectivity or Server URL.`,
-        );
+        throw new ApiError(0, 'NETWORK_UNREACHABLE', NO_INTERNET_ERROR_MESSAGE);
       } finally {
         clearTimeout(timer);
       }
@@ -242,11 +273,7 @@ export class ApiClient {
 
     throw (
       lastNetworkError ??
-      new ApiError(
-        0,
-        'NETWORK_UNREACHABLE',
-        `Unable to reach Tracely server (${this._config.baseUrl}). Check connectivity or Server URL.`,
-      )
+      new ApiError(0, 'NETWORK_UNREACHABLE', NO_INTERNET_ERROR_MESSAGE)
     );
   }
 

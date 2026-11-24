@@ -24,6 +24,31 @@ cat > /etc/apache2/sites-available/000-default.conf <<EOF
 </VirtualHost>
 EOF
 
+cat > /etc/apache2/conf-enabled/99-tracely-ddos.conf <<'EOF'
+ServerTokens Prod
+ServerSignature Off
+Timeout 30
+KeepAlive On
+KeepAliveTimeout 5
+MaxKeepAliveRequests 100
+LimitRequestBody 167772160
+LimitRequestFields 64
+LimitRequestFieldSize 8190
+LimitRequestLine 8190
+
+<IfModule mod_reqtimeout.c>
+    RequestReadTimeout header=10-20,MinRate=500 body=15-30,MinRate=500
+</IfModule>
+
+<IfModule mpm_prefork_module>
+    StartServers             4
+    MinSpareServers          4
+    MaxSpareServers          12
+    MaxRequestWorkers        80
+    MaxConnectionsPerChild   1000
+</IfModule>
+EOF
+
 cd "${APP_DIR}"
 
 # Ensure storage and cache directories exist (important when a Railway Volume is mounted at storage/app)
@@ -89,6 +114,16 @@ php artisan config:cache --no-interaction
 php artisan view:cache --no-interaction
 
 chown -R www-data:www-data storage bootstrap/cache
+
+if [ "${ENABLE_SCHEDULER:-true}" = "true" ]; then
+    echo "[tracely-backend] Starting background Laravel scheduler loop (60s interval)..."
+    (
+        while true; do
+            sleep 60
+            su -s /bin/sh www-data -c "cd ${APP_DIR} && php artisan schedule:run --no-interaction" >/dev/null 2>&1 || true
+        done
+    ) &
+fi
 
 echo "[tracely-backend] Starting Apache on 0.0.0.0:${PORT}..."
 rm -f /etc/apache2/mods-enabled/mpm_event.* /etc/apache2/mods-enabled/mpm_worker.*

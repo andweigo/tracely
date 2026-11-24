@@ -23,6 +23,7 @@ import {
 } from 'lucide-react-native';
 import { OfficeSummary } from '../../domain/entities/Personnel';
 import { AUTH_INPUT_LIMITS, AuthInputPolicy } from '../../domain/security/AuthInputPolicy';
+import { normalizeMobileErrorMessage } from '../../network/ApiClient';
 import { useAppServices } from '../../state/AppServiceContext';
 import { AppIconBadge } from '../components/AppIconBadge';
 import { MobileIdentityWalletCard } from '../components/MobileIdentityWalletCard';
@@ -239,7 +240,7 @@ export const LoginScreen: React.FC = () => {
       );
       setResetStep('confirm');
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Unable to request reset code.');
+      setFormError(normalizeMobileErrorMessage(err, 'Unable to request reset code.'));
     }
   };
 
@@ -262,7 +263,7 @@ export const LoginScreen: React.FC = () => {
       setResetStep('request');
       setAuthMode('signin');
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Unable to reset password.');
+      setFormError(normalizeMobileErrorMessage(err, 'Unable to reset password.'));
     }
   };
 
@@ -272,7 +273,7 @@ export const LoginScreen: React.FC = () => {
       await signIn(identifier, password);
       setPassword('');
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Unable to sign in.');
+      setFormError(normalizeMobileErrorMessage(err, 'Unable to sign in.'));
     }
   };
 
@@ -302,7 +303,7 @@ export const LoginScreen: React.FC = () => {
         setIdentifier(email.trim().toLowerCase() || employeeId.trim().toUpperCase());
       }
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Unable to submit registration.');
+      setFormError(normalizeMobileErrorMessage(err, 'Unable to submit registration.'));
     }
   };
 

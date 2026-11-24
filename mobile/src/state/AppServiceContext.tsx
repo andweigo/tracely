@@ -10,7 +10,12 @@ import React, {
   useState,
 } from 'react';
 import { AppState } from 'react-native';
-import { AUTH_REQUIRED, ApiConfig } from '../config/ApiConfig';
+import {
+  AUTH_REQUIRED,
+  ApiConfig,
+  isNewerAppVersion,
+  MOBILE_APP_VERSION,
+} from '../config/ApiConfig';
 import { AuditLogEntry } from '../domain/entities/AuditLogEntry';
 import { Document } from '../domain/entities/Document';
 import { DocumentCategory } from '../domain/entities/DocumentCategory';
@@ -47,7 +52,12 @@ import {
 } from '../domain/security/AccessPolicy';
 import { DeviceNotificationBridge } from '../domain/security/DeviceNotificationBridge';
 import { DeviceSecurityBridge } from '../domain/security/DeviceSecurityBridge';
-import { ApiClient, ApiError } from '../network/ApiClient';
+import {
+  ApiClient,
+  ApiError,
+  NO_INTERNET_ERROR_MESSAGE,
+  normalizeMobileErrorMessage,
+} from '../network/ApiClient';
 import type { IAuditRepository } from '../repositories/contracts/IAuditRepository';
 import type {
   IAuthRepository,
@@ -197,10 +207,19 @@ function createDefaultDependencies(onUnauthorized: () => void): AppDependencies 
   };
 }
 
+export interface MobileAppUpdateInfo {
+  readonly version: string;
+  readonly notes: string;
+  readonly downloadUrl: string;
+  readonly sizeMb?: number | null;
+}
+
 export interface AppContextValue {
   bootstrapping: boolean;
   showOnboarding: boolean;
   requireAuth: boolean;
+  availableUpdate: MobileAppUpdateInfo | null;
+  dismissAvailableUpdate(): void;
   pendingRegistration: PendingRegistrationRecord | null;
   prefillLoginIdentifier: string;
   checkPendingRegistrationStatus(silent?: boolean): Promise<PendingApprovalStatus | null>;
@@ -515,6 +534,7 @@ export const AppServiceProvider: React.FC<{
   selectedDocumentIdRef.current = selectedDocumentId;
   const [isOnline, setIsOnline] = useState(true);
   const [toast, setToast] = useState<ToastMessage | null>(null);
+  const [availableUpdate, setAvailableUpdate] = useState<MobileAppUpdateInfo | null>(null);
 
   const [offices, setOffices] = useState<ReadonlyArray<OfficeSummary>>([]);
   const [personnelDirectory, setPersonnelDirectory] = useState<ReadonlyArray<Personnel>>([]);
@@ -903,7 +923,7 @@ export const AppServiceProvider: React.FC<{
         if (successMessage) notify('success', successMessage);
         return result;
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Request failed.';
+        const message = normalizeMobileErrorMessage(err, 'Request failed.');
         notify('error', message);
         throw err;
       } finally {
@@ -1087,6 +1107,12 @@ export const AppServiceProvider: React.FC<{
         }
         return current.status;
       }
+      if (!isOnline) {
+        if (!silent) {
+          notify('error', NO_INTERNET_ERROR_MESSAGE);
+        }
+        return null;
+      }
       try {
         const res = await services.authService.checkRegistrationStatus(current.statusToken);
         const updated: PendingRegistrationRecord = {
@@ -1121,13 +1147,13 @@ export const AppServiceProvider: React.FC<{
         if (!silent) {
           notify(
             'error',
-            err instanceof Error ? err.message : 'Unable to check registration status.',
+            normalizeMobileErrorMessage(err, 'Unable to check registration status.'),
           );
         }
         return null;
       }
     },
-    [notify, persistPendingRegistration, services.authService],
+    [isOnline, notify, persistPendingRegistration, services.authService],
   );
 
   const proceedFromPendingToLoginStable = useCallback(
@@ -1152,10 +1178,67 @@ export const AppServiceProvider: React.FC<{
     setActiveTab('login');
   }, [persistPendingRegistration]);
 
+  const dismissAvailableUpdateStable = useCallback(() => {
+    setAvailableUpdate(null);
+  }, []);
+
+  useEffect(() => {
+    if (dependencies || !isOnline) return;
+    let cancelled = false;
+    const baseUrl = services.deps.apiConfig.baseUrl;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+
+    fetch(`${baseUrl}/mobile-release/latest`, {
+      headers: { Accept: 'application/json' },
+      signal: controller.signal,
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then(
+        (
+          data: {
+            available?: boolean;
+            version?: string | null;
+            notes?: string;
+            size_mb?: number | null;
+            download_page_url?: string;
+            apk_url?: string;
+          } | null,
+        ) => {
+          if (cancelled || !data?.available || !data.version) return;
+          if (isNewerAppVersion(data.version, MOBILE_APP_VERSION)) {
+            setAvailableUpdate({
+              version: data.version,
+              notes: data.notes ?? '',
+              sizeMb: data.size_mb ?? null,
+              downloadUrl:
+                data.download_page_url ||
+                data.apk_url ||
+                'https://tracely-web.up.railway.app/download',
+            });
+          }
+        },
+      )
+      .catch(() => {
+        // Silent best-effort update check; never interrupt user flow
+      })
+      .finally(() => {
+        clearTimeout(timer);
+      });
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [dependencies, isOnline, apiBaseUrl, services.deps.apiConfig]);
+
   const value: AppContextValue = {
     bootstrapping,
     showOnboarding,
     requireAuth,
+    availableUpdate,
+    dismissAvailableUpdate: dismissAvailableUpdateStable,
     pendingRegistration,
     prefillLoginIdentifier,
     checkPendingRegistrationStatus: checkPendingRegistrationStatusStable,
@@ -1265,6 +1348,9 @@ export const AppServiceProvider: React.FC<{
     signIn: async (identifier, password) => {
       setIsBusy(true);
       try {
+        if (!isOnline) {
+          throw new ApiError(0, 'NO_INTERNET', NO_INTERNET_ERROR_MESSAGE);
+        }
         const result = await services.authService.login(identifier, password);
         persistPendingRegistration(null);
         await applyAuthenticatedSession(result);
@@ -1311,7 +1397,7 @@ export const AppServiceProvider: React.FC<{
           notify(status === 'rejected' ? 'error' : 'info', err.message);
           return;
         }
-        const message = err instanceof Error ? err.message : 'Unable to complete action.';
+        const message = normalizeMobileErrorMessage(err, 'Unable to complete action.');
         notify('error', message);
         throw err;
       } finally {
@@ -1320,6 +1406,9 @@ export const AppServiceProvider: React.FC<{
     },
     registerAccount: async (input) =>
       runAsyncAction(async () => {
+        if (!isOnline) {
+          throw new ApiError(0, 'NO_INTERNET', NO_INTERNET_ERROR_MESSAGE);
+        }
         const outcome = await services.authService.register(input);
         if (outcome.authSession) {
           persistPendingRegistration(null);
@@ -1353,16 +1442,25 @@ export const AppServiceProvider: React.FC<{
         return outcome;
       }),
     requestPasswordReset: async (identifier) =>
-      runAsyncAction(() => services.authService.requestPasswordReset(identifier)),
+      runAsyncAction(async () => {
+        if (!isOnline) {
+          throw new ApiError(0, 'NO_INTERNET', NO_INTERNET_ERROR_MESSAGE);
+        }
+        return services.authService.requestPasswordReset(identifier);
+      }),
     confirmPasswordReset: async (identifier, resetCode, newPassword, confirmPassword) =>
       runAsyncAction(
-        () =>
-          services.authService.confirmPasswordReset(
+        async () => {
+          if (!isOnline) {
+            throw new ApiError(0, 'NO_INTERNET', NO_INTERNET_ERROR_MESSAGE);
+          }
+          return services.authService.confirmPasswordReset(
             identifier,
             resetCode,
             newPassword,
             confirmPassword,
-          ),
+          );
+        },
         'Password reset successful. Sign in with your new password.',
       ),
     signOutAndWipeCache: async () => {

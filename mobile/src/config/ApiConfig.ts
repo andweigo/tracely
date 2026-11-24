@@ -3,9 +3,29 @@ import { NativeModules } from 'react-native';
 import { DomainRuleError } from '../domain/base/DomainRuleError';
 
 const STORAGE_KEY_API_URL = '@sdo_doctrack/api_base_url';
+export const MOBILE_APP_VERSION = '1.0.5';
 export const PRODUCTION_API_BASE_URL =
   'https://backend-production-43015d9a.up.railway.app/api/v1';
 export const LOCAL_DEV_API_BASE_URL = 'http://127.0.0.1:8000/api/v1';
+
+export function isNewerAppVersion(latest: string, current: string): boolean {
+  const parse = (v: string) =>
+    v
+      .trim()
+      .replace(/^v/i, '')
+      .split('.')
+      .map((part) => Number.parseInt(part, 10) || 0);
+  const a = parse(latest);
+  const b = parse(current);
+  const len = Math.max(a.length, b.length, 3);
+  for (let i = 0; i < len; i += 1) {
+    const av = a[i] ?? 0;
+    const bv = b[i] ?? 0;
+    if (av > bv) return true;
+    if (av < bv) return false;
+  }
+  return false;
+}
 
 export function getDefaultApiBaseUrl(): string {
   return typeof __DEV__ !== 'undefined' && __DEV__

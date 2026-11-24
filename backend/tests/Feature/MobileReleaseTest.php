@@ -28,9 +28,13 @@ class MobileReleaseTest extends TestCase
 
     public function test_ict_admin_can_publish_apk_and_public_download_serves_it(): void
     {
-        // Before publication, APK returns 404 and landing page renders unavailable state
+        // Before publication, APK returns 404, landing page renders unavailable state, and latest API reports unavailable
         $this->get('/download')->assertOk()->assertSee('not published yet');
         $this->get('/download/tracely.apk')->assertNotFound();
+        $this->getJson('/api/v1/mobile-release/latest')
+            ->assertOk()
+            ->assertJsonPath('available', false)
+            ->assertJsonPath('version', null);
 
         $staff = User::query()->where('email', 'records@tracely.app')->firstOrFail();
         $ictAdmin = User::query()->where('email', 'ict@tracely.app')->firstOrFail();
@@ -86,5 +90,13 @@ class MobileReleaseTest extends TestCase
             ->assertOk()
             ->assertHeader('Content-Type', 'application/vnd.android.package-archive');
         $this->assertSame($fakeApkBytes, $downloadResponse->streamedContent());
+
+        // Public latest-release metadata endpoint powers mobile in-app update banner without exposing SHA-256
+        $latestResponse = $this->getJson('/api/v1/mobile-release/latest')
+            ->assertOk()
+            ->assertJsonPath('available', true)
+            ->assertJsonPath('version', '1.0.0')
+            ->assertJsonPath('notes', 'Initial Railway production release');
+        $this->assertArrayNotHasKey('sha256', $latestResponse->json());
     }
 }

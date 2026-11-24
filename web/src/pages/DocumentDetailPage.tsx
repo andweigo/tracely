@@ -227,7 +227,7 @@ export const DocumentDetailPage: React.FC = () => {
               .{' '}
               {doc.copyFormat === 'digital'
                 ? 'Display the live Unlock QR to scan with Tracely Mobile, or unlock with your account password.'
-                : 'Scan the printed routing slip with Tracely Mobile, or confirm via USB scanner / tracking code on desktop.'}
+                : 'Scan the printed routing slip with Tracely Mobile, or enter the Tracking Code on desktop.'}
             </p>
 
             <div className="doc-actions" style={{ marginTop: 4 }}>

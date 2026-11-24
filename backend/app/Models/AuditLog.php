@@ -22,6 +22,8 @@ class AuditLog extends Model
         'tracking_code',
         'summary',
         'device_label',
+        'prev_hash',
+        'entry_hash',
         'occurred_at',
     ];
 

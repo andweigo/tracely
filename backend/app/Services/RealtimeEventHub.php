@@ -100,7 +100,7 @@ class RealtimeEventHub
 
     public function fcmConfigured(): bool
     {
-        return trim((string) env('FCM_SERVER_KEY', '')) !== '';
+        return $this->loadFcmV1ServiceAccount() !== null;
     }
 
     /**
@@ -188,7 +188,7 @@ class RealtimeEventHub
             ->values()
             ->all();
 
-        $serverKey = trim((string) env('FCM_SERVER_KEY', ''));
+        $serviceAccount = $this->loadFcmV1ServiceAccount();
 
         if ($tokens === []) {
             $this->recordPushLog($eventType, $documentId, $primaryUserId, $officeId, 0, 'no_tokens', null, 'No registered push tokens for target user(s).');
@@ -196,40 +196,167 @@ class RealtimeEventHub
             return;
         }
 
-        if ($serverKey === '') {
-            $this->recordPushLog($eventType, $documentId, $primaryUserId, $officeId, count($tokens), 'skipped_unconfigured', null, 'FCM_SERVER_KEY not set — delivered via Realtime Pulse/SSE.');
+        if ($serviceAccount === null) {
+            $this->recordPushLog($eventType, $documentId, $primaryUserId, $officeId, count($tokens), 'skipped_unconfigured', null, 'FCM HTTP v1 service account not configured — delivered via Realtime Pulse/SSE.');
 
             return;
         }
 
+        $accessToken = $this->resolveFcmV1AccessToken($serviceAccount);
+        if ($accessToken === null) {
+            $this->recordPushLog($eventType, $documentId, $primaryUserId, $officeId, count($tokens), 'failed', null, 'Failed to obtain FCM HTTP v1 OAuth2 access token.');
+
+            return;
+        }
+
+        $projectId = $serviceAccount['project_id'];
+        $endpoint = "https://fcm.googleapis.com/v1/projects/{$projectId}/messages:send";
+        $sentCount = 0;
+        $lastStatus = null;
+        $lastError = null;
+
+        foreach ($tokens as $deviceToken) {
+            try {
+                $response = Http::timeout(4)
+                    ->withToken($accessToken)
+                    ->acceptJson()
+                    ->post($endpoint, [
+                        'message' => [
+                            'token' => $deviceToken,
+                            'notification' => [
+                                'title' => 'Tracely Custody Alert',
+                                'body' => $lockScreenPreview,
+                            ],
+                            'data' => [
+                                'event' => $eventType,
+                                'document_id' => $documentId ?? '',
+                            ],
+                            'android' => [
+                                'priority' => 'HIGH',
+                            ],
+                        ],
+                    ]);
+
+                $lastStatus = $response->status();
+                if ($response->successful()) {
+                    $sentCount++;
+                } else {
+                    $lastError = Str::limit($response->body(), 240);
+                }
+            } catch (\Throwable $e) {
+                $lastError = Str::limit($e->getMessage(), 240);
+            }
+        }
+
+        if ($sentCount > 0) {
+            $this->recordPushLog($eventType, $documentId, $primaryUserId, $officeId, $sentCount, 'sent', $lastStatus ?? 200, $lastError);
+        } else {
+            $this->recordPushLog($eventType, $documentId, $primaryUserId, $officeId, count($tokens), 'failed', $lastStatus, $lastError ?? 'FCM HTTP v1 dispatch failed.');
+        }
+    }
+
+    /**
+     * @return array{project_id: string, client_email: string, private_key: string, token_uri: string}|null
+     */
+    private function loadFcmV1ServiceAccount(): ?array
+    {
+        $rawJson = trim((string) env('FCM_SERVICE_ACCOUNT_JSON', ''));
+        if ($rawJson === '') {
+            $path = trim((string) env('FCM_SERVICE_ACCOUNT_PATH', ''));
+            if ($path !== '' && is_file($path)) {
+                $rawJson = trim((string) @file_get_contents($path));
+            }
+        }
+
+        if ($rawJson === '') {
+            return null;
+        }
+
+        $decoded = json_decode($rawJson, true);
+        if (! is_array($decoded)) {
+            return null;
+        }
+
+        $projectId = trim((string) (env('FCM_PROJECT_ID') ?: ($decoded['project_id'] ?? '')));
+        $clientEmail = trim((string) ($decoded['client_email'] ?? ''));
+        $privateKey = (string) ($decoded['private_key'] ?? '');
+        $tokenUri = trim((string) ($decoded['token_uri'] ?? 'https://oauth2.googleapis.com/token'));
+
+        if ($projectId === '' || $clientEmail === '' || $privateKey === '') {
+            return null;
+        }
+
+        return [
+            'project_id' => $projectId,
+            'client_email' => $clientEmail,
+            'private_key' => $privateKey,
+            'token_uri' => $tokenUri,
+        ];
+    }
+
+    /**
+     * @param  array{project_id: string, client_email: string, private_key: string, token_uri: string}  $sa
+     */
+    private function resolveFcmV1AccessToken(array $sa): ?string
+    {
+        $cacheKey = 'tracely:fcm_v1:token:'.sha1($sa['project_id'].'|'.$sa['client_email']);
+        $cached = Cache::get($cacheKey);
+        if (is_string($cached) && $cached !== '') {
+            return $cached;
+        }
+
+        if (! function_exists('openssl_sign')) {
+            return null;
+        }
+
+        $now = time();
+        $header = $this->base64UrlEncode((string) json_encode(['alg' => 'RS256', 'typ' => 'JWT']));
+        $claimSet = $this->base64UrlEncode((string) json_encode([
+            'iss' => $sa['client_email'],
+            'scope' => 'https://www.googleapis.com/auth/firebase.messaging',
+            'aud' => $sa['token_uri'],
+            'iat' => $now,
+            'exp' => $now + 3600,
+        ]));
+
+        $signature = '';
+        $signingInput = "{$header}.{$claimSet}";
+        if (! @openssl_sign($signingInput, $signature, $sa['private_key'], OPENSSL_ALGO_SHA256)) {
+            return null;
+        }
+
+        $jwt = $signingInput.'.'.$this->base64UrlEncode($signature);
+
         try {
-            $response = Http::timeout(3)
-                ->withHeaders([
-                    'Authorization' => "key={$serverKey}",
-                    'Content-Type' => 'application/json',
-                ])
-                ->post('https://fcm.googleapis.com/fcm/send', [
-                    'registration_ids' => $tokens,
-                    'priority' => 'high',
-                    'notification' => [
-                        'title' => 'Tracely Custody Alert',
-                        'body' => $lockScreenPreview,
-                    ],
-                    'data' => [
-                        'event' => $eventType,
-                        'document_id' => $documentId ?? '',
-                    ],
+            $response = Http::timeout(5)
+                ->asForm()
+                ->post($sa['token_uri'], [
+                    'grant_type' => 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+                    'assertion' => $jwt,
                 ]);
 
-            if ($response->successful()) {
-                $this->recordPushLog($eventType, $documentId, $primaryUserId, $officeId, count($tokens), 'sent', $response->status(), null);
-            } else {
-                $this->recordPushLog($eventType, $documentId, $primaryUserId, $officeId, count($tokens), 'failed', $response->status(), Str::limit($response->body(), 240));
+            if (! $response->successful()) {
+                return null;
             }
-        } catch (\Throwable $e) {
-            // Best-effort push delivery; never fail primary custody transaction
-            $this->recordPushLog($eventType, $documentId, $primaryUserId, $officeId, count($tokens), 'failed', null, Str::limit($e->getMessage(), 240));
+
+            $token = $response->json('access_token');
+            $expiresIn = max(120, (int) $response->json('expires_in', 3600) - 300);
+
+            if (is_string($token) && $token !== '') {
+                Cache::put($cacheKey, $token, now()->addSeconds($expiresIn));
+
+                return $token;
+            }
+        } catch (\Throwable) {
+            return null;
         }
+
+        return null;
+    }
+
+    private function base64UrlEncode(string $raw): string
+    {
+        return rtrim(strtr(base64_encode($raw), '+/', '-_'), '=');
     }
 
     private function recordPushLog(

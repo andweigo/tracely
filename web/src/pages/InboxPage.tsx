@@ -774,7 +774,7 @@ export const InboxPage: React.FC = () => {
               style={{ width: '100%', minHeight: 34, fontSize: 12 }}
               onClick={openBatchUsbReceive}
             >
-              <Keyboard size={13} /> USB Batch Receive (Hard Copies)
+              <Keyboard size={13} /> Batch Code Receive (Hard Copies)
             </button>
           ) : null}
         </div>
