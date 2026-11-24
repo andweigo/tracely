@@ -47,9 +47,14 @@ import {
 } from '../domain/security/AccessPolicy';
 import { DeviceNotificationBridge } from '../domain/security/DeviceNotificationBridge';
 import { DeviceSecurityBridge } from '../domain/security/DeviceSecurityBridge';
-import { ApiClient } from '../network/ApiClient';
+import { ApiClient, ApiError } from '../network/ApiClient';
 import type { IAuditRepository } from '../repositories/contracts/IAuditRepository';
-import type { IAuthRepository } from '../repositories/contracts/IAuthRepository';
+import type {
+  IAuthRepository,
+  PendingApprovalStatus,
+  PendingRegistrationRecord,
+  PendingRegistrationSummary,
+} from '../repositories/contracts/IAuthRepository';
 import type {
   CommentVisibility,
   CreateDigitalDocumentPayload,
@@ -121,6 +126,7 @@ export type MobileTab =
   | 'profile'
   | 'user_profile'
   | 'settings'
+  | 'pending_approval'
   | 'login';
 
 export interface ToastAction {
@@ -195,6 +201,11 @@ export interface AppContextValue {
   bootstrapping: boolean;
   showOnboarding: boolean;
   requireAuth: boolean;
+  pendingRegistration: PendingRegistrationRecord | null;
+  prefillLoginIdentifier: string;
+  checkPendingRegistrationStatus(silent?: boolean): Promise<PendingApprovalStatus | null>;
+  proceedFromPendingToLogin(clearRecord?: boolean): void;
+  dismissPendingRegistration(): void;
   isBusy: boolean;
   isRefreshing: boolean;
   apiBaseUrl: string;
@@ -372,7 +383,42 @@ export interface AppContextValue {
 const ONBOARDING_STORAGE_KEY = '@sdo_doctrack/onboarding_done';
 const RECENT_SCANS_STORAGE_KEY = '@sdo_doctrack/recent_scans';
 const USER_PREFS_STORAGE_KEY = '@sdo_doctrack/user_preferences';
+const PENDING_REGISTRATION_STORAGE_KEY = '@sdo_doctrack/mobile_pending_registration';
 const AVATAR_COLOR_STORAGE_PREFIX = '@tracely/avatar_color_v1:';
+
+function parseStoredPendingRegistration(raw: string | null): PendingRegistrationRecord | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as Partial<PendingRegistrationRecord> | null;
+    if (!parsed || typeof parsed !== 'object') return null;
+    if (
+      parsed.status !== 'pending' &&
+      parsed.status !== 'approved' &&
+      parsed.status !== 'rejected'
+    ) {
+      return null;
+    }
+    return {
+      status: parsed.status,
+      statusToken: typeof parsed.statusToken === 'string' ? parsed.statusToken : null,
+      message:
+        typeof parsed.message === 'string'
+          ? parsed.message
+          : 'Registration submitted for administrator verification.',
+      fullName: typeof parsed.fullName === 'string' ? parsed.fullName : '',
+      employeeId: typeof parsed.employeeId === 'string' ? parsed.employeeId : '',
+      email: typeof parsed.email === 'string' ? parsed.email : '',
+      position: typeof parsed.position === 'string' ? parsed.position : '',
+      officeCode: typeof parsed.officeCode === 'string' ? parsed.officeCode : '',
+      officeName: typeof parsed.officeName === 'string' ? parsed.officeName : '',
+      submittedAt:
+        typeof parsed.submittedAt === 'string' ? parsed.submittedAt : new Date().toISOString(),
+      checkedAt: typeof parsed.checkedAt === 'string' ? parsed.checkedAt : null,
+    };
+  } catch {
+    return null;
+  }
+}
 const WORKSPACE_POLL_MS = 15_000;
 const REALTIME_PULSE_MS = 3_000;
 
@@ -451,6 +497,11 @@ export const AppServiceProvider: React.FC<{
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [actor, setActor] = useState<Personnel | null>(null);
   const [sessionMetadata, setSessionMetadata] = useState<SecureSessionRecord | null>(null);
+  const [pendingRegistration, setPendingRegistration] =
+    useState<PendingRegistrationRecord | null>(null);
+  const [prefillLoginIdentifier, setPrefillLoginIdentifier] = useState<string>('');
+  const pendingRegistrationRef = useRef<PendingRegistrationRecord | null>(null);
+  pendingRegistrationRef.current = pendingRegistration;
   const [apiBaseUrl, setApiBaseUrl] = useState('');
   const defaultLandingTab: MobileTab =
     dependencies?.initialTab ?? (dependencies ? 'inbox' : 'dashboard');
@@ -668,10 +719,18 @@ export const AppServiceProvider: React.FC<{
           }
           setActor(restored.actor);
           setSessionMetadata(restored.session);
+          setPendingRegistration(null);
           if (!services.deps.disableNetInfoListener) {
             DeviceNotificationBridge.requestPermission().catch(() => false);
           }
           await hydrateWorkspace(restored.actor);
+        } else if (!dependencies) {
+          const savedPending = parseStoredPendingRegistration(
+            await AsyncStorage.getItem(PENDING_REGISTRATION_STORAGE_KEY).catch(() => null),
+          );
+          if (mounted && savedPending) {
+            setPendingRegistration(savedPending);
+          }
         }
       } catch {
         // Unauthenticated or unreachable at boot: keep user cleanly at LoginScreen
@@ -971,10 +1030,109 @@ export const AppServiceProvider: React.FC<{
     [services.deps.docRepo],
   );
 
+  const persistPendingRegistration = useCallback(
+    (next: PendingRegistrationRecord | null) => {
+      setPendingRegistration(next);
+      if (!dependencies) {
+        if (!next) {
+          AsyncStorage.removeItem(PENDING_REGISTRATION_STORAGE_KEY).catch(() => {});
+        } else {
+          AsyncStorage.setItem(PENDING_REGISTRATION_STORAGE_KEY, JSON.stringify(next)).catch(
+            () => {},
+          );
+        }
+      }
+    },
+    [dependencies],
+  );
+
+  const checkPendingRegistrationStatusStable = useCallback(
+    async (silent = false): Promise<PendingApprovalStatus | null> => {
+      const current = pendingRegistrationRef.current;
+      if (!current) return null;
+      if (!current.statusToken) {
+        if (!silent) {
+          notify(
+            'info',
+            'Your registration is awaiting administrator verification. Try signing in once approved.',
+          );
+        }
+        return current.status;
+      }
+      try {
+        const res = await services.authService.checkRegistrationStatus(current.statusToken);
+        const updated: PendingRegistrationRecord = {
+          ...current,
+          status: res.status,
+          message: res.message,
+          fullName: res.submitted?.fullName || current.fullName,
+          employeeId: res.submitted?.employeeId || current.employeeId,
+          email: res.submitted?.email || current.email,
+          position: res.submitted?.position || current.position,
+          officeCode: res.submitted?.officeCode || current.officeCode,
+          officeName: res.submitted?.officeName || current.officeName,
+          submittedAt: res.submitted?.submittedAt || current.submittedAt,
+          checkedAt: new Date().toISOString(),
+        };
+        persistPendingRegistration(updated);
+
+        if (res.status === 'approved') {
+          if (!silent || current.status !== 'approved') {
+            notify('success', 'Your account has been approved! You can now sign in.');
+          }
+        } else if (res.status === 'rejected') {
+          if (!silent || current.status !== 'rejected') {
+            notify('error', res.message);
+          }
+        } else if (!silent) {
+          notify('info', 'Still awaiting administrator approval.');
+        }
+
+        return res.status;
+      } catch (err) {
+        if (!silent) {
+          notify(
+            'error',
+            err instanceof Error ? err.message : 'Unable to check registration status.',
+          );
+        }
+        return null;
+      }
+    },
+    [notify, persistPendingRegistration, services.authService],
+  );
+
+  const proceedFromPendingToLoginStable = useCallback(
+    (clearRecord = true) => {
+      const current = pendingRegistrationRef.current;
+      if (current) {
+        const nextId = current.email || current.employeeId;
+        if (nextId) {
+          setPrefillLoginIdentifier(nextId);
+        }
+      }
+      if (clearRecord) {
+        persistPendingRegistration(null);
+      }
+      setActiveTab('login');
+    },
+    [persistPendingRegistration],
+  );
+
+  const dismissPendingRegistrationStable = useCallback(() => {
+    persistPendingRegistration(null);
+    setActiveTab('login');
+  }, [persistPendingRegistration]);
+
   const value: AppContextValue = {
     bootstrapping,
     showOnboarding,
     requireAuth,
+    pendingRegistration,
+    prefillLoginIdentifier,
+    checkPendingRegistrationStatus: checkPendingRegistrationStatusStable,
+    proceedFromPendingToLogin: proceedFromPendingToLoginStable,
+    dismissPendingRegistration: dismissPendingRegistrationStable,
     isBusy,
     isRefreshing,
     apiBaseUrl,
@@ -1077,18 +1235,91 @@ export const AppServiceProvider: React.FC<{
       }, 'Server API URL saved.');
     },
     signIn: async (identifier, password) => {
-      await runAsyncAction(async () => {
+      setIsBusy(true);
+      try {
         const result = await services.authService.login(identifier, password);
+        persistPendingRegistration(null);
         await applyAuthenticatedSession(result);
-      }, 'Signed in securely.');
+        notify('success', 'Signed in securely.');
+      } catch (err) {
+        if (
+          err instanceof ApiError &&
+          (err.code === 'ACCOUNT_PENDING_APPROVAL' || err.code === 'ACCOUNT_REJECTED')
+        ) {
+          const status: PendingApprovalStatus =
+            err.code === 'ACCOUNT_REJECTED' ? 'rejected' : 'pending';
+          const rawSub = err.payload?.submitted as Record<string, unknown> | undefined;
+          const submitted: PendingRegistrationSummary | null = rawSub
+            ? {
+                fullName: typeof rawSub.full_name === 'string' ? rawSub.full_name : '',
+                employeeId: typeof rawSub.employee_id === 'string' ? rawSub.employee_id : '',
+                email: typeof rawSub.email === 'string' ? rawSub.email : '',
+                position: typeof rawSub.position === 'string' ? rawSub.position : '',
+                officeCode: typeof rawSub.office_code === 'string' ? rawSub.office_code : '',
+                officeName: typeof rawSub.office_name === 'string' ? rawSub.office_name : '',
+                submittedAt:
+                  typeof rawSub.submitted_at === 'string'
+                    ? rawSub.submitted_at
+                    : new Date().toISOString(),
+              }
+            : null;
+          const trimmedId = identifier.trim();
+          persistPendingRegistration({
+            status,
+            statusToken:
+              typeof err.payload?.status_token === 'string' ? err.payload.status_token : null,
+            message: err.message,
+            fullName: submitted?.fullName || '',
+            employeeId:
+              submitted?.employeeId || (trimmedId.includes('@') ? '' : trimmedId.toUpperCase()),
+            email: submitted?.email || (trimmedId.includes('@') ? trimmedId.toLowerCase() : ''),
+            position: submitted?.position || '',
+            officeCode: submitted?.officeCode || '',
+            officeName: submitted?.officeName || '',
+            submittedAt: submitted?.submittedAt || new Date().toISOString(),
+            checkedAt: new Date().toISOString(),
+          });
+          setActiveTab('pending_approval');
+          notify(status === 'rejected' ? 'error' : 'info', err.message);
+          return;
+        }
+        const message = err instanceof Error ? err.message : 'Unable to complete action.';
+        notify('error', message);
+        throw err;
+      } finally {
+        setIsBusy(false);
+      }
     },
     registerAccount: async (input) =>
       runAsyncAction(async () => {
         const outcome = await services.authService.register(input);
         if (outcome.authSession) {
+          persistPendingRegistration(null);
           await applyAuthenticatedSession(outcome.authSession);
           notify('success', outcome.message);
         } else {
+          const matchedOffice = offices.find(
+            (o) => o.code.toUpperCase() === input.officeCode.trim().toUpperCase(),
+          );
+          const submitted = outcome.submitted;
+          persistPendingRegistration({
+            status: 'pending',
+            statusToken: outcome.statusToken ?? null,
+            message: outcome.message,
+            fullName: submitted?.fullName || input.fullName.trim(),
+            employeeId: submitted?.employeeId || input.employeeId.trim().toUpperCase(),
+            email: submitted?.email || input.email.trim().toLowerCase(),
+            position: submitted?.position || input.position.trim(),
+            officeCode: submitted?.officeCode || input.officeCode.trim().toUpperCase(),
+            officeName:
+              submitted?.officeName ||
+              input.customOfficeName?.trim() ||
+              matchedOffice?.name ||
+              input.officeCode.trim().toUpperCase(),
+            submittedAt: submitted?.submittedAt || new Date().toISOString(),
+            checkedAt: null,
+          });
+          setActiveTab('pending_approval');
           notify('info', outcome.message);
         }
         return outcome;

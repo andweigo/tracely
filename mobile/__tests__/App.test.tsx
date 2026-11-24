@@ -2014,4 +2014,116 @@ describe('DocsTracker React Native App', () => {
       backSpy.mockRestore();
     }
   });
+
+  test('redirects newly registered users to PendingApprovalScreen and transitions to LoginScreen once approved', async () => {
+    const { deps } = createTestAppDependencies();
+    let statusChecks = 0;
+    deps.authRepo.register = async (payload) => ({
+      pendingApproval: true,
+      statusToken: 'mob-pending-tok-1',
+      message: 'Registration submitted for administrator verification.',
+      submitted: {
+        fullName: payload.fullName,
+        employeeId: payload.employeeId,
+        email: payload.email,
+        position: payload.position,
+        officeCode: payload.officeCode,
+        officeName: 'Records & Registry',
+        submittedAt: '2026-11-24T01:00:00Z',
+      },
+      session: null,
+    });
+    deps.authRepo.checkRegistrationStatus = async () => {
+      statusChecks += 1;
+      if (statusChecks === 1) {
+        return {
+          status: 'pending',
+          canSignIn: false,
+          message: 'Still awaiting administrator review.',
+        };
+      }
+      return {
+        status: 'approved',
+        canSignIn: true,
+        message: 'Your account has been approved! You can now sign in.',
+      };
+    };
+
+    const renderer = await mountApp(<App dependencies={deps} requireAuth firstVisitSkeletonMs={0} />);
+
+    // Open Create Account tab
+    const registerTab = renderer.root.findAll(
+      (node) =>
+        typeof node.props.onPress === 'function' &&
+        extractInstanceText(node).trim() === 'Create Account',
+    );
+    await ReactTestRenderer.act(async () => {
+      registerTab[registerTab.length - 1].props.onPress();
+    });
+
+    const fillByPlaceholder = async (needle: string, val: string) => {
+      const inputs = renderer.root.findAll(
+        (node) =>
+          typeof node.props.onChangeText === 'function' &&
+          typeof node.props.placeholder === 'string' &&
+          node.props.placeholder.includes(needle),
+      );
+      expect(inputs.length).toBeGreaterThan(0);
+      await ReactTestRenderer.act(async () => {
+        inputs[inputs.length - 1].props.onChangeText(val);
+      });
+    };
+
+    await fillByPlaceholder('Juan Dela Crus', 'Elena Cruz');
+    await fillByPlaceholder('EMP-2026-0142', 'TRC-9401');
+    await fillByPlaceholder('@tracely.app', 'elena.cruz@tracely.app');
+    await fillByPlaceholder('Administrative Officer', 'Records Clerk');
+    await fillByPlaceholder('At least', 'Tracely#2026!');
+    await fillByPlaceholder('Re-enter password', 'Tracely#2026!');
+
+    const submitBtn = renderer.root.findAll(
+      (node) =>
+        typeof node.props.onPress === 'function' &&
+        extractInstanceText(node).trim() === 'Submit Registration',
+    );
+    await ReactTestRenderer.act(async () => {
+      await submitBtn[submitBtn.length - 1].props.onPress();
+    });
+
+    // Redirected straight to PendingApprovalScreen
+    expect(
+      renderer.root.findAllByProps({ testID: 'mobile-pending-approval-screen' }).length,
+    ).toBeGreaterThan(0);
+    expect(extractRenderedText(renderer.toJSON())).toContain('Awaiting Administrator Verification');
+    expect(extractRenderedText(renderer.toJSON())).toContain('TRC-9401');
+
+    // First status check stays pending
+    const checkBtn = renderer.root.findByProps({ testID: 'mobile-pending-check-status-btn' });
+    await ReactTestRenderer.act(async () => {
+      await checkBtn.props.onPress();
+    });
+    expect(statusChecks).toBe(1);
+    expect(extractRenderedText(renderer.toJSON())).toContain('Awaiting Administrator Verification');
+
+    // Second status check flips to Approved and reveals Proceed to Sign In button
+    await ReactTestRenderer.act(async () => {
+      await renderer.root.findByProps({ testID: 'mobile-pending-check-status-btn' }).props.onPress();
+    });
+    expect(statusChecks).toBe(2);
+    expect(extractRenderedText(renderer.toJSON())).toContain('Account Approved');
+    const proceedBtn = renderer.root.findByProps({ testID: 'mobile-pending-proceed-signin-btn' });
+    await ReactTestRenderer.act(async () => {
+      proceedBtn.props.onPress();
+    });
+
+    // Returned to LoginScreen with email prefilled
+    const idInputs = renderer.root.findAll(
+      (node) =>
+        typeof node.props.onChangeText === 'function' &&
+        typeof node.props.placeholder === 'string' &&
+        node.props.placeholder.includes('EMP-2026-0001'),
+    );
+    expect(idInputs.length).toBeGreaterThan(0);
+    expect(idInputs[idInputs.length - 1].props.value).toBe('elena.cruz@tracely.app');
+  });
 });

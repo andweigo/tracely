@@ -16,6 +16,7 @@ export type ScreenSkeletonVariant =
   | 'profile'
   | 'user_profile'
   | 'settings'
+  | 'pending_approval'
   | 'login';
 
 interface AppBootSkeletonProps {
@@ -241,7 +242,7 @@ export const AppBootSkeleton: React.FC<AppBootSkeletonProps> = ({
     );
   }
 
-  if (variant === 'login') {
+  if (variant === 'login' || variant === 'pending_approval') {
     return (
       <View testID={testID} style={[styles.container, styles.centerContainer]}>
         <View style={[styles.docCard, styles.loginCard]}>

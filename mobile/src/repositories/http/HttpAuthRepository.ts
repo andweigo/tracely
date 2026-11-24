@@ -18,9 +18,22 @@ import type {
   AdminUpdateUserPayload,
   IAuthRepository,
   LoginResult,
+  PendingApprovalStatus,
+  PendingRegistrationSummary,
   RegisterAccountPayload,
   RegistrationResult,
+  RegistrationStatusResult,
 } from '../contracts/IAuthRepository';
+
+interface PendingSubmissionDto {
+  full_name?: string;
+  employee_id?: string;
+  email?: string;
+  position?: string;
+  office_code?: string;
+  office_name?: string;
+  submitted_at?: string;
+}
 
 interface LoginResponseDto {
   token: string;
@@ -31,9 +44,24 @@ interface LoginResponseDto {
 interface RegisterResponseDto {
   pending_approval?: boolean;
   message?: string;
+  status_token?: string;
+  submitted?: PendingSubmissionDto | null;
   token?: string;
   expires_at?: string;
   user?: PersonnelDto;
+}
+
+function mapPendingSubmission(dto?: PendingSubmissionDto | null): PendingRegistrationSummary | null {
+  if (!dto || typeof dto !== 'object') return null;
+  return {
+    fullName: dto.full_name ?? '',
+    employeeId: dto.employee_id ?? '',
+    email: dto.email ?? '',
+    position: dto.position ?? '',
+    officeCode: dto.office_code ?? '',
+    officeName: dto.office_name ?? '',
+    submittedAt: dto.submitted_at ?? new Date().toISOString(),
+  };
 }
 
 export class HttpAuthRepository implements IAuthRepository {
@@ -83,7 +111,24 @@ export class HttpAuthRepository implements IAuthRepository {
         (pendingApproval
           ? 'Registration submitted for administrator verification.'
           : 'Account created and signed in.'),
+      statusToken: res.status_token ?? null,
+      submitted: mapPendingSubmission(res.submitted),
       session,
+    };
+  }
+
+  public async checkRegistrationStatus(statusToken: string): Promise<RegistrationStatusResult> {
+    const res = await this._api.get<{
+      status: PendingApprovalStatus;
+      can_sign_in?: boolean;
+      message?: string;
+      submitted?: PendingSubmissionDto | null;
+    }>(`/auth/registration-status/${encodeURIComponent(statusToken)}`);
+    return {
+      status: res.status,
+      canSignIn: Boolean(res.can_sign_in ?? res.status === 'approved'),
+      message: res.message ?? 'Registration status updated.',
+      submitted: mapPendingSubmission(res.submitted),
     };
   }
 

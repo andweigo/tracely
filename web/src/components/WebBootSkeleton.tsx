@@ -26,7 +26,7 @@ export const WebBootSkeleton: React.FC<WebBootSkeletonProps> = ({
   variant = 'inbox',
   'data-testid': testId = variant === 'inbox' ? 'web-boot-skeleton' : `web-skeleton-${variant}`,
 }) => {
-  if (variant === 'login') {
+  if (variant === 'login' || variant === 'pending_approval') {
     return (
       <div
         data-testid={testId}

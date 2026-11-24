@@ -66,7 +66,8 @@ export const MobileShell: React.FC<{ children: React.ReactNode }> = ({ children 
     (Boolean(actor) || !requireAuth) &&
     !selectedDocumentId &&
     activeTab !== 'document' &&
-    activeTab !== 'login';
+    activeTab !== 'login' &&
+    activeTab !== 'pending_approval';
 
   return (
     <SafeAreaView

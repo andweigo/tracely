@@ -8,18 +8,21 @@ export class ApiError extends Error {
   public readonly status: number;
   public readonly code: string;
   public readonly retryAfterSeconds?: number;
+  public readonly payload?: Record<string, unknown>;
 
   constructor(
     status: number,
     code: string,
     message: string,
     retryAfterSeconds?: number,
+    payload?: Record<string, unknown>,
   ) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.code = code;
     this.retryAfterSeconds = retryAfterSeconds;
+    this.payload = payload;
   }
 }
 
@@ -156,7 +159,13 @@ export class ApiClient {
             (parsed && typeof parsed === 'object' && 'code' in parsed && typeof parsed.code === 'string'
               ? parsed.code
               : null) ?? (response.status === 429 ? 'RATE_LIMITED' : `HTTP_${response.status}`);
-          throw new ApiError(response.status, code, message, retryAfterSeconds);
+          throw new ApiError(
+            response.status,
+            code,
+            message,
+            retryAfterSeconds,
+            parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : undefined,
+          );
         }
 
         return parsed as TResponse;

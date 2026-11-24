@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -14,6 +14,7 @@ import {
   ArrowLeft,
   Check,
   CheckCircle2,
+  Clock,
   Eye,
   EyeOff,
   Lock,
@@ -150,6 +151,9 @@ export const LoginScreen: React.FC = () => {
     registerAccount,
     requestPasswordReset,
     confirmPasswordReset,
+    pendingRegistration,
+    prefillLoginIdentifier,
+    setActiveTab,
     isBusy,
     requireAuth,
     offices,
@@ -164,7 +168,14 @@ export const LoginScreen: React.FC = () => {
 
   const [authMode, setAuthMode] = useState<AuthMode>('signin');
   const [serverModalOpen, setServerModalOpen] = useState(false);
-  const [identifier, setIdentifier] = useState('');
+  const [identifier, setIdentifier] = useState(prefillLoginIdentifier);
+
+  useEffect(() => {
+    if (prefillLoginIdentifier) {
+      setIdentifier(prefillLoginIdentifier);
+      setAuthMode('signin');
+    }
+  }, [prefillLoginIdentifier]);
   const [password, setPassword] = useState('');
 
   const [fullName, setFullName] = useState('');
@@ -335,6 +346,24 @@ export const LoginScreen: React.FC = () => {
             <Text style={styles.brandSubtitle}>Document Custody & QR Tracking</Text>
           </View>
         </View>
+
+        {pendingRegistration ? (
+          <Pressable
+            testID="mobile-login-pending-banner"
+            onPress={() => setActiveTab('pending_approval')}
+            style={styles.pendingBanner}
+          >
+            <View style={styles.pendingBannerLeft}>
+              <Clock size={14} color={SDO_COLORS.amberText} />
+              <Text style={styles.pendingBannerText}>
+                {pendingRegistration.status === 'approved'
+                  ? 'Registration approved — view details'
+                  : 'Registration pending administrator approval'}
+              </Text>
+            </View>
+            <Text style={styles.pendingBannerAction}>View →</Text>
+          </Pressable>
+        ) : null}
 
         <View style={styles.segmentWrap}>
           <Pressable
@@ -844,6 +873,35 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.navy,
+  },
+  pendingBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: SDO_COLORS.amberBorder,
+    backgroundColor: SDO_COLORS.amberSoft,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  pendingBannerLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  pendingBannerText: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '700',
+    color: SDO_COLORS.amberText,
+  },
+  pendingBannerAction: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: SDO_COLORS.amberText,
   },
   brandHeader: {
     alignItems: 'center',

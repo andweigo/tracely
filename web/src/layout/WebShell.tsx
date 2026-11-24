@@ -45,6 +45,7 @@ const ROUTE_TITLES: Record<WebRoute, { title: string; sub: string }> = {
   user_profile: { title: 'User Profile & Settings', sub: 'Update your personal info, workflow preferences, and account settings' },
   settings: { title: 'Settings & System Info', sub: 'About Tracely, platform overview, and workspace shortcuts' },
   verify: { title: 'Public Verification', sub: 'Verify printed Tracely transmittals without signing in' },
+  pending_approval: { title: 'Pending Approval', sub: 'Awaiting administrator account verification' },
   login: { title: 'Sign In', sub: 'Tracely Web Portal' },
 };
 

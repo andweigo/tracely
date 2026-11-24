@@ -14,6 +14,7 @@ import { DocumentDetailPage } from './pages/DocumentDetailPage';
 import { InboxPage } from './pages/InboxPage';
 import { LoginPage } from './pages/LoginPage';
 import { NotificationsPage } from './pages/NotificationsPage';
+import { PendingApprovalPage } from './pages/PendingApprovalPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { SendPage } from './pages/SendPage';
 import { SentPage } from './pages/SentPage';
@@ -34,6 +35,7 @@ const WebRouteSwitch: React.FC = () => {
     route,
     actor,
     requireAuth,
+    pendingRegistration,
     bootstrapping,
     firstVisitSkeletonMs,
     hasScreenBeenOpened,
@@ -45,9 +47,11 @@ const WebRouteSwitch: React.FC = () => {
   const activeScreenKey: WebRoute =
     route === 'verify'
       ? 'verify'
-      : (requireAuth && !actor) || route === 'login'
-        ? 'login'
-        : route;
+      : !actor && (route === 'pending_approval' || (requireAuth && Boolean(pendingRegistration) && route !== 'login'))
+        ? 'pending_approval'
+        : (requireAuth && !actor) || route === 'login'
+          ? 'login'
+          : route;
 
   useEffect(() => {
     if (bootstrapping) {
@@ -95,7 +99,9 @@ const WebRouteSwitch: React.FC = () => {
     const bootSkeleton = (
       <WebBootSkeleton variant={activeScreenKey} data-testid="web-boot-skeleton" />
     );
-    return activeScreenKey === 'login' ? bootSkeleton : <WebShell>{bootSkeleton}</WebShell>;
+    return activeScreenKey === 'login' || activeScreenKey === 'pending_approval'
+      ? bootSkeleton
+      : <WebShell>{bootSkeleton}</WebShell>;
   }
 
   if (isWaitingFirstOpen) {
@@ -109,7 +115,13 @@ const WebRouteSwitch: React.FC = () => {
         }
       />
     );
-    return activeScreenKey === 'login' ? skeleton : <WebShell>{skeleton}</WebShell>;
+    return activeScreenKey === 'login' || activeScreenKey === 'pending_approval'
+      ? skeleton
+      : <WebShell>{skeleton}</WebShell>;
+  }
+
+  if (activeScreenKey === 'pending_approval') {
+    return <PendingApprovalPage />;
   }
 
   if (activeScreenKey === 'login') {

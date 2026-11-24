@@ -51,11 +51,17 @@ class AuthController extends Controller
         }
 
         if ($user->approval_status !== 'approved') {
-            throw new ApiDomainException(
-                'ACCOUNT_PENDING_APPROVAL',
-                'Your account registration is still awaiting administrator approval.',
-                403,
-            );
+            $isRejected = $user->approval_status === 'rejected';
+
+            return response()->json([
+                'code' => $isRejected ? 'ACCOUNT_REJECTED' : 'ACCOUNT_PENDING_APPROVAL',
+                'approval_status' => $isRejected ? 'rejected' : 'pending',
+                'message' => $isRejected
+                    ? 'Your account registration was not approved. Please contact your system administrator.'
+                    : 'Your account registration is still awaiting administrator approval.',
+                'status_token' => $this->issueRegistrationStatusToken($user),
+                'submitted' => $this->serializePendingSubmission($user),
+            ], 403);
         }
 
         if (! $user->active) {
@@ -125,7 +131,7 @@ class AuthController extends Controller
             ]);
         }
 
-        User::query()->create([
+        $createdUser = User::query()->create([
             'id' => 'usr-'.Str::uuid()->toString(),
             'employee_id' => $employeeId,
             'full_name' => trim($validated['full_name']),
@@ -138,13 +144,133 @@ class AuthController extends Controller
             'approval_status' => 'pending',
             'password' => $validated['password'],
         ]);
+        $createdUser->setRelation('office', $office);
 
         $this->realtime->publish('account_registered', [$office->id]);
 
         return response()->json([
             'pending_approval' => true,
+            'approval_status' => 'pending',
+            'status_token' => $this->issueRegistrationStatusToken($createdUser),
             'message' => 'Registration submitted for administrator verification.',
+            'submitted' => $this->serializePendingSubmission($createdUser),
         ], 201);
+    }
+
+    public function registrationStatus(string $token): JsonResponse
+    {
+        $userId = $this->parseRegistrationStatusToken($token);
+        if (! $userId) {
+            return response()->json([
+                'code' => 'INVALID_STATUS_TOKEN',
+                'message' => 'This registration status link is invalid or has expired.',
+            ], 404);
+        }
+
+        /** @var User|null $user */
+        $user = User::query()->with('office')->find($userId);
+        if (! $user) {
+            return response()->json([
+                'status' => 'rejected',
+                'can_sign_in' => false,
+                'message' => 'This registration record is no longer active. Contact your administrator or register again.',
+                'submitted' => null,
+            ]);
+        }
+
+        if ($user->approval_status === 'approved' && $user->active) {
+            return response()->json([
+                'status' => 'approved',
+                'can_sign_in' => true,
+                'message' => 'Your account has been verified and approved. You can now sign in to Tracely.',
+                'submitted' => $this->serializePendingSubmission($user),
+            ]);
+        }
+
+        if ($user->approval_status === 'rejected') {
+            return response()->json([
+                'status' => 'rejected',
+                'can_sign_in' => false,
+                'message' => 'Your account registration was not approved by an administrator. Contact ICT or HR for assistance.',
+                'submitted' => $this->serializePendingSubmission($user),
+            ]);
+        }
+
+        return response()->json([
+            'status' => 'pending',
+            'can_sign_in' => false,
+            'message' => 'Your registration is awaiting administrator verification.',
+            'submitted' => $this->serializePendingSubmission($user),
+        ]);
+    }
+
+    private function issueRegistrationStatusToken(User $user): string
+    {
+        $payload = json_encode([
+            'uid' => $user->id,
+            'exp' => now()->addDays(14)->timestamp,
+        ], JSON_THROW_ON_ERROR);
+
+        $encoded = rtrim(strtr(base64_encode($payload), '+/', '-_'), '=');
+        $sig = hash_hmac('sha256', $encoded, (string) config('app.key'));
+
+        return $encoded.'.'.$sig;
+    }
+
+    private function parseRegistrationStatusToken(string $token): ?string
+    {
+        $parts = explode('.', trim($token), 2);
+        if (count($parts) !== 2) {
+            return null;
+        }
+
+        [$encoded, $providedSig] = $parts;
+        if ($encoded === '' || ! preg_match('/^[0-9a-f]{64}$/i', $providedSig)) {
+            return null;
+        }
+
+        $expectedSig = hash_hmac('sha256', $encoded, (string) config('app.key'));
+        if (! hash_equals($expectedSig, strtolower($providedSig))) {
+            return null;
+        }
+
+        $padded = strtr($encoded, '-_', '+/');
+        $mod = strlen($padded) % 4;
+        if ($mod !== 0) {
+            $padded .= str_repeat('=', 4 - $mod);
+        }
+
+        $raw = base64_decode($padded, true);
+        if ($raw === false) {
+            return null;
+        }
+
+        $decoded = json_decode($raw, true);
+        if (! is_array($decoded) || ! is_string($decoded['uid'] ?? null) || ! is_int($decoded['exp'] ?? null)) {
+            return null;
+        }
+
+        if ($decoded['exp'] < now()->timestamp) {
+            return null;
+        }
+
+        return $decoded['uid'];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function serializePendingSubmission(User $user): array
+    {
+        return [
+            'full_name' => $user->full_name,
+            'employee_id' => $user->employee_id,
+            'email' => $user->email,
+            'position' => $user->position,
+            'office_code' => $user->office?->code ?? '',
+            'office_name' => $user->office?->name ?? '',
+            'submitted_at' => $user->created_at?->toIso8601String() ?? now()->toIso8601String(),
+        ];
     }
 
     public function me(Request $request): JsonResponse

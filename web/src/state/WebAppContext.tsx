@@ -18,6 +18,9 @@ import {
   DocumentUpdatePayload,
   OfficeSummary,
   PaginatedDocumentsResult,
+  PendingApprovalStatus,
+  PendingRegistrationRecord,
+  PendingRegistrationSummary,
   Personnel,
   PresignedDownloadGrant,
   PrivacySafeNotification,
@@ -82,6 +85,11 @@ export interface WebContextValue {
   fcmConfigured: boolean;
   toast: ToastMessage | null;
   requireAuth: boolean;
+  pendingRegistration: PendingRegistrationRecord | null;
+  prefillLoginIdentifier: string;
+  checkPendingRegistrationStatus(silent?: boolean): Promise<PendingApprovalStatus | null>;
+  proceedFromPendingToLogin(clearRecord?: boolean): void;
+  dismissPendingRegistration(): void;
   navigate(next: WebRoute): void;
   openDocument(documentId: string): void;
   closeDocument(): void;
@@ -246,6 +254,54 @@ const STORAGE_KEY_BEARER_TOKEN = '@sdo_doctrack/web_bearer_token';
 const STORAGE_KEY_ACTOR = '@sdo_doctrack/web_actor';
 const STORAGE_KEY_USER_PREFS = '@sdo_doctrack/web_user_prefs';
 const STORAGE_KEY_ANNOUNCED_NOTIFS_PREFIX = '@sdo_doctrack/web_announced_notifs_';
+const STORAGE_KEY_PENDING_REGISTRATION = '@sdo_doctrack/web_pending_registration';
+
+function loadStoredPendingRegistration(): PendingRegistrationRecord | null {
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY_PENDING_REGISTRATION);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<PendingRegistrationRecord> | null;
+    if (!parsed || typeof parsed !== 'object') return null;
+    if (
+      parsed.status !== 'pending' &&
+      parsed.status !== 'approved' &&
+      parsed.status !== 'rejected'
+    ) {
+      return null;
+    }
+    return {
+      status: parsed.status,
+      statusToken: typeof parsed.statusToken === 'string' ? parsed.statusToken : null,
+      message:
+        typeof parsed.message === 'string'
+          ? parsed.message
+          : 'Registration submitted for administrator verification.',
+      fullName: typeof parsed.fullName === 'string' ? parsed.fullName : '',
+      employeeId: typeof parsed.employeeId === 'string' ? parsed.employeeId : '',
+      email: typeof parsed.email === 'string' ? parsed.email : '',
+      position: typeof parsed.position === 'string' ? parsed.position : '',
+      officeCode: typeof parsed.officeCode === 'string' ? parsed.officeCode : '',
+      officeName: typeof parsed.officeName === 'string' ? parsed.officeName : '',
+      submittedAt:
+        typeof parsed.submittedAt === 'string' ? parsed.submittedAt : new Date().toISOString(),
+      checkedAt: typeof parsed.checkedAt === 'string' ? parsed.checkedAt : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function saveStoredPendingRegistration(record: PendingRegistrationRecord | null): void {
+  try {
+    if (!record) {
+      window.localStorage.removeItem(STORAGE_KEY_PENDING_REGISTRATION);
+    } else {
+      window.localStorage.setItem(STORAGE_KEY_PENDING_REGISTRATION, JSON.stringify(record));
+    }
+  } catch {
+    // Ignore storage restriction
+  }
+}
 
 function loadStoredUserPrefs(): UserPreferences {
   try {
@@ -451,6 +507,10 @@ export const WebAppProvider: React.FC<WebAppProviderProps> = ({
   const shouldBootstrap = Boolean(!gateway && !initialActor && restoredSession.token);
   const [bootstrapping, setBootstrapping] = useState<boolean>(shouldBootstrap);
   const [route, setRoute] = useState<WebRoute>(initialHash.route);
+  const [pendingRegistration, setPendingRegistration] = useState<PendingRegistrationRecord | null>(
+    () => (gateway || initialActor || restoredSession.user ? null : loadStoredPendingRegistration()),
+  );
+  const [prefillLoginIdentifier, setPrefillLoginIdentifier] = useState<string>('');
   const [apiBaseUrl, setApiBaseUrl] = useState<string>(loadStoredApiUrl);
   const [actor, setActor] = useState<Personnel | null>(restoredSession.user);
   const apiBaseUrlRef = useRef<string>(apiBaseUrl);
@@ -1118,6 +1178,158 @@ export const WebAppProvider: React.FC<WebAppProviderProps> = ({
     [activeGateway],
   );
 
+  const pendingRegistrationRef = useRef<PendingRegistrationRecord | null>(pendingRegistration);
+  pendingRegistrationRef.current = pendingRegistration;
+
+  const persistPendingRegistration = useCallback(
+    (next: PendingRegistrationRecord | null) => {
+      setPendingRegistration(next);
+      if (!gateway) {
+        saveStoredPendingRegistration(next);
+      }
+    },
+    [gateway],
+  );
+
+  const checkPendingRegistrationStatusStable = useCallback(
+    async (silent = false): Promise<PendingApprovalStatus | null> => {
+      const current = pendingRegistrationRef.current;
+      if (!current) return null;
+      if (!current.statusToken || !activeGateway.checkRegistrationStatus) {
+        if (!silent) {
+          notify(
+            'info',
+            'Your registration is awaiting administrator verification. Please check back or try signing in once approved.',
+          );
+        }
+        return current.status;
+      }
+
+      try {
+        const res = await activeGateway.checkRegistrationStatus(current.statusToken);
+        const updated: PendingRegistrationRecord = {
+          ...current,
+          status: res.status,
+          message: res.message,
+          fullName: res.submitted?.fullName || current.fullName,
+          employeeId: res.submitted?.employeeId || current.employeeId,
+          email: res.submitted?.email || current.email,
+          position: res.submitted?.position || current.position,
+          officeCode: res.submitted?.officeCode || current.officeCode,
+          officeName: res.submitted?.officeName || current.officeName,
+          submittedAt: res.submitted?.submittedAt || current.submittedAt,
+          checkedAt: new Date().toISOString(),
+        };
+        persistPendingRegistration(updated);
+
+        if (res.status === 'approved') {
+          if (!silent || current.status !== 'approved') {
+            notify('success', 'Your account has been approved! You can now sign in.');
+          }
+        } else if (res.status === 'rejected') {
+          if (!silent || current.status !== 'rejected') {
+            notify('error', res.message);
+          }
+        } else if (!silent) {
+          notify('info', 'Still awaiting administrator approval.');
+        }
+
+        return res.status;
+      } catch (err) {
+        if (!silent) {
+          notify(
+            'error',
+            err instanceof Error ? err.message : 'Unable to check registration status.',
+          );
+        }
+        return null;
+      }
+    },
+    [activeGateway, notify, persistPendingRegistration],
+  );
+
+  const proceedFromPendingToLoginStable = useCallback(
+    (clearRecord = true) => {
+      const current = pendingRegistrationRef.current;
+      if (current) {
+        const nextId = current.email || current.employeeId;
+        if (nextId) {
+          setPrefillLoginIdentifier(nextId);
+        }
+      }
+      if (clearRecord) {
+        persistPendingRegistration(null);
+      }
+      applyRoute('login', null);
+    },
+    [applyRoute, persistPendingRegistration],
+  );
+
+  const dismissPendingRegistrationStable = useCallback(() => {
+    persistPendingRegistration(null);
+    applyRoute('login', null);
+  }, [applyRoute, persistPendingRegistration]);
+
+  const signInAction = async (identifier: string, password: string) => {
+    const clean = AuthInputPolicy.validateLogin(identifier, password);
+    setIsBusy(true);
+    try {
+      const res = await activeGateway.login(clean.identifier, clean.password);
+      bearerTokenRef.current = res.bearerToken;
+      setActor(res.user);
+      persistPendingRegistration(null);
+      if (!gateway) {
+        saveStoredWebSession(res.bearerToken, res.user);
+      }
+      const targetLanding: WebRoute =
+        typeof window !== 'undefined' && window.location.hash === '#/inbox'
+          ? 'inbox'
+          : 'dashboard';
+      applyRoute(targetLanding, null);
+      await hydrateWorkspace();
+      notify('success', 'Signed in securely.');
+    } catch (err) {
+      const typedErr = err as Error & {
+        code?: string;
+        approvalStatus?: PendingApprovalStatus;
+        statusToken?: string | null;
+        submitted?: PendingRegistrationSummary | null;
+      };
+      if (
+        typedErr.code === 'ACCOUNT_PENDING_APPROVAL' ||
+        typedErr.code === 'ACCOUNT_REJECTED'
+      ) {
+        const status: PendingApprovalStatus =
+          typedErr.code === 'ACCOUNT_REJECTED' ? 'rejected' : 'pending';
+        const submitted = typedErr.submitted;
+        persistPendingRegistration({
+          status,
+          statusToken: typedErr.statusToken ?? null,
+          message: typedErr.message,
+          fullName: submitted?.fullName || '',
+          employeeId:
+            submitted?.employeeId ||
+            (clean.identifier.includes('@') ? '' : clean.identifier.toUpperCase()),
+          email:
+            submitted?.email ||
+            (clean.identifier.includes('@') ? clean.identifier.toLowerCase() : ''),
+          position: submitted?.position || '',
+          officeCode: submitted?.officeCode || '',
+          officeName: submitted?.officeName || '',
+          submittedAt: submitted?.submittedAt || new Date().toISOString(),
+          checkedAt: new Date().toISOString(),
+        });
+        applyRoute('pending_approval', null);
+        notify(status === 'rejected' ? 'error' : 'info', typedErr.message);
+        return;
+      }
+      notify('error', err instanceof Error ? err.message : 'Request failed.');
+      throw err;
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
   const value: WebContextValue = {
     route,
     bootstrapping,
@@ -1154,6 +1366,11 @@ export const WebAppProvider: React.FC<WebAppProviderProps> = ({
     fcmConfigured,
     toast,
     requireAuth,
+    pendingRegistration,
+    prefillLoginIdentifier,
+    checkPendingRegistrationStatus: checkPendingRegistrationStatusStable,
+    proceedFromPendingToLogin: proceedFromPendingToLoginStable,
+    dismissPendingRegistration: dismissPendingRegistrationStable,
     navigate: (next) => {
       applyRoute(next, next === 'document' ? selectedDocumentId : null);
     },
@@ -1278,23 +1495,7 @@ export const WebAppProvider: React.FC<WebAppProviderProps> = ({
       }
       notify('success', 'Server API URL saved.');
     },
-    signIn: async (identifier, password) => {
-      const clean = AuthInputPolicy.validateLogin(identifier, password);
-      await runAction(async () => {
-        const res = await activeGateway.login(clean.identifier, clean.password);
-        bearerTokenRef.current = res.bearerToken;
-        setActor(res.user);
-        if (!gateway) {
-          saveStoredWebSession(res.bearerToken, res.user);
-        }
-        const targetLanding: WebRoute =
-          typeof window !== 'undefined' && window.location.hash === '#/inbox'
-            ? 'inbox'
-            : 'dashboard';
-        applyRoute(targetLanding, null);
-        await hydrateWorkspace();
-      }, 'Signed in securely.');
-    },
+    signIn: signInAction,
     registerAccount: async (input) => {
       const clean = AuthInputPolicy.validateRegistration(input);
       return runAction(async () => {
@@ -1305,6 +1506,7 @@ export const WebAppProvider: React.FC<WebAppProviderProps> = ({
         if (!outcome.pendingApproval && outcome.user && outcome.bearerToken) {
           bearerTokenRef.current = outcome.bearerToken;
           setActor(outcome.user);
+          persistPendingRegistration(null);
           if (!gateway) {
             saveStoredWebSession(outcome.bearerToken, outcome.user);
           }
@@ -1314,6 +1516,29 @@ export const WebAppProvider: React.FC<WebAppProviderProps> = ({
               : 'dashboard';
           applyRoute(targetLanding, null);
           await hydrateWorkspace();
+        } else if (outcome.pendingApproval) {
+          const matchedOffice = offices.find(
+            (o) => o.code.toUpperCase() === clean.officeCode.toUpperCase(),
+          );
+          const submitted = outcome.submitted;
+          persistPendingRegistration({
+            status: 'pending',
+            statusToken: outcome.statusToken ?? null,
+            message: outcome.message,
+            fullName: submitted?.fullName || clean.fullName,
+            employeeId: submitted?.employeeId || clean.employeeId,
+            email: submitted?.email || clean.email,
+            position: submitted?.position || clean.position,
+            officeCode: submitted?.officeCode || clean.officeCode,
+            officeName:
+              submitted?.officeName ||
+              clean.customOfficeName ||
+              matchedOffice?.name ||
+              clean.officeCode,
+            submittedAt: submitted?.submittedAt || new Date().toISOString(),
+            checkedAt: null,
+          });
+          applyRoute('pending_approval', null);
         }
         notify('info', outcome.message);
         return { pendingApproval: outcome.pendingApproval, message: outcome.message };

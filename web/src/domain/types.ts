@@ -32,7 +32,27 @@ export type WebRoute =
   | 'user_profile'
   | 'settings'
   | 'verify'
+  | 'pending_approval'
   | 'login';
+
+export type PendingApprovalStatus = 'pending' | 'approved' | 'rejected';
+
+export interface PendingRegistrationSummary {
+  readonly fullName: string;
+  readonly employeeId: string;
+  readonly email: string;
+  readonly position: string;
+  readonly officeCode: string;
+  readonly officeName: string;
+  readonly submittedAt: string;
+}
+
+export interface PendingRegistrationRecord extends PendingRegistrationSummary {
+  readonly status: PendingApprovalStatus;
+  readonly statusToken: string | null;
+  readonly message: string;
+  readonly checkedAt?: string | null;
+}
 
 export interface AdminCreateUserPayload {
   readonly fullName: string;

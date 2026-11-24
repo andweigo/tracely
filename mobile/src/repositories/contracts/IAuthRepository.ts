@@ -24,9 +24,37 @@ export interface RegisterAccountPayload {
   readonly deviceName: string;
 }
 
+export type PendingApprovalStatus = 'pending' | 'approved' | 'rejected';
+
+export interface PendingRegistrationSummary {
+  readonly fullName: string;
+  readonly employeeId: string;
+  readonly email: string;
+  readonly position: string;
+  readonly officeCode: string;
+  readonly officeName: string;
+  readonly submittedAt: string;
+}
+
+export interface PendingRegistrationRecord extends PendingRegistrationSummary {
+  readonly status: PendingApprovalStatus;
+  readonly statusToken: string | null;
+  readonly message: string;
+  readonly checkedAt?: string | null;
+}
+
+export interface RegistrationStatusResult {
+  readonly status: PendingApprovalStatus;
+  readonly canSignIn: boolean;
+  readonly message: string;
+  readonly submitted?: PendingRegistrationSummary | null;
+}
+
 export interface RegistrationResult {
   readonly pendingApproval: boolean;
   readonly message: string;
+  readonly statusToken?: string | null;
+  readonly submitted?: PendingRegistrationSummary | null;
   readonly session: LoginResult | null;
 }
 
@@ -54,6 +82,7 @@ export interface AdminUpdateUserPayload {
 export interface IAuthRepository {
   login(identifier: string, password: string, deviceName: string): Promise<LoginResult>;
   register(payload: RegisterAccountPayload): Promise<RegistrationResult>;
+  checkRegistrationStatus?(statusToken: string): Promise<RegistrationStatusResult>;
   fetchCurrentProfile(): Promise<Personnel>;
   updateAvailability(
     status: AvailabilityStatus,

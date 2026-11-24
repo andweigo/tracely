@@ -126,8 +126,16 @@ export interface WebBackendGateway {
   }): Promise<{
     pendingApproval: boolean;
     message: string;
+    statusToken?: string | null;
+    submitted?: import('./types').PendingRegistrationSummary | null;
     bearerToken?: string;
     user?: import('./types').Personnel;
+  }>;
+  checkRegistrationStatus?(statusToken: string): Promise<{
+    status: import('./types').PendingApprovalStatus;
+    canSignIn: boolean;
+    message: string;
+    submitted?: import('./types').PendingRegistrationSummary | null;
   }>;
   logout(): Promise<void>;
   listWorkspace(): Promise<{

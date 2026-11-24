@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { ArrowLeft, Eye, EyeOff, KeyRound, Lock, ShieldCheck, Smartphone } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ArrowLeft, Clock, Eye, EyeOff, KeyRound, Lock, ShieldCheck, Smartphone } from 'lucide-react';
 import { AUTH_INPUT_LIMITS, AuthInputPolicy } from '../domain/authPolicy';
 import { OfficeSummary } from '../domain/types';
 import { useWebApp } from '../state/WebAppContext';
@@ -29,13 +29,22 @@ export const LoginPage: React.FC = () => {
     registerAccount,
     requestPasswordReset,
     confirmPasswordReset,
+    pendingRegistration,
+    prefillLoginIdentifier,
     navigate,
     requireAuth,
     isBusy,
   } = useWebApp();
 
   const [mode, setMode] = useState<AuthMode>('signin');
-  const [identifier, setIdentifier] = useState('');
+  const [identifier, setIdentifier] = useState(prefillLoginIdentifier);
+
+  useEffect(() => {
+    if (prefillLoginIdentifier) {
+      setIdentifier(prefillLoginIdentifier);
+      setMode('signin');
+    }
+  }, [prefillLoginIdentifier]);
   const [password, setPassword] = useState('');
   const [showSignInPass, setShowSignInPass] = useState(false);
   const [resetIdentifier, setResetIdentifier] = useState('');
@@ -143,8 +152,6 @@ export const LoginPage: React.FC = () => {
         confirmPassword,
       });
       if (outcome.pendingApproval) {
-        setInfoBanner(outcome.message);
-        setMode('signin');
         setPassword('');
         setRegPassword('');
         setConfirmPassword('');
@@ -206,6 +213,38 @@ export const LoginPage: React.FC = () => {
             Create Account
           </button>
         </div>
+
+        {pendingRegistration ? (
+          <button
+            type="button"
+            data-testid="web-login-pending-banner"
+            onClick={() => navigate('pending_approval')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 10,
+              width: '100%',
+              padding: '10px 12px',
+              borderRadius: 12,
+              border: '1px solid var(--amber-border)',
+              background: 'var(--amber-soft)',
+              color: 'var(--amber-text)',
+              fontSize: 12.5,
+              fontWeight: 700,
+              cursor: 'pointer',
+              textAlign: 'left',
+            }}
+          >
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+              <Clock size={14} />
+              {pendingRegistration.status === 'approved'
+                ? 'Your registration was approved — view details'
+                : 'Registration pending administrator approval'}
+            </span>
+            <span>View →</span>
+          </button>
+        ) : null}
 
         {infoBanner ? (
           <div className="pill pill-emerald" style={{ padding: '10px 12px', borderRadius: 12 }}>

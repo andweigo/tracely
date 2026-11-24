@@ -15,6 +15,7 @@ const VALID_ROUTES = new Set<WebRoute>([
   'user_profile',
   'settings',
   'verify',
+  'pending_approval',
   'login',
 ]);
 

@@ -24,6 +24,8 @@ Route::prefix('v1')->group(function (): void {
         ->middleware('throttle:auth-login');
     Route::post('/auth/register', [AuthController::class, 'register'])
         ->middleware('throttle:auth-register');
+    Route::get('/auth/registration-status/{token}', [AuthController::class, 'registrationStatus'])
+        ->middleware('throttle:auth-registration-status');
     Route::post('/auth/forgot-password', [AuthController::class, 'requestPasswordReset'])
         ->middleware('throttle:auth-password-reset');
     Route::post('/auth/reset-password', [AuthController::class, 'confirmPasswordReset'])

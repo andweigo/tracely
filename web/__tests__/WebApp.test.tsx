@@ -3008,4 +3008,73 @@ describe('DocsTracker Web App', () => {
     const settingsText = screen.getByTestId('web-settings-page').textContent ?? '';
     expect(settingsText).not.toMatch(/DepEd|SDO|Sanctum|Bearer|http:\/\/|https:\/\//i);
   });
+
+  it('redirects newly registered users to PendingApprovalPage and transitions to Sign In once approved', async () => {
+    let statusChecks = 0;
+    const gateway = createMockGateway({
+      register: async (payload) => ({
+        pendingApproval: true,
+        statusToken: 'tok-pending-123',
+        message: 'Registration submitted for administrator verification.',
+        submitted: {
+          fullName: payload.fullName,
+          employeeId: payload.employeeId,
+          email: payload.email,
+          position: payload.position,
+          officeCode: payload.officeCode,
+          officeName: 'Records & Registry',
+          submittedAt: '2026-11-24T01:00:00Z',
+        },
+      }),
+      checkRegistrationStatus: async () => {
+        statusChecks += 1;
+        if (statusChecks === 1) {
+          return {
+            status: 'pending',
+            canSignIn: false,
+            message: 'Still awaiting administrator review.',
+          };
+        }
+        return {
+          status: 'approved',
+          canSignIn: true,
+          message: 'Your account has been approved! You can now sign in.',
+        };
+      },
+    });
+
+    render(<App gateway={gateway} requireAuth={true} firstVisitSkeletonMs={0} />);
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Create Account' }));
+    fireEvent.change(screen.getByLabelText('Full Name'), { target: { value: 'Elena Cruz' } });
+    fireEvent.change(screen.getByLabelText('Employee ID'), { target: { value: 'TRC-9401' } });
+    fireEvent.change(screen.getByLabelText('Work Email'), { target: { value: 'elena.cruz@tracely.app' } });
+    fireEvent.change(screen.getByLabelText('Designation / Position'), { target: { value: 'Records Clerk' } });
+    fireEvent.change(screen.getByLabelText('Create Password'), { target: { value: 'Tracely#2026!' } });
+    fireEvent.change(screen.getByLabelText('Confirm Password'), { target: { value: 'Tracely#2026!' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Submit Registration' }));
+
+    expect(await screen.findByTestId('web-pending-approval-page')).toBeTruthy();
+    expect(screen.getByTestId('web-pending-status-pill').textContent).toContain(
+      'Awaiting Administrator Verification',
+    );
+    expect(screen.getByTestId('web-pending-summary-card').textContent).toContain('TRC-9401');
+
+    // First manual check stays pending
+    fireEvent.click(screen.getByTestId('web-pending-check-status-btn'));
+    await waitFor(() => expect(statusChecks).toBe(1));
+    expect(screen.getByTestId('web-pending-status-pill').textContent).toContain(
+      'Awaiting Administrator Verification',
+    );
+
+    // Second manual check transitions to approved and reveals Proceed to Sign In CTA
+    fireEvent.click(screen.getByTestId('web-pending-check-status-btn'));
+    expect(await screen.findByTestId('web-pending-proceed-signin-btn')).toBeTruthy();
+    expect(screen.getByTestId('web-pending-status-pill').textContent).toContain('Account Approved');
+
+    // Clicking Proceed to Sign In navigates to LoginPage with email prefilled
+    fireEvent.click(screen.getByTestId('web-pending-proceed-signin-btn'));
+    const idInput = (await screen.findByLabelText('Employee ID or Work Email')) as HTMLInputElement;
+    expect(idInput.value).toBe('elena.cruz@tracely.app');
+  });
 });

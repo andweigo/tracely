@@ -15,6 +15,7 @@ import { InboxScreen } from './src/ui/screens/InboxScreen';
 import { LoginScreen } from './src/ui/screens/LoginScreen';
 import { NotificationsScreen } from './src/ui/screens/NotificationsScreen';
 import { OnboardingScreen } from './src/ui/screens/OnboardingScreen';
+import { PendingApprovalScreen } from './src/ui/screens/PendingApprovalScreen';
 import { ProfileScreen } from './src/ui/screens/ProfileScreen';
 import { ScannerScreen } from './src/ui/screens/ScannerScreen';
 import { SendScreen } from './src/ui/screens/SendScreen';
@@ -29,6 +30,7 @@ const MobileRouteView: React.FC = () => {
     showOnboarding,
     requireAuth,
     actor,
+    pendingRegistration,
     activeTab,
     selectedDocumentId,
     documents,
@@ -39,11 +41,18 @@ const MobileRouteView: React.FC = () => {
 
   const [, setRevealTick] = useState(0);
 
+  const showPendingApproval =
+    !actor &&
+    (activeTab === 'pending_approval' ||
+      (requireAuth && Boolean(pendingRegistration) && activeTab !== 'login'));
+
   const screenKey: ScreenSkeletonVariant = selectedDocumentId
     ? 'document'
-    : (requireAuth && !actor) || activeTab === 'login'
-      ? 'login'
-      : activeTab;
+    : showPendingApproval
+      ? 'pending_approval'
+      : (requireAuth && !actor) || activeTab === 'login'
+        ? 'login'
+        : activeTab;
 
   useEffect(() => {
     if (bootstrapping && !showOnboarding) {
@@ -99,12 +108,20 @@ const MobileRouteView: React.FC = () => {
     );
   }
 
+  if (showPendingApproval) {
+    return <PendingApprovalScreen />;
+  }
+
   if (requireAuth && !actor) {
     return <LoginScreen />;
   }
 
   if (!selectedDocumentId && activeTab === 'login') {
     return <LoginScreen />;
+  }
+
+  if (!selectedDocumentId && activeTab === 'pending_approval') {
+    return <PendingApprovalScreen />;
   }
 
   if (selectedDocumentId) {

@@ -20,6 +20,8 @@ import {
   LandingScreenPreference,
   OfficeSummary,
   PaginatedDocumentsResult,
+  PendingApprovalStatus,
+  PendingRegistrationSummary,
   Personnel,
   PresignedDownloadGrant,
   PrivacySafeNotification,
@@ -437,13 +439,55 @@ export class LaravelSanctumGateway implements WebBackendGateway {
           signal: controller.signal,
         });
         const text = await response.text();
-        const parsed = text ? (JSON.parse(text) as { message?: string; data?: unknown }) : {};
+        const parsed = text
+          ? (JSON.parse(text) as {
+              code?: string;
+              message?: string;
+              data?: unknown;
+              approval_status?: string;
+              status_token?: string;
+              submitted?: {
+                full_name?: string;
+                employee_id?: string;
+                email?: string;
+                position?: string;
+                office_code?: string;
+                office_name?: string;
+                submitted_at?: string;
+              } | null;
+            })
+          : {};
         if (!response.ok) {
           const httpErr = new Error(
             parsed.message ?? `Server responded with HTTP ${response.status}.`,
-          ) as Error & { isHttpError?: boolean; status?: number };
+          ) as Error & {
+            isHttpError?: boolean;
+            status?: number;
+            code?: string;
+            approvalStatus?: PendingApprovalStatus;
+            statusToken?: string | null;
+            submitted?: PendingRegistrationSummary | null;
+          };
           httpErr.isHttpError = true;
           httpErr.status = response.status;
+          httpErr.code = parsed.code;
+          if (parsed.approval_status === 'pending' || parsed.approval_status === 'rejected') {
+            httpErr.approvalStatus = parsed.approval_status;
+          }
+          if (typeof parsed.status_token === 'string') {
+            httpErr.statusToken = parsed.status_token;
+          }
+          if (parsed.submitted && typeof parsed.submitted === 'object') {
+            httpErr.submitted = {
+              fullName: parsed.submitted.full_name ?? '',
+              employeeId: parsed.submitted.employee_id ?? '',
+              email: parsed.submitted.email ?? '',
+              position: parsed.submitted.position ?? '',
+              officeCode: parsed.submitted.office_code ?? '',
+              officeName: parsed.submitted.office_name ?? '',
+              submittedAt: parsed.submitted.submitted_at ?? new Date().toISOString(),
+            };
+          }
           throw httpErr;
         }
         return parsed as T;
@@ -534,6 +578,16 @@ export class LaravelSanctumGateway implements WebBackendGateway {
     const res = await this.request<{
       pending_approval?: boolean;
       message?: string;
+      status_token?: string;
+      submitted?: {
+        full_name?: string;
+        employee_id?: string;
+        email?: string;
+        position?: string;
+        office_code?: string;
+        office_name?: string;
+        submitted_at?: string;
+      } | null;
       bearer_token?: string;
       token?: string;
       user?: ApiPersonnelDto;
@@ -550,11 +604,62 @@ export class LaravelSanctumGateway implements WebBackendGateway {
         device_name: 'Tracely Web',
       }),
     });
+    const submitted: PendingRegistrationSummary | null = res.submitted
+      ? {
+          fullName: res.submitted.full_name ?? payload.fullName,
+          employeeId: res.submitted.employee_id ?? payload.employeeId,
+          email: res.submitted.email ?? payload.email,
+          position: res.submitted.position ?? payload.position,
+          officeCode: res.submitted.office_code ?? payload.officeCode,
+          officeName: res.submitted.office_name ?? payload.customOfficeName ?? payload.officeCode,
+          submittedAt: res.submitted.submitted_at ?? new Date().toISOString(),
+        }
+      : null;
     return {
       pendingApproval: Boolean(res.pending_approval ?? !res.user),
       message: res.message ?? 'Registration submitted for administrator verification.',
+      statusToken: res.status_token ?? null,
+      submitted,
       bearerToken: res.bearer_token ?? res.token,
       user: res.user ? mapApiPersonnel(res.user) : undefined,
+    };
+  }
+
+  public async checkRegistrationStatus(statusToken: string): Promise<{
+    status: PendingApprovalStatus;
+    canSignIn: boolean;
+    message: string;
+    submitted?: PendingRegistrationSummary | null;
+  }> {
+    const res = await this.request<{
+      status: PendingApprovalStatus;
+      can_sign_in?: boolean;
+      message?: string;
+      submitted?: {
+        full_name?: string;
+        employee_id?: string;
+        email?: string;
+        position?: string;
+        office_code?: string;
+        office_name?: string;
+        submitted_at?: string;
+      } | null;
+    }>(`/auth/registration-status/${encodeURIComponent(statusToken)}`);
+    return {
+      status: res.status,
+      canSignIn: Boolean(res.can_sign_in ?? res.status === 'approved'),
+      message: res.message ?? 'Registration status updated.',
+      submitted: res.submitted
+        ? {
+            fullName: res.submitted.full_name ?? '',
+            employeeId: res.submitted.employee_id ?? '',
+            email: res.submitted.email ?? '',
+            position: res.submitted.position ?? '',
+            officeCode: res.submitted.office_code ?? '',
+            officeName: res.submitted.office_name ?? '',
+            submittedAt: res.submitted.submitted_at ?? new Date().toISOString(),
+          }
+        : null,
     };
   }
 

@@ -10,7 +10,12 @@ import type { ActiveDeviceSession } from '../domain/entities/UserSecurityProfile
 import { AvailabilityStatus } from '../domain/enums/DomainEnums';
 import { AuthInputPolicy } from '../domain/security/AuthInputPolicy';
 import { ApiError } from '../network/ApiClient';
-import type { IAuthRepository, LoginResult } from '../repositories/contracts/IAuthRepository';
+import type {
+  IAuthRepository,
+  LoginResult,
+  PendingRegistrationSummary,
+  RegistrationStatusResult,
+} from '../repositories/contracts/IAuthRepository';
 import type {
   ISecureTokenStore,
   SecureSessionRecord,
@@ -36,6 +41,8 @@ export interface AuthenticatedSessionOutcome {
 export interface RegistrationOutcome {
   readonly pendingApproval: boolean;
   readonly message: string;
+  readonly statusToken?: string | null;
+  readonly submitted?: PendingRegistrationSummary | null;
   readonly authSession: AuthenticatedSessionOutcome | null;
 }
 
@@ -96,8 +103,21 @@ export class AuthSessionService {
     return {
       pendingApproval: result.pendingApproval,
       message: result.message,
+      statusToken: result.statusToken ?? null,
+      submitted: result.submitted ?? null,
       authSession,
     };
+  }
+
+  public async checkRegistrationStatus(statusToken: string): Promise<RegistrationStatusResult> {
+    if (!this._authRepo.checkRegistrationStatus) {
+      return {
+        status: 'pending',
+        canSignIn: false,
+        message: 'Awaiting administrator verification.',
+      };
+    }
+    return this._authRepo.checkRegistrationStatus(statusToken);
   }
 
   public async updateAvailability(
