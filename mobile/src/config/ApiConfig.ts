@@ -3,7 +3,8 @@ import { NativeModules } from 'react-native';
 import { DomainRuleError } from '../domain/base/DomainRuleError';
 
 const STORAGE_KEY_API_URL = '@sdo_doctrack/api_base_url';
-export const PRODUCTION_API_BASE_URL = 'https://api.tracely.app/api/v1';
+export const PRODUCTION_API_BASE_URL =
+  'https://backend-production-43015d9a.up.railway.app/api/v1';
 export const LOCAL_DEV_API_BASE_URL = 'http://127.0.0.1:8000/api/v1';
 export const DEFAULT_API_BASE_URL =
   typeof __DEV__ !== 'undefined' && __DEV__
@@ -37,9 +38,8 @@ export class ApiConfig {
       if (saved) {
         const normalized = ApiConfig.normalizeAndValidate(saved);
         if (
-          typeof __DEV__ !== 'undefined' &&
-          __DEV__ &&
-          normalized.startsWith('https://api.tracely.app') || normalized.startsWith('https://doctrack.depedormin.gov.ph')
+          normalized.startsWith('https://api.tracely.app') ||
+          normalized.startsWith('https://doctrack.depedormin.gov.ph')
         ) {
           await AsyncStorage.removeItem(STORAGE_KEY_API_URL);
           this._baseUrl = DEFAULT_API_BASE_URL;

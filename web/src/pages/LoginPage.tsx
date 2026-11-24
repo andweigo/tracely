@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ArrowLeft, Eye, EyeOff, KeyRound, Lock, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, KeyRound, Lock, ShieldCheck, Smartphone } from 'lucide-react';
 import { AUTH_INPUT_LIMITS, AuthInputPolicy } from '../domain/authPolicy';
 import { OfficeSummary } from '../domain/types';
 import { useWebApp } from '../state/WebAppContext';
@@ -647,6 +647,24 @@ export const LoginPage: React.FC = () => {
             </button>
           </form>
         )}
+
+        <div
+          style={{
+            marginTop: 4,
+            paddingTop: 12,
+            borderTop: '1px solid var(--border)',
+            display: 'flex',
+            justifyContent: 'center',
+          }}
+        >
+          <a
+            href="/download"
+            className="unlock-fallback-toggle"
+            style={{ textDecoration: 'none' }}
+          >
+            <Smartphone size={13} /> Download Tracely Android App (.apk)
+          </a>
+        </div>
       </div>
     </div>
   );

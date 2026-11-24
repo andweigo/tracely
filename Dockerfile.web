@@ -15,7 +15,8 @@ RUN npm run build
 FROM nginx:1.27-alpine
 
 ENV PORT=8080
-ENV NGINX_ENVSUBST_FILTER=^PORT$
+ENV BACKEND_PUBLIC_URL=https://backend-production-43015d9a.up.railway.app
+ENV NGINX_ENVSUBST_FILTER=^(PORT|BACKEND_PUBLIC_URL)$
 
 COPY docker/web-nginx.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=builder /app/dist /usr/share/nginx/html

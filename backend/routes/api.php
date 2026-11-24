@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\DocumentController;
 use App\Http\Controllers\Api\V1\QrController;
 use App\Http\Controllers\Api\V1\RealtimeController;
 use App\Http\Controllers\Api\V1\RoutingTemplateController;
+use App\Http\Controllers\MobileReleaseController;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 
@@ -59,6 +60,7 @@ Route::prefix('v1')->group(function (): void {
         Route::patch('/admin/offices/{id}', [AuthController::class, 'adminUpdateOffice']);
         Route::patch('/admin/categories/{id}', [DirectoryController::class, 'adminUpdateCategory']);
         Route::delete('/admin/categories/{id}', [DirectoryController::class, 'adminDeleteCategory']);
+        Route::post('/admin/mobile-release', [MobileReleaseController::class, 'uploadRelease']);
 
         // Real-time workspace pulse, SSE stream & push device token registration
         Route::get('/events/pulse', [RealtimeController::class, 'pulse']);

@@ -1,11 +1,15 @@
 <?php
 
 use App\Http\Controllers\Admin\AdminPortalController;
+use App\Http\Controllers\MobileReleaseController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::get('/download', [MobileReleaseController::class, 'showDownloadPage'])->name('mobile.download.page');
+Route::get('/download/tracely.apk', [MobileReleaseController::class, 'downloadApk'])->name('mobile.download.apk');
 
 Route::prefix('admin')->name('admin.')->group(function (): void {
     Route::get('/login', [AdminPortalController::class, 'showLogin'])->name('login');

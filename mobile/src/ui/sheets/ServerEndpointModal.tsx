@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { PRODUCTION_API_BASE_URL } from '../../config/ApiConfig';
 import { useAppServices } from '../../state/AppServiceContext';
 import { ModalSheet } from '../components/ModalSheet';
 import { SDO_COLORS } from '../theme/tokens';
@@ -46,12 +47,18 @@ export const ServerEndpointModal: React.FC<ServerEndpointModalProps> = ({ open, 
           autoCapitalize="none"
           autoCorrect={false}
           keyboardType="url"
-          placeholder="http://127.0.0.1:8000/api/v1"
+          placeholder={PRODUCTION_API_BASE_URL}
           placeholderTextColor={SDO_COLORS.textMuted}
           style={styles.input}
         />
       </View>
       <View style={styles.presetRow}>
+        <Pressable
+          onPress={() => setServerUrlDraft(PRODUCTION_API_BASE_URL)}
+          style={styles.presetChip}
+        >
+          <Text style={styles.presetChipText}>Cloud (Railway)</Text>
+        </Pressable>
         <Pressable
           onPress={() => setServerUrlDraft('http://127.0.0.1:8000/api/v1')}
           style={styles.presetChip}
