@@ -14,29 +14,28 @@ import {
   Layers,
   Lock,
   Menu,
+  Play,
   QrCode,
   ScanLine,
   ShieldAlert,
   ShieldCheck,
   Smartphone,
-  Sparkles,
   UserCheck,
   X,
   XCircle,
 } from 'lucide-react';
 import { FaqSection } from './components/FaqSection';
 import { HeroCustodyDemo } from './components/HeroCustodyDemo';
+import { OrbitalHeroStage } from './components/OrbitalHeroStage';
 import { PlatformShowcase } from './components/PlatformShowcase';
 import { RoleShowcase } from './components/RoleShowcase';
 import { SITE_CONFIG } from './config';
 
 const NAV_LINKS = [
   { label: 'Features', href: '#features' },
-  { label: 'How It Works', href: '#how-it-works' },
-  { label: 'Roles', href: '#roles' },
+  { label: 'How it works', href: '#how-it-works' },
   { label: 'Security', href: '#security' },
   { label: 'Platforms', href: '#platforms' },
-  { label: 'FAQ', href: '#faq' },
 ] as const;
 
 const PAIN_COMPARISONS = [
@@ -63,21 +62,21 @@ const WORKFLOW_STEPS = [
     num: '01',
     title: 'Register & Seal',
     badge: 'Hard Copy or Digital',
-    icon: <QrCode size={20} />,
-    body: 'Register a physical folder to print a crisp QR transmittal slip, or upload a SHA-256 verified digital bundle under a unique tracking code.',
+    icon: <QrCode size={19} />,
+    body: 'Register a physical folder to print a crisp QR transmittal slip, or upload a SHA-256 verified digital bundle under one unique tracking code.',
   },
   {
     num: '02',
     title: 'Route & Scan to Unlock',
     badge: 'Zero Self-Receipt',
-    icon: <ScanLine size={20} />,
-    body: 'Dispatch to the destination unit. Custody remains sealed in transit until the receiving officer scans the QR via Android camera or USB desk scanner.',
+    icon: <ScanLine size={19} />,
+    body: 'Dispatch to the destination unit. Custody stays sealed in transit until the receiving officer scans the QR via Android camera or USB desk scanner.',
   },
   {
     num: '03',
     title: 'Track, Approve & Verify',
     badge: 'Audit Ready',
-    icon: <FileCheck2 size={20} />,
+    icon: <FileCheck2 size={19} />,
     body: 'Monitor live SLA health, collaborate with scoped remarks, approve or archive the record, and share privacy-safe public QR verification links.',
   },
 ] as const;
@@ -117,23 +116,28 @@ const SECURITY_PILLARS = [
 
 export const App: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeNav, setActiveNav] = useState<string>('#features');
 
   return (
     <div className="site-root">
-      {/* Sticky Navigation */}
+      {/* Minimalist Floating Pill Header matching template */}
       <header className="site-header">
         <div className="container header-inner">
           <a href="#top" className="brand-link" aria-label="Tracely Home">
             <img src="/tracely-logo.png" alt="Tracely" className="brand-logo" />
-            <div className="brand-text">
-              <span className="brand-name">Tracely</span>
-              <span className="brand-sub">Document Custody</span>
-            </div>
+            <span className="brand-wordmark">
+              Tracely<sup className="brand-deg">°</sup>
+            </span>
           </a>
 
-          <nav className="desktop-nav" aria-label="Primary navigation">
+          <nav className="nav-pill" aria-label="Primary navigation">
             {NAV_LINKS.map((link) => (
-              <a key={link.href} href={link.href} className="nav-link">
+              <a
+                key={link.href}
+                href={link.href}
+                className={`nav-pill-link ${activeNav === link.href ? 'is-active' : ''}`}
+                onClick={() => setActiveNav(link.href)}
+              >
                 {link.label}
               </a>
             ))}
@@ -141,22 +145,13 @@ export const App: React.FC = () => {
 
           <div className="header-actions">
             <a
-              href={SITE_CONFIG.webAppUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn-ghost btn-sm"
-            >
-              <span>Web App</span>
-              <ArrowUpRight size={14} />
-            </a>
-            <a
               href={SITE_CONFIG.downloadUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn btn-primary btn-sm"
+              className="btn btn-navy-pill btn-sm"
             >
-              <Download size={14} />
-              <span>Get Android</span>
+              <span>Get the app</span>
+              <ArrowUpRight size={14} />
             </a>
             <button
               type="button"
@@ -178,27 +173,44 @@ export const App: React.FC = () => {
                   key={link.href}
                   href={link.href}
                   className="mobile-nav-link"
-                  onClick={() => setMobileMenuOpen(false)}
+                  onClick={() => {
+                    setActiveNav(link.href);
+                    setMobileMenuOpen(false);
+                  }}
                 >
                   {link.label}
                 </a>
               ))}
+              <a
+                href="#simulator"
+                className="mobile-nav-link"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Live Simulator
+              </a>
+              <a
+                href="#faq"
+                className="mobile-nav-link"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                FAQ
+              </a>
               <div className="mobile-drawer-ctas">
                 <a
                   href={SITE_CONFIG.webAppUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="btn btn-outline"
+                  className="btn btn-navy-pill"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <span>Open Web App</span>
-                  <ArrowUpRight size={15} />
+                  <ArrowRight size={15} />
                 </a>
                 <a
                   href={SITE_CONFIG.downloadUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="btn btn-primary"
+                  className="btn btn-white-pill"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <Download size={15} />
@@ -211,65 +223,114 @@ export const App: React.FC = () => {
       </header>
 
       <main id="top">
-        {/* Hero Section */}
-        <section className="hero-section">
-          <div className="hero-backdrop" aria-hidden="true" />
-          <div className="container hero-grid">
-            <div className="hero-copy">
-              <div className="hero-eyebrow">
-                <Sparkles size={13} />
-                <span>Web Workspace + Android v{SITE_CONFIG.androidVersion} · Built for Agencies &amp; Enterprise</span>
-              </div>
-              <h1 className="hero-title">
-                Every paper and digital document, <span className="text-accent">accounted for.</span>
+        {/* Editorial Centered Hero matching Mindly template in Tracely's Navy/Amber/Teal colorway */}
+        <section className="hero-editorial">
+          <div className="container hero-editorial-inner">
+            {/* Rotating Circular Editorial Stamp (top-right) */}
+            <div className="hero-stamp" aria-hidden="true">
+              <svg viewBox="0 0 116 116" className="stamp-ring">
+                <defs>
+                  <path
+                    id="tracelyStampCircle"
+                    d="M 58, 58 m -40, 0 a 40,40 0 1,1 80,0 a 40,40 0 1,1 -80,0"
+                  />
+                </defs>
+                <text className="stamp-text">
+                  <textPath href="#tracelyStampCircle" startOffset="0%">
+                    VERIFIED CUSTODY • EVERY OFFICE •
+                  </textPath>
+                </text>
+              </svg>
+              <svg viewBox="0 0 24 24" className="stamp-star">
+                <path
+                  d="M12 2L14.2 9.8L22 12L14.2 14.2L12 22L9.8 14.2L2 12L9.8 9.8L12 2Z"
+                  fill="#0D3472"
+                />
+                <circle cx="12" cy="12" r="2" fill="#F3B32A" />
+              </svg>
+            </div>
+
+            {/* Centered High-Contrast Editorial Serif Headline */}
+            <div className="hero-center-copy">
+              <h1 className="hero-serif-title">
+                A clearer trail
+                <br />
+                <em className="hero-serif-italic">for every document.</em>
               </h1>
-              <p className="hero-subtitle">
-                Tracely replaces paper logbooks and guesswork with QR-gated custody transfers,
-                SHA-256 verified digital bundles, live SLA monitoring, and instant audit trails
-                across desktop and Android.
+              <p className="hero-serif-sub">
+                Tracely helps agencies and teams seal transfers, scan QR custody, and meet every
+                deadline — all in one unified space.
               </p>
 
-              <div className="hero-ctas">
+              <div className="hero-pill-ctas">
                 <a
                   href={SITE_CONFIG.webAppUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="btn btn-primary btn-lg"
+                  className="btn btn-navy-pill btn-lg"
                 >
-                  <span>Launch Web App</span>
-                  <ArrowUpRight size={17} />
+                  <span>Open Web App</span>
+                  <ArrowRight size={16} />
                 </a>
-                <a
-                  href={SITE_CONFIG.downloadUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn btn-amber btn-lg"
-                >
-                  <Download size={17} />
-                  <span>Download Android App</span>
+                <a href="#simulator" className="btn btn-white-pill btn-lg">
+                  <span className="play-badge" aria-hidden="true">
+                    <Play size={10} fill="currentColor" />
+                  </span>
+                  <span>Try live demo</span>
                 </a>
-              </div>
-
-              <div className="hero-metrics">
-                <div className="hero-metric">
-                  <strong>Hybrid</strong>
-                  <span>Hard Copy + Digital</span>
-                </div>
-                <div className="hero-metric-divider" aria-hidden="true" />
-                <div className="hero-metric">
-                  <strong>QR-Gated</strong>
-                  <span>Verified Custody Handoffs</span>
-                </div>
-                <div className="hero-metric-divider" aria-hidden="true" />
-                <div className="hero-metric">
-                  <strong>SHA-256</strong>
-                  <span>Tamper-Evident Files</span>
-                </div>
               </div>
             </div>
 
-            <div className="hero-visual">
-              <HeroCustodyDemo />
+            {/* Signature Orbital Centerpiece + Tilted Floating Cards + Hairline Arcs */}
+            <OrbitalHeroStage />
+          </div>
+        </section>
+
+        {/* Interactive Live Custody-Timeline Simulator Showcase */}
+        <section id="simulator" className="section section-editorial-band">
+          <div className="container">
+            <div className="simulator-layout">
+              <div className="simulator-copy">
+                <span className="eyebrow">
+                  <ScanLine size={13} /> Interactive Custody Demo
+                </span>
+                <h2 className="editorial-heading">
+                  Follow every handoff <em>in real time.</em>
+                </h2>
+                <p>
+                  Switch between a physical hard-copy folder and a SHA-256 verified digital bundle.
+                  Step through registration, sealed transit, QR scan unlock, and final approval to
+                  see how Tracely enforces accountability at every desk.
+                </p>
+
+                <div className="simulator-points">
+                  <div className="sim-point">
+                    <CheckCircle2 size={16} className="sim-point-icon" />
+                    <div>
+                      <strong>Sealed Until Scanned</strong>
+                      <span>Transfers stay locked until the actual destination office scans in.</span>
+                    </div>
+                  </div>
+                  <div className="sim-point">
+                    <CheckCircle2 size={16} className="sim-point-icon" />
+                    <div>
+                      <strong>Zero Self-Receipt Loopholes</strong>
+                      <span>Senders cannot forge or self-acknowledge their own dispatches.</span>
+                    </div>
+                  </div>
+                  <div className="sim-point">
+                    <CheckCircle2 size={16} className="sim-point-icon" />
+                    <div>
+                      <strong>Live SLA &amp; SHA-256 Integrity</strong>
+                      <span>Every transfer logs timestamps, checksums, and turnaround health.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="simulator-stage">
+                <HeroCustodyDemo />
+              </div>
             </div>
           </div>
         </section>
@@ -280,7 +341,9 @@ export const App: React.FC = () => {
             <div className="comparison-shell">
               <div className="comparison-head">
                 <span className="eyebrow">Why Organizations Switch</span>
-                <h2>End the logbook blind spot across every department</h2>
+                <h2 className="editorial-heading">
+                  End the logbook blind spot <em>across every unit.</em>
+                </h2>
               </div>
               <div className="comparison-grid">
                 <div className="comparison-col comparison-before">
@@ -324,10 +387,12 @@ export const App: React.FC = () => {
               <span className="eyebrow">
                 <Layers size={13} /> Core Capabilities
               </span>
-              <h2>Engineered for real-world custody workflows</h2>
+              <h2 className="editorial-heading">
+                Engineered for <em>real-world custody</em>
+              </h2>
               <p>
-                Every feature in Tracely is designed around how offices actually move folders,
-                attachments, revisions, and executive approvals day to day.
+                Every workflow in Tracely mirrors how agencies and offices move folders, digital
+                bundles, revisions, and executive sign-offs day to day.
               </p>
             </div>
 
@@ -340,7 +405,7 @@ export const App: React.FC = () => {
                 <p>
                   Track physical folders with printable QR transmittal slips alongside single PDFs,
                   multi-file bundles (one QR for an entire packet), or batch-dispatched files—all in
-                  the same unified ledger.
+                  one unified ledger.
                 </p>
                 <div className="bento-chip-row">
                   <span className="bento-chip">Printable QR Slips</span>
@@ -422,10 +487,12 @@ export const App: React.FC = () => {
               <span className="eyebrow">
                 <ArrowRight size={13} /> How It Works
               </span>
-              <h2>Three steps from intake to verifiable completion</h2>
+              <h2 className="editorial-heading">
+                Three quiet steps from <em>intake to archive</em>
+              </h2>
               <p>
-                Zero complex setup for staff. Every handoff takes seconds and leaves an indisputable
-                digital proof of custody.
+                Zero friction for receiving clerks or executives. Every handoff takes seconds and
+                creates an indisputable custody record.
               </p>
             </div>
 
@@ -448,17 +515,19 @@ export const App: React.FC = () => {
         {/* Interactive Role Showcase */}
         <RoleShowcase />
 
-        {/* Enterprise Security Dark Band */}
+        {/* Enterprise Security Deep Navy Band */}
         <section id="security" className="section section-navy">
           <div className="container">
             <div className="section-header center light">
               <span className="eyebrow eyebrow-dark">
                 <ShieldCheck size={13} /> Security &amp; Governance Architecture
               </span>
-              <h2>Built for compliance, auditability, and zero blind spots</h2>
+              <h2 className="editorial-heading light">
+                Built for compliance, <em>auditability, and trust</em>
+              </h2>
               <p>
-                Designed from the ground up for public-sector and enterprise document sensitivity,
-                with verifiable integrity at every layer.
+                Designed from the ground up for public-sector and enterprise sensitivity, with
+                cryptographic verification at every layer.
               </p>
             </div>
 
@@ -496,16 +565,18 @@ export const App: React.FC = () => {
         {/* FAQ Accordion */}
         <FaqSection />
 
-        {/* Final Call to Action */}
+        {/* Final Editorial CTA */}
         <section className="section section-compact">
           <div className="container">
             <div className="cta-banner">
               <div className="cta-banner-copy">
                 <span className="eyebrow eyebrow-dark">Ready to Modernize Custody?</span>
-                <h2>Bring complete accountability to every document your team handles.</h2>
+                <h2 className="editorial-heading light">
+                  Bring complete clarity to <em>every document.</em>
+                </h2>
                 <p>
-                  Launch the Tracely Web Workspace right now or install the native Android app on
-                  your team’s devices in under a minute.
+                  Launch the Tracely Web Workspace now or install the native Android app on your
+                  team’s phones in under a minute.
                 </p>
               </div>
               <div className="cta-banner-actions">
@@ -513,7 +584,7 @@ export const App: React.FC = () => {
                   href={SITE_CONFIG.webAppUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="btn btn-amber btn-lg"
+                  className="btn btn-amber-pill btn-lg"
                 >
                   <span>Open Web App</span>
                   <ArrowUpRight size={17} />
@@ -522,7 +593,7 @@ export const App: React.FC = () => {
                   href={SITE_CONFIG.downloadUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="btn btn-light-outline btn-lg"
+                  className="btn btn-light-pill btn-lg"
                 >
                   <Download size={17} />
                   <span>Download Android v{SITE_CONFIG.androidVersion}</span>
@@ -533,20 +604,19 @@ export const App: React.FC = () => {
         </section>
       </main>
 
-      {/* Footer */}
+      {/* Editorial Footer */}
       <footer className="site-footer">
         <div className="container footer-inner">
           <div className="footer-brand">
             <div className="brand-link">
               <img src="/tracely-logo.png" alt="Tracely" className="brand-logo" />
-              <div className="brand-text">
-                <span className="brand-name">Tracely</span>
-                <span className="brand-sub">QR Document Custody &amp; Routing</span>
-              </div>
+              <span className="brand-wordmark">
+                Tracely<sup className="brand-deg">°</sup>
+              </span>
             </div>
             <p className="footer-desc">
-              Hybrid physical &amp; digital document tracking with QR-gated transfers, SHA-256
-              integrity, and real-time SLA oversight.
+              Hybrid physical &amp; digital document tracking with QR-gated custody transfers,
+              SHA-256 integrity, and real-time SLA oversight.
             </p>
           </div>
 
@@ -554,8 +624,8 @@ export const App: React.FC = () => {
             <div className="footer-col">
               <h4>Product</h4>
               <a href="#features">Core Features</a>
+              <a href="#simulator">Live Simulator</a>
               <a href="#how-it-works">How It Works</a>
-              <a href="#roles">Team Roles</a>
               <a href="#security">Security</a>
             </div>
             <div className="footer-col">
