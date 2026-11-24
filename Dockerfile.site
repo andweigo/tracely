@@ -1,0 +1,28 @@
+FROM node:22-alpine AS builder
+
+WORKDIR /app
+
+COPY site/package.json site/package-lock.json ./
+RUN npm ci
+
+COPY site/ ./
+
+ARG VITE_WEB_APP_URL=https://tracely-web.up.railway.app
+ARG VITE_DOWNLOAD_URL=https://tracely-web.up.railway.app/download
+ARG VITE_ADMIN_URL=https://backend-production-43015d9a.up.railway.app/admin/login
+ENV VITE_WEB_APP_URL=$VITE_WEB_APP_URL
+ENV VITE_DOWNLOAD_URL=$VITE_DOWNLOAD_URL
+ENV VITE_ADMIN_URL=$VITE_ADMIN_URL
+
+RUN npm run build
+
+FROM nginx:1.27-alpine
+
+ENV PORT=8080
+ENV BACKEND_PUBLIC_URL=https://backend-production-43015d9a.up.railway.app
+ENV NGINX_ENVSUBST_FILTER=^(PORT|BACKEND_PUBLIC_URL)$
+
+COPY docker/site-nginx.conf.template /etc/nginx/templates/default.conf.template
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+EXPOSE 8080
