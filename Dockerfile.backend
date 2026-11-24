@@ -60,10 +60,12 @@ RUN mkdir -p \
     && php artisan package:discover --ansi --no-interaction \
     && chown -R www-data:www-data /var/www/html/backend/storage /var/www/html/backend/bootstrap/cache
 
-# Apply PHP production config and entrypoint
+# Apply PHP production config, ensure single Apache MPM (prefork for mod_php), and install entrypoint
 COPY docker/php-production.ini /usr/local/etc/php/conf.d/99-tracely.ini
 COPY docker/backend-entrypoint.sh /usr/local/bin/backend-entrypoint.sh
-RUN sed -i 's/\r$//' /usr/local/bin/backend-entrypoint.sh \
+RUN rm -f /etc/apache2/mods-enabled/mpm_event.* /etc/apache2/mods-enabled/mpm_worker.* \
+    && a2enmod mpm_prefork \
+    && sed -i 's/\r$//' /usr/local/bin/backend-entrypoint.sh \
     && chmod +x /usr/local/bin/backend-entrypoint.sh
 
 EXPOSE 8080

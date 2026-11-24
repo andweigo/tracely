@@ -91,4 +91,5 @@ php artisan view:cache --no-interaction
 chown -R www-data:www-data storage bootstrap/cache
 
 echo "[tracely-backend] Starting Apache on 0.0.0.0:${PORT}..."
+rm -f /etc/apache2/mods-enabled/mpm_event.* /etc/apache2/mods-enabled/mpm_worker.*
 exec apache2-foreground
