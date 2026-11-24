@@ -1780,7 +1780,7 @@ describe('DocsTracker React Native App', () => {
       renderer.root.findAllByProps({ testID: 'mobile-routing-flow-analytics' }).length,
     ).toBeGreaterThan(0);
     expect(
-      renderer.root.findAllByProps({ testID: 'mobile-routing-flow-inspector' }).length,
+      renderer.root.findAllByProps({ testID: 'mobile-custody-journey-road' }).length,
     ).toBeGreaterThan(0);
 
     // Switch flow scope between My Sent (per-user) and My Office (per-office), never All Offices

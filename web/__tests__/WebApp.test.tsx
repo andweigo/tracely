@@ -2966,26 +2966,19 @@ describe('DocsTracker Web App', () => {
     expect(screen.getByTestId('analytics-office-table')).toBeTruthy();
     expect(screen.getByTestId('web-analytics-export-csv')).toBeTruthy();
 
-    // Dedicated Dashboard screen renders Wallet Card + Minimalist Routing Flow Map + 3D Folder Organizer
+    // Dedicated Dashboard screen renders Wallet Card + Vertical Scroll-Tracked Custody Road + 3D Folder Organizer
     fireEvent.click(within(mainNav).getByRole('button', { name: /^Dashboard$/i }));
     expect(await screen.findByTestId('web-dashboard-page')).toBeTruthy();
     expect(screen.getByTestId('web-dashboard-wallet-card')).toBeTruthy();
     fireEvent.click(screen.getByTestId('web-dashboard-wallet-card-flip-btn'));
     fireEvent.click(screen.getByTestId('web-dashboard-wallet-card-mask-btn'));
     expect(screen.getByTestId('web-routing-flow-analytics')).toBeTruthy();
-    expect(screen.getByTestId('web-routing-flow-inspector')).toBeTruthy();
-    // Each SVG flow corridor renders uncrowded office text (code + count only, no rank prefix or overlapping name/%)
-    const flowSvg = screen.getByLabelText('Office Document Routing Flow Map');
-    const corridorGroups = flowSvg.querySelectorAll('[data-testid^="flow-corridor-"]');
-    expect(corridorGroups.length).toBeGreaterThan(0);
-    corridorGroups.forEach((group) => {
-      const textNodes = Array.from(group.querySelectorAll('text')).map((el) => el.textContent?.trim());
-      expect(textNodes).toHaveLength(2);
-      expect(textNodes[0]).not.toMatch(/^0\d$/);
-      expect(textNodes[1]).not.toContain('%');
-    });
+    expect(screen.getByTestId('web-custody-journey-road')).toBeTruthy();
+    expect(
+      screen.getByTestId('web-custody-journey-road').querySelectorAll('[data-testid^="custody-hop-"]').length,
+    ).toBeGreaterThanOrEqual(2);
     fireEvent.click(screen.getByTestId('flow-scope-user'));
-    expect(screen.getByTestId('web-routing-flow-inspector')).toBeTruthy();
+    expect(screen.getByTestId('web-custody-journey-road')).toBeTruthy();
     fireEvent.click(screen.getByTestId('flow-scope-office'));
 
     expect(screen.getByTestId('web-folder-organizer')).toBeTruthy();

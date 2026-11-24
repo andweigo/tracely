@@ -3,7 +3,7 @@ import { NativeModules } from 'react-native';
 import { DomainRuleError } from '../domain/base/DomainRuleError';
 
 const STORAGE_KEY_API_URL = '@sdo_doctrack/api_base_url';
-export const MOBILE_APP_VERSION = '1.0.6';
+export const MOBILE_APP_VERSION = '1.0.7';
 export const PRODUCTION_API_BASE_URL =
   'https://backend-production-43015d9a.up.railway.app/api/v1';
 export const LOCAL_DEV_API_BASE_URL = 'http://127.0.0.1:8000/api/v1';

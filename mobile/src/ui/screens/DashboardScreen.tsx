@@ -1,5 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
+  LayoutChangeEvent,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -31,9 +34,9 @@ import {
 } from '../../domain/enums/DomainEnums';
 import { useAppServices } from '../../state/AppServiceContext';
 import { ConfidentialityBadge, SlaBadge } from '../components/Badges';
+import { MobileCustodyJourneyRoad } from '../components/MobileCustodyJourneyRoad';
 import { MobileFolder, MobileFolderSheetItem } from '../components/MobileFolder';
 import { MobileIdentityWalletCard } from '../components/MobileIdentityWalletCard';
-import { MobileRoutingFlowMap } from '../components/MobileRoutingFlowMap';
 import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 import { sortDocuments } from '../utils/inboxFilter';
 import { paginateSentItems } from '../utils/sentFilter';
@@ -57,25 +60,6 @@ export function formatMobileCompactCount(count: number): string {
     return `${val >= 100 ? val.toFixed(0) : val.toFixed(1).replace(/\.0$/, '')}K`;
   }
   return String(count);
-}
-
-interface DestinationCorridorStats {
-  readonly officeId: string;
-  readonly officeCode: string;
-  readonly officeName: string;
-  readonly sentCount: number;
-  readonly inTransitCount: number;
-  readonly atDeskCount: number;
-  readonly completedCount: number;
-  readonly avgAckHours: string;
-  readonly softRatio: number;
-  readonly recentDocs: ReadonlyArray<{
-    readonly id: string;
-    readonly trackingCode: string;
-    readonly title: string;
-    readonly formatLabel: 'Soft' | 'Hard';
-    readonly stateLabel: 'In Transit' | 'At Desk' | 'Completed';
-  }>;
 }
 
 interface OrganizerFolderBucket {
@@ -102,7 +86,6 @@ export const DashboardScreen: React.FC = () => {
   const {
     actor,
     documents,
-    offices,
     categories,
     openDocument,
     setActiveTab,
@@ -112,8 +95,13 @@ export const DashboardScreen: React.FC = () => {
   } = useAppServices();
 
   const [flowScope, setFlowScope] = useState<RoutingScopeFilter>('office');
-  const [selectedOfficeId, setSelectedOfficeId] = useState<string | null>(null);
+  const [selectedJourneyDocId, setSelectedJourneyDocId] = useState<string | null>(null);
   const [lanyardDragging, setLanyardDragging] = useState(false);
+
+  const scrollViewRef = useRef<React.ComponentRef<typeof ScrollView> | null>(null);
+  const [scrollY, setScrollY] = useState<number>(0);
+  const [viewportHeight, setViewportHeight] = useState<number>(720);
+  const [journeySectionY, setJourneySectionY] = useState<number>(380);
 
   const [folderGroupMode, setFolderGroupMode] = useState<FolderGroupingMode>('stage');
   const [folderMode, setFolderMode] = useState<'flap' | 'book'>('flap');
@@ -149,168 +137,40 @@ export const DashboardScreen: React.FC = () => {
 
   const scopedDocuments = flowScope === 'user' ? myUserSentDocs : myOfficeSentDocs;
 
-  const corridors = useMemo<ReadonlyArray<DestinationCorridorStats>>(() => {
-    const officeMap = new Map<
-      string,
-      {
-        officeId: string;
-        officeCode: string;
-        officeName: string;
-        docs: Map<string, Document>;
-        ackTotalMs: number;
-        ackSamples: number;
-      }
-    >();
-
-    for (const off of offices) {
-      officeMap.set(off.id, {
-        officeId: off.id,
-        officeCode: off.code,
-        officeName: off.name,
-        docs: new Map(),
-        ackTotalMs: 0,
-        ackSamples: 0,
-      });
-    }
-
-    for (const doc of scopedDocuments) {
-      const touchedTargets = new Set<string>();
-      for (const tx of doc.transactions) {
-        if (flowScope === 'user' && actor && tx.fromUserId !== actor.id) {
-          continue;
-        }
-        if (flowScope === 'office' && actor && tx.fromOffice.id !== actor.office.id) {
-          continue;
-        }
-        touchedTargets.add(tx.toOffice.id);
-        let entry = officeMap.get(tx.toOffice.id);
-        if (!entry) {
-          entry = {
-            officeId: tx.toOffice.id,
-            officeCode: tx.toOffice.code,
-            officeName: tx.toOffice.name,
-            docs: new Map(),
-            ackTotalMs: 0,
-            ackSamples: 0,
-          };
-          officeMap.set(tx.toOffice.id, entry);
-        }
-        entry.docs.set(doc.id, doc);
-        if (tx.sentAt && tx.acknowledgedAt) {
-          const diff = new Date(tx.acknowledgedAt).getTime() - new Date(tx.sentAt).getTime();
-          if (diff > 0) {
-            entry.ackTotalMs += diff;
-            entry.ackSamples += 1;
-          }
-        }
-      }
-
-      if (touchedTargets.size === 0) {
-        let entry = officeMap.get(doc.currentOffice.id);
-        if (!entry) {
-          entry = {
-            officeId: doc.currentOffice.id,
-            officeCode: doc.currentOffice.code,
-            officeName: doc.currentOffice.name,
-            docs: new Map(),
-            ackTotalMs: 0,
-            ackSamples: 0,
-          };
-          officeMap.set(doc.currentOffice.id, entry);
-        }
-        entry.docs.set(doc.id, doc);
-      }
-    }
-
-    const activeEntries = Array.from(officeMap.values()).filter((e) => e.docs.size > 0);
-    return activeEntries
-      .map((entry) => {
-        const docList = Array.from(entry.docs.values());
-        let inTransitCount = 0;
-        let atDeskCount = 0;
-        let completedCount = 0;
-        let softCount = 0;
-
-        for (const d of docList) {
-          if (d.copyFormat !== DocumentCopyFormat.HARD_COPY) softCount += 1;
-          const hasPendingToOffice = d.transactions.some(
-            (tx) =>
-              tx.toOffice.id === entry.officeId &&
-              tx.receiptStatus === ReceiptStatus.PENDING,
-          );
-          if (
-            d.lifecycleStatus === DocumentLifecycleStatus.APPROVED ||
-            d.lifecycleStatus === DocumentLifecycleStatus.ARCHIVED
-          ) {
-            completedCount += 1;
-          } else if (
-            hasPendingToOffice ||
-            d.lifecycleStatus === DocumentLifecycleStatus.IN_TRANSIT
-          ) {
-            inTransitCount += 1;
-          } else {
-            atDeskCount += 1;
-          }
-        }
-
-        const avgHoursNum =
-          entry.ackSamples > 0 ? entry.ackTotalMs / entry.ackSamples / 3_600_000 : 1.4;
-
-        return {
-          officeId: entry.officeId,
-          officeCode: entry.officeCode,
-          officeName: entry.officeName,
-          sentCount: docList.length,
-          inTransitCount,
-          atDeskCount,
-          completedCount,
-          avgAckHours: `${avgHoursNum.toFixed(1)}h`,
-          softRatio: docList.length > 0 ? softCount / docList.length : 0.7,
-          recentDocs: docList.slice(0, 3).map((d) => {
-            const isCompleted =
-              d.lifecycleStatus === DocumentLifecycleStatus.APPROVED ||
-              d.lifecycleStatus === DocumentLifecycleStatus.ARCHIVED;
-            const isTransit =
-              d.lifecycleStatus === DocumentLifecycleStatus.IN_TRANSIT ||
-              d.transactions.some(
-                (tx) =>
-                  tx.toOffice.id === entry.officeId &&
-                  tx.receiptStatus === ReceiptStatus.PENDING,
-              );
-            const formatLabel: 'Soft' | 'Hard' =
-              d.copyFormat === DocumentCopyFormat.HARD_COPY ? 'Hard' : 'Soft';
-            const stateLabel: 'In Transit' | 'At Desk' | 'Completed' = isCompleted
-              ? 'Completed'
-              : isTransit
-                ? 'In Transit'
-                : 'At Desk';
-            return {
-              id: d.id,
-              trackingCode: d.trackingCode,
-              title: d.isSealed ? 'Sealed Transfer (Protected Until Receipt)' : d.title,
-              formatLabel,
-              stateLabel,
-            };
-          }),
-        };
-      })
-      .sort((a, b) => b.sentCount - a.sentCount || a.officeCode.localeCompare(b.officeCode))
-      .slice(0, 5);
-  }, [offices, scopedDocuments, flowScope, actor]);
-
-  const totalCorridorVolume = useMemo(
-    () => Math.max(1, corridors.reduce((sum, item) => sum + item.sentCount, 0)),
-    [corridors],
+  const journeyDocuments = useMemo(
+    () =>
+      [...scopedDocuments]
+        .sort((a, b) => getDocumentTimestampMs(b) - getDocumentTimestampMs(a))
+        .slice(0, 12),
+    [scopedDocuments],
   );
 
-  const activeCorridor = useMemo(() => {
-    if (corridors.length === 0) return null;
-    if (selectedOfficeId) {
-      const found = corridors.find((c) => c.officeId === selectedOfficeId);
+  const activeJourneyDoc = useMemo(() => {
+    if (journeyDocuments.length === 0) return null;
+    if (selectedJourneyDocId) {
+      const found = journeyDocuments.find((d) => d.id === selectedJourneyDocId);
       if (found) return found;
     }
-    return corridors[0];
-  }, [corridors, selectedOfficeId]);
+    return journeyDocuments[0];
+  }, [journeyDocuments, selectedJourneyDocId]);
+
+  const handleDashboardScroll = (ev: NativeSyntheticEvent<NativeScrollEvent>) => {
+    setScrollY(ev.nativeEvent.contentOffset.y);
+  };
+
+  const handleScrollViewLayout = (ev: LayoutChangeEvent) => {
+    const h = Math.round(ev.nativeEvent.layout.height);
+    if (h > 100 && Math.abs(h - viewportHeight) > 4) {
+      setViewportHeight(h);
+    }
+  };
+
+  const handleJourneySectionLayout = (ev: LayoutChangeEvent) => {
+    const y = Math.round(ev.nativeEvent.layout.y);
+    if (Math.abs(y - journeySectionY) > 2) {
+      setJourneySectionY(y);
+    }
+  };
 
   // High-Scale Folder Buckets:
   // - Sorts by SLA urgency so Top-5 physical sheets inside each folder are the most urgent documents
@@ -582,9 +442,13 @@ export const DashboardScreen: React.FC = () => {
       </View>
 
       <ScrollView
+        ref={scrollViewRef}
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
         scrollEnabled={!lanyardDragging}
+        onScroll={handleDashboardScroll}
+        scrollEventThrottle={16}
+        onLayout={handleScrollViewLayout}
         refreshControl={
           <RefreshControl refreshing={isRefreshing} onRefresh={refreshWorkspace} />
         }
@@ -622,16 +486,20 @@ export const DashboardScreen: React.FC = () => {
           />
         </View>
 
-        {/* SECTION 1: Minimalist Background-Free Office Document Routing Flow Map */}
-        <View testID="mobile-routing-flow-analytics" style={styles.sectionBlock}>
+        {/* SECTION 1: Vertical Scroll-Tracked Live Custody Road */}
+        <View
+          testID="mobile-routing-flow-analytics"
+          onLayout={handleJourneySectionLayout}
+          style={styles.sectionBlock}
+        >
           <View style={styles.sectionHeaderRow}>
             <View style={styles.sectionTitleWrap}>
               <Text style={styles.eyebrowText}>
                 {flowScope === 'user'
-                  ? 'ROUTING FLOW · MY SENT DISPATCHES'
-                  : `ROUTING FLOW · ${actor?.office.code ?? 'OFFICE'} SENT DISPATCHES`}
+                  ? 'LIVE CUSTODY TRACK · MY SENT'
+                  : `LIVE CUSTODY TRACK · ${actor?.office.code ?? 'OFFICE'}`}
               </Text>
-              <Text style={styles.sectionTitle}>Document Distribution &amp; Corridor Volume</Text>
+              <Text style={styles.sectionTitle}>Scroll-Tracked Office Custody Road</Text>
             </View>
 
             <View style={styles.segmentedControl}>
@@ -639,7 +507,7 @@ export const DashboardScreen: React.FC = () => {
                 testID="mobile-flow-scope-user"
                 onPress={() => {
                   setFlowScope('user');
-                  setSelectedOfficeId(null);
+                  setSelectedJourneyDocId(null);
                 }}
                 style={[styles.segmentBtn, flowScope === 'user' && styles.segmentBtnActive]}
               >
@@ -656,7 +524,7 @@ export const DashboardScreen: React.FC = () => {
                 testID="mobile-flow-scope-office"
                 onPress={() => {
                   setFlowScope('office');
-                  setSelectedOfficeId(null);
+                  setSelectedJourneyDocId(null);
                 }}
                 style={[styles.segmentBtn, flowScope === 'office' && styles.segmentBtnActive]}
               >
@@ -672,22 +540,61 @@ export const DashboardScreen: React.FC = () => {
             </View>
           </View>
 
-          <View style={styles.legendRow}>
-            <Text style={styles.legendCaption}>Origin → Destination Volume</Text>
-            <View style={styles.legendPills}>
-              <View style={styles.legendItem}>
-                <View style={styles.dotSoft} />
-                <Text style={styles.legendText}>Soft Copy</Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View style={styles.dotHard} />
-                <Text style={styles.legendText}>Hard Copy</Text>
-              </View>
-            </View>
-          </View>
+          {journeyDocuments.length > 0 ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.journeyDocStrip}
+            >
+              {journeyDocuments.map((doc) => {
+                const isSelected = activeJourneyDoc?.id === doc.id;
+                const isCompleted =
+                  doc.lifecycleStatus === DocumentLifecycleStatus.APPROVED ||
+                  doc.lifecycleStatus === DocumentLifecycleStatus.ARCHIVED;
+                const hasPending = doc.transactions.some(
+                  (tx) => tx.receiptStatus === ReceiptStatus.PENDING,
+                );
+                const dotColor = isCompleted
+                  ? '#34D399'
+                  : hasPending || doc.lifecycleStatus === DocumentLifecycleStatus.IN_TRANSIT
+                    ? '#F3B32A'
+                    : doc.lifecycleStatus === DocumentLifecycleStatus.RETURNED_FOR_REVISION
+                      ? '#FB7185'
+                      : '#2DD4BF';
+                return (
+                  <Pressable
+                    key={doc.id}
+                    testID={`mobile-custody-doc-pill-${doc.id}`}
+                    onPress={() => setSelectedJourneyDocId(doc.id)}
+                    style={[
+                      styles.journeyDocPill,
+                      isSelected && styles.journeyDocPillActive,
+                    ]}
+                  >
+                    <View style={[styles.journeyDocDot, { backgroundColor: dotColor }]} />
+                    <Text
+                      style={[
+                        styles.journeyDocCode,
+                        isSelected && styles.journeyDocTextActive,
+                      ]}
+                    >
+                      {doc.trackingCode}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.journeyDocOffice,
+                        isSelected && styles.journeyDocTextActive,
+                      ]}
+                    >
+                      {`· ${doc.currentOffice.code}`}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          ) : null}
 
-          {/* 60fps Native-Driver Animated Background-Free Sankey Flow Map */}
-          {corridors.length === 0 ? (
+          {!activeJourneyDoc ? (
             <View style={styles.emptyFlowBox}>
               <Text style={styles.emptyFlowText}>
                 {flowScope === 'user'
@@ -696,89 +603,17 @@ export const DashboardScreen: React.FC = () => {
               </Text>
             </View>
           ) : (
-            <MobileRoutingFlowMap
-              corridors={corridors}
-              activeOfficeId={activeCorridor?.officeId ?? null}
-              originCode={flowScope === 'user' ? avatarInitials : actor?.office.code ?? 'OFFICE'}
-              originSubLabel={flowScope === 'user' ? 'My Sent' : 'My Office'}
-              totalSentLabel={`${formatMobileCompactCount(scopedDocuments.length)} sent`}
-              formatCount={formatMobileCompactCount}
-              onSelectOffice={setSelectedOfficeId}
+            <MobileCustodyJourneyRoad
+              document={activeJourneyDoc}
+              scrollY={scrollY}
+              viewportHeight={viewportHeight}
+              sectionOffsetY={journeySectionY}
+              onOpenDocument={openDocument}
+              onRequestScrollToY={(y) => {
+                scrollViewRef.current?.scrollTo({ y, animated: true });
+              }}
             />
           )}
-
-          {/* Hairline-Divided Destination Office Inspector (No Card Background) */}
-          {activeCorridor ? (
-            <View testID="mobile-routing-flow-inspector" style={styles.inspectorWrap}>
-              <View style={styles.inspectorHeader}>
-                <View style={styles.inspectorTitleWrap}>
-                  <Text numberOfLines={1} style={styles.inspectorName}>
-                    {activeCorridor.officeName}
-                  </Text>
-                  <Text style={styles.inspectorRankCode}>{activeCorridor.officeCode}</Text>
-                </View>
-                <View style={styles.inspectorCountBox}>
-                  <Text style={styles.inspectorCountText}>
-                    {activeCorridor.sentCount.toLocaleString()}
-                  </Text>
-                  <Text style={styles.inspectorShareText}>
-                    {Math.round((activeCorridor.sentCount / totalCorridorVolume) * 100)}% of total
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.metricStrip}>
-                <View style={styles.metricCell}>
-                  <Text style={styles.metricValueAmber}>
-                    {formatMobileCompactCount(activeCorridor.inTransitCount)}
-                  </Text>
-                  <Text style={styles.metricLabel}>In Transit</Text>
-                </View>
-                <View style={[styles.metricCell, styles.metricCellBorder]}>
-                  <Text style={styles.metricValueSky}>
-                    {formatMobileCompactCount(activeCorridor.atDeskCount)}
-                  </Text>
-                  <Text style={styles.metricLabel}>At Desk</Text>
-                </View>
-                <View style={[styles.metricCell, styles.metricCellBorder]}>
-                  <Text style={styles.metricValueEmerald}>
-                    {formatMobileCompactCount(activeCorridor.completedCount)}
-                  </Text>
-                  <Text style={styles.metricLabel}>Done</Text>
-                </View>
-                <View style={[styles.metricCell, styles.metricCellBorder]}>
-                  <Text style={styles.metricValueDark}>{activeCorridor.avgAckHours}</Text>
-                  <Text style={styles.metricLabel}>Avg Ack</Text>
-                </View>
-              </View>
-
-              <View style={styles.recentHeaderRow}>
-                <Text style={styles.recentHeaderLabel}>Recent Transfers</Text>
-                <Text style={styles.recentHeaderRatio}>
-                  {Math.round(activeCorridor.softRatio * 100)}% Soft ·{' '}
-                  {100 - Math.round(activeCorridor.softRatio * 100)}% Hard
-                </Text>
-              </View>
-
-              {activeCorridor.recentDocs.map((doc) => (
-                <Pressable
-                  key={doc.id}
-                  onPress={() => openDocument(doc.id)}
-                  style={styles.recentDocRow}
-                >
-                  <View style={styles.recentDocCopy}>
-                    <Text numberOfLines={1} style={styles.recentDocTitle}>
-                      {doc.title}
-                    </Text>
-                    <Text style={styles.recentDocMeta}>
-                      {doc.trackingCode} · {doc.stateLabel}
-                    </Text>
-                  </View>
-                  <Text style={styles.recentDocFormat}>{doc.formatLabel}</Text>
-                </Pressable>
-              ))}
-            </View>
-          ) : null}
         </View>
 
         {/* SECTION 2: High-Scale Interactive Folder Organizer */}
@@ -1877,5 +1712,46 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     fontWeight: '700',
     color: SDO_COLORS.navyInk,
+  },
+  journeyDocStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 2,
+  },
+  journeyDocPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: SDO_COLORS.border,
+    backgroundColor: SDO_COLORS.surface,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+  },
+  journeyDocPillActive: {
+    backgroundColor: SDO_COLORS.navy,
+    borderColor: SDO_COLORS.navy,
+  },
+  journeyDocDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+  },
+  journeyDocCode: {
+    fontFamily: SDO_FONTS.mono,
+    fontSize: 11,
+    fontWeight: '700',
+    color: SDO_COLORS.textPrimary,
+  },
+  journeyDocOffice: {
+    fontFamily: SDO_FONTS.sans,
+    fontSize: 11,
+    fontWeight: '600',
+    color: SDO_COLORS.textSecondary,
+  },
+  journeyDocTextActive: {
+    color: '#FFFFFF',
   },
 });

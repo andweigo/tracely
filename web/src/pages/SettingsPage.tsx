@@ -152,7 +152,7 @@ export const SettingsPage: React.FC = () => {
           </p>
         </div>
         <span className="pill pill-sky" style={{ fontSize: 11 }}>
-          v1.0.6
+          v1.0.7
         </span>
       </div>
 
@@ -362,7 +362,7 @@ export const SettingsPage: React.FC = () => {
               }}
             >
               <span style={{ color: 'var(--text-secondary)' }}>Version</span>
-              <strong className="mono">1.0.6</strong>
+              <strong className="mono">1.0.7</strong>
             </div>
 
             <div

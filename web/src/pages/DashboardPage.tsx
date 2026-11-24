@@ -14,6 +14,7 @@ import {
   X,
 } from 'lucide-react';
 import { SlaBadge, TierBadge } from '../components/Badges';
+import { CustodyJourneyRoad } from '../components/CustodyJourneyRoad';
 import { Folder, FolderObjectItem } from '../components/Folder';
 import { IdentityWalletCard } from '../components/IdentityWalletCard';
 import { paginateList, PaginationBar } from '../components/PaginationBar';
@@ -40,25 +41,6 @@ export function formatCompactCount(count: number): string {
     return `${val >= 100 ? val.toFixed(0) : val.toFixed(1).replace(/\.0$/, '')}K`;
   }
   return String(count);
-}
-
-interface DestinationCorridorStats {
-  readonly officeId: string;
-  readonly officeCode: string;
-  readonly officeName: string;
-  readonly sentCount: number;
-  readonly inTransitCount: number;
-  readonly atDeskCount: number;
-  readonly completedCount: number;
-  readonly avgAckHours: string;
-  readonly softRatio: number;
-  readonly recentDocs: ReadonlyArray<{
-    readonly id: string;
-    readonly trackingCode: string;
-    readonly title: string;
-    readonly formatLabel: 'Soft' | 'Hard';
-    readonly stateLabel: 'In Transit' | 'At Desk' | 'Completed';
-  }>;
 }
 
 interface FolderSheetItem extends FolderObjectItem {
@@ -90,10 +72,10 @@ function getDocumentTimestampMs(doc: DocumentRecord): number {
 }
 
 export const DashboardPage: React.FC = () => {
-  const { actor, documents, offices, categories, openDocument, navigate } = useWebApp();
+  const { actor, documents, categories, openDocument, navigate } = useWebApp();
 
   const [flowScope, setFlowScope] = useState<RoutingScopeFilter>('office');
-  const [selectedOfficeId, setSelectedOfficeId] = useState<string | null>(null);
+  const [selectedJourneyDocId, setSelectedJourneyDocId] = useState<string | null>(null);
 
   const [folderGroupMode, setFolderGroupMode] = useState<FolderGroupingMode>('stage');
   const [folderMode, setFolderMode] = useState<'flap' | 'book'>('flap');
@@ -133,170 +115,22 @@ export const DashboardPage: React.FC = () => {
 
   const scopedDocuments = flowScope === 'user' ? myUserSentDocs : myOfficeSentDocs;
 
-  // Build top 5 destination corridors ranked by volume of documents sent in the active scope
-  const corridors = useMemo<ReadonlyArray<DestinationCorridorStats>>(() => {
-    const officeMap = new Map<
-      string,
-      {
-        officeId: string;
-        officeCode: string;
-        officeName: string;
-        docs: Map<string, DocumentRecord>;
-        ackTotalMs: number;
-        ackSamples: number;
-      }
-    >();
-
-    for (const off of offices) {
-      officeMap.set(off.id, {
-        officeId: off.id,
-        officeCode: off.code,
-        officeName: off.name,
-        docs: new Map(),
-        ackTotalMs: 0,
-        ackSamples: 0,
-      });
-    }
-
-    for (const doc of scopedDocuments) {
-      const touchedTargets = new Set<string>();
-      for (const tx of doc.transactions) {
-        if (
-          flowScope === 'user' &&
-          actor &&
-          tx.fromUserId !== actor.id &&
-          tx.fromUserName !== actor.fullName
-        ) {
-          continue;
-        }
-        if (flowScope === 'office' && actor && tx.fromOffice.id !== actor.office.id) {
-          continue;
-        }
-        touchedTargets.add(tx.toOffice.id);
-        let entry = officeMap.get(tx.toOffice.id);
-        if (!entry) {
-          entry = {
-            officeId: tx.toOffice.id,
-            officeCode: tx.toOffice.code,
-            officeName: tx.toOffice.name,
-            docs: new Map(),
-            ackTotalMs: 0,
-            ackSamples: 0,
-          };
-          officeMap.set(tx.toOffice.id, entry);
-        }
-        entry.docs.set(doc.id, doc);
-        if (tx.sentAt && tx.receivedAt) {
-          const diff = new Date(tx.receivedAt).getTime() - new Date(tx.sentAt).getTime();
-          if (diff > 0) {
-            entry.ackTotalMs += diff;
-            entry.ackSamples += 1;
-          }
-        }
-      }
-
-      if (touchedTargets.size === 0) {
-        let entry = officeMap.get(doc.currentOffice.id);
-        if (!entry) {
-          entry = {
-            officeId: doc.currentOffice.id,
-            officeCode: doc.currentOffice.code,
-            officeName: doc.currentOffice.name,
-            docs: new Map(),
-            ackTotalMs: 0,
-            ackSamples: 0,
-          };
-          officeMap.set(doc.currentOffice.id, entry);
-        }
-        entry.docs.set(doc.id, doc);
-      }
-    }
-
-    const stats: DestinationCorridorStats[] = Array.from(officeMap.values())
-      .filter((entry) => entry.docs.size > 0)
-      .map((entry) => {
-        const docList = Array.from(entry.docs.values());
-        let inTransitCount = 0;
-        let atDeskCount = 0;
-        let completedCount = 0;
-        let softCount = 0;
-
-        for (const d of docList) {
-          if (d.copyFormat !== 'hard_copy') softCount += 1;
-          const hasPendingToOffice = d.transactions.some(
-            (tx) => tx.toOffice.id === entry.officeId && tx.status === 'pending',
-          );
-          if (d.lifecycleStatus === 'approved' || d.lifecycleStatus === 'archived') {
-            completedCount += 1;
-          } else if (hasPendingToOffice || d.lifecycleStatus === 'in_transit') {
-            inTransitCount += 1;
-          } else {
-            atDeskCount += 1;
-          }
-        }
-
-        const avgHoursNum =
-          entry.ackSamples > 0 ? entry.ackTotalMs / entry.ackSamples / 3_600_000 : 1.4;
-
-        return {
-          officeId: entry.officeId,
-          officeCode: entry.officeCode,
-          officeName: entry.officeName,
-          sentCount: docList.length,
-          inTransitCount,
-          atDeskCount,
-          completedCount,
-          avgAckHours: `${avgHoursNum.toFixed(1)}h`,
-          softRatio: docList.length > 0 ? softCount / docList.length : 0.7,
-          recentDocs: docList.slice(0, 3).map((d) => {
-            const isCompleted =
-              d.lifecycleStatus === 'approved' || d.lifecycleStatus === 'archived';
-            const isTransit =
-              d.lifecycleStatus === 'in_transit' ||
-              d.transactions.some(
-                (tx) => tx.toOffice.id === entry.officeId && tx.status === 'pending',
-              );
-            const formatLabel: 'Soft' | 'Hard' =
-              d.copyFormat === 'hard_copy' ? 'Hard' : 'Soft';
-            const stateLabel: 'In Transit' | 'At Desk' | 'Completed' = isCompleted
-              ? 'Completed'
-              : isTransit
-                ? 'In Transit'
-                : 'At Desk';
-            return {
-              id: d.id,
-              trackingCode: d.trackingCode,
-              title: d.isSealed ? 'Sealed Transfer (Protected Until Receipt)' : d.title,
-              formatLabel,
-              stateLabel,
-            };
-          }),
-        };
-      })
-      .sort((a, b) => b.sentCount - a.sentCount || a.officeCode.localeCompare(b.officeCode))
-      .slice(0, 5);
-
-    return stats;
-  }, [offices, scopedDocuments, flowScope, actor]);
-
-  const totalCorridorVolume = useMemo(
-    () => Math.max(1, corridors.reduce((sum, item) => sum + item.sentCount, 0)),
-    [corridors],
+  const journeyDocuments = useMemo(
+    () =>
+      [...scopedDocuments]
+        .sort((a, b) => getDocumentTimestampMs(b) - getDocumentTimestampMs(a))
+        .slice(0, 12),
+    [scopedDocuments],
   );
 
-  const maxCorridorSent = useMemo(
-    () => Math.max(1, ...corridors.map((c) => c.sentCount)),
-    [corridors],
-  );
-
-  const activeCorridor = useMemo(() => {
-    if (corridors.length === 0) return null;
-    if (selectedOfficeId) {
-      const found = corridors.find((c) => c.officeId === selectedOfficeId);
+  const activeJourneyDoc = useMemo(() => {
+    if (journeyDocuments.length === 0) return null;
+    if (selectedJourneyDocId) {
+      const found = journeyDocuments.find((d) => d.id === selectedJourneyDocId);
       if (found) return found;
     }
-    return corridors[0];
-  }, [corridors, selectedOfficeId]);
+    return journeyDocuments[0];
+  }, [journeyDocuments, selectedJourneyDocId]);
 
   // Build High-Scale 3D Folder Organizer buckets:
   // - Sorts by SLA urgency so the top physical sheets inside each 3D folder are the highest-priority records
@@ -516,11 +350,6 @@ export const DashboardPage: React.FC = () => {
     setLedgerPage(1);
   };
 
-  const startX = 88;
-  const startY = 122;
-  const endX = 336;
-  const rowYPositions = [30, 76, 122, 168, 214];
-
   const activeCustodyCount = useMemo(
     () =>
       documents.filter(
@@ -568,13 +397,13 @@ export const DashboardPage: React.FC = () => {
         />
       </section>
 
-      {/* SECTION 1: Minimalist Background-Free Office Document Routing Flow Map */}
+      {/* SECTION 1: Vertical Scroll-Tracked Live Custody Road */}
       <section
         data-testid="web-routing-flow-analytics"
         style={{
           display: 'flex',
           flexDirection: 'column',
-          gap: 24,
+          gap: 18,
           paddingBottom: 36,
           borderBottom: '1px solid var(--border)',
         }}
@@ -586,7 +415,7 @@ export const DashboardPage: React.FC = () => {
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: 16,
-            paddingBottom: 16,
+            paddingBottom: 14,
             borderBottom: '1px solid var(--border)',
           }}
         >
@@ -603,7 +432,7 @@ export const DashboardPage: React.FC = () => {
                 color: 'var(--text-muted)',
               }}
             >
-              <span>Routing Flow Analytics</span>
+              <span>Live Custody Track</span>
               <span>·</span>
               <span>
                 {flowScope === 'user'
@@ -619,7 +448,7 @@ export const DashboardPage: React.FC = () => {
                 color: 'var(--text-main)',
               }}
             >
-              Document Distribution &amp; Active Corridor Volume
+              Scroll-Tracked Office Custody Road
             </h3>
           </div>
 
@@ -638,7 +467,7 @@ export const DashboardPage: React.FC = () => {
               data-testid="flow-scope-user"
               onClick={() => {
                 setFlowScope('user');
-                setSelectedOfficeId(null);
+                setSelectedJourneyDocId(null);
               }}
               style={{
                 border: 'none',
@@ -658,7 +487,7 @@ export const DashboardPage: React.FC = () => {
               data-testid="flow-scope-office"
               onClick={() => {
                 setFlowScope('office');
-                setSelectedOfficeId(null);
+                setSelectedJourneyDocId(null);
               }}
               style={{
                 border: 'none',
@@ -676,516 +505,55 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Background-Free Two-Column Flow Explorer */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
-            gap: 36,
-            alignItems: 'stretch',
-            paddingTop: 4,
-          }}
-        >
-          {/* Left: Minimalist Weighted Sankey SVG */}
-          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 12 }}>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                fontSize: 12,
-                color: 'var(--text-muted)',
-                marginBottom: 8,
-              }}
-            >
-              <span style={{ fontWeight: 600 }}>Origin → Destination Volume</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                  <span
-                    style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: 999,
-                      background: '#0ea5e9',
-                      display: 'inline-block',
-                    }}
-                  />
-                  Soft Copy
-                </span>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                  <span
-                    style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: 999,
-                      background: '#f59e0b',
-                      display: 'inline-block',
-                    }}
-                  />
-                  Hard Copy
-                </span>
-              </div>
-            </div>
-
-            {corridors.length === 0 ? (
-              <div
-                style={{
-                  padding: '36px 12px',
-                  textAlign: 'center',
-                  fontSize: 13,
-                  color: 'var(--text-muted)',
-                }}
-              >
-                {flowScope === 'user'
-                  ? 'No outgoing documents sent by you yet.'
-                  : 'No outgoing documents sent by your office yet.'}
-              </div>
-            ) : (
-              <svg
-                viewBox="0 0 540 246"
-                style={{ width: '100%', height: 264, display: 'block', overflow: 'visible' }}
-                aria-label="Office Document Routing Flow Map"
-              >
-              {corridors.map((corridor, idx) => {
-                const isSelected = activeCorridor?.officeId === corridor.officeId;
-                const y = rowYPositions[idx] ?? 30 + idx * 46;
-                const ratio = corridor.sentCount / maxCorridorSent;
-                const trackWidth = Math.round(3 + ratio * 11);
-                const pathId = `dashboard-corridor-${corridor.officeId}`;
-                const d = `M ${startX} ${startY} C ${startX + 95} ${startY}, ${endX - 95} ${y}, ${endX} ${y}`;
-                const capsuleCount = Math.max(1, Math.min(3, Math.round(ratio * 3)));
-                const durationSec = (2.4 + idx * 0.45).toFixed(2);
-
-                return (
-                  <g
-                    key={corridor.officeId}
-                    data-testid={`flow-corridor-${corridor.officeCode}`}
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => setSelectedOfficeId(corridor.officeId)}
-                  >
-                    <title>
-                      {corridor.officeCode} — {corridor.officeName} ({corridor.sentCount})
-                    </title>
-                    <rect x={endX} y={y - 20} width={540 - endX} height={40} fill="transparent" />
-
-                    {/* Weighted Sankey Corridor Ribbon */}
-                    <path
-                      id={pathId}
-                      d={d}
-                      fill="none"
-                      stroke={isSelected ? '#0ea5e9' : 'currentColor'}
-                      strokeOpacity={isSelected ? 0.24 : 0.09}
-                      strokeWidth={trackWidth}
-                      strokeLinecap="round"
-                    />
-
-                    {/* Subtle Animated Center Guide Line */}
-                    <path
-                      d={d}
-                      fill="none"
-                      stroke={isSelected ? '#0ea5e9' : 'currentColor'}
-                      strokeOpacity={isSelected ? 0.85 : 0.25}
-                      strokeWidth={1.15}
-                      strokeDasharray={isSelected ? '4 6' : '3 7'}
-                    />
-
-                    {/* Moving Document Micro-Capsules */}
-                    {Array.from({ length: capsuleCount }).map((_, cIdx) => {
-                      const isSoft = cIdx / capsuleCount < corridor.softRatio;
-                      const dotColor = isSoft ? '#0ea5e9' : '#f59e0b';
-                      const delay = ((cIdx * parseFloat(durationSec)) / capsuleCount).toFixed(2);
-                      return (
-                        <rect
-                          key={cIdx}
-                          x={-5}
-                          y={-2}
-                          width={10}
-                          height={4}
-                          rx={2}
-                          fill={dotColor}
-                          opacity={isSelected ? 1 : 0.72}
-                        >
-                          <animateMotion
-                            dur={`${durationSec}s`}
-                            begin={`-${delay}s`}
-                            repeatCount="indefinite"
-                            rotate="auto"
-                          >
-                            <mpath href={`#${pathId}`} />
-                          </animateMotion>
-                        </rect>
-                      );
-                    })}
-
-                    {/* Uncrowded Minimalist Destination Office Row (Code + Count + Bar Only, matching Mobile) */}
-                    <g transform={`translate(${endX + 12}, ${y - 12})`}>
-                      <circle
-                        cx={0}
-                        cy={12}
-                        r={isSelected ? 3.5 : 2.3}
-                        fill={isSelected ? '#0ea5e9' : 'currentColor'}
-                        opacity={isSelected ? 1 : 0.4}
-                      />
-                      <text
-                        x={12}
-                        y={11}
-                        fill={isSelected ? '#0ea5e9' : 'currentColor'}
-                        fontSize={12}
-                        fontWeight={800}
-                      >
-                        {corridor.officeCode.slice(0, 12)}
-                      </text>
-
-                      <text
-                        x={184}
-                        y={11}
-                        textAnchor="end"
-                        fill="currentColor"
-                        fontSize={12}
-                        fontWeight={800}
-                      >
-                        {formatCompactCount(corridor.sentCount)}
-                      </text>
-
-                      <line
-                        x1={12}
-                        y1={21}
-                        x2={184}
-                        y2={21}
-                        stroke="currentColor"
-                        strokeOpacity={0.11}
-                        strokeWidth={2.5}
-                        strokeLinecap="round"
-                      />
-                      <line
-                        x1={12}
-                        y1={21}
-                        x2={12 + Math.round(ratio * 172)}
-                        y2={21}
-                        stroke={isSelected ? '#0ea5e9' : 'currentColor'}
-                        strokeOpacity={isSelected ? 0.92 : 0.42}
-                        strokeWidth={2.5}
-                        strokeLinecap="round"
-                      />
-                    </g>
-                  </g>
-                );
-              })}
-
-              {/* Clean Background-Free Origin Node (matching Mobile) */}
-              <g transform={`translate(2, ${startY - 22})`}>
-                <circle cx={7} cy={11} r={3.5} fill="#0ea5e9" />
-                <text
-                  x={17}
-                  y={14}
-                  fill="currentColor"
-                  fontSize={11.5}
-                  fontWeight={800}
-                >
-                  {(flowScope === 'user'
-                    ? actor?.initials ?? 'ME'
-                    : actor?.office.code ?? 'OFFICE'
-                  ).slice(0, 8)}
-                </text>
-                <text x={2} y={28} fill="currentColor" opacity={0.55} fontSize={10}>
-                  {flowScope === 'user' ? 'My Sent' : 'My Office'}
-                </text>
-                <text
-                  x={2}
-                  y={42}
-                  fill="currentColor"
-                  fontSize={11}
-                  fontWeight={800}
-                >
-                  {formatCompactCount(scopedDocuments.length)} sent
-                </text>
-              </g>
-              </svg>
-            )}
-          </div>
-
-          {/* Right: Hairline-Divided Destination Office Inspector (No Card Background) */}
-          {activeCorridor ? (
-            <div
-              data-testid="web-routing-flow-inspector"
-              style={{
-                borderLeft: '1px solid var(--border)',
-                paddingLeft: 28,
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                gap: 16,
-              }}
-            >
-              <div>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    justifyContent: 'space-between',
-                    gap: 12,
-                    paddingBottom: 14,
-                    borderBottom: '1px solid var(--border)',
-                  }}
-                >
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <h4
-                      style={{
-                        margin: 0,
-                        fontSize: 14,
-                        fontWeight: 700,
-                        color: 'var(--text-main)',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                      }}
-                    >
-                      {activeCorridor.officeName}
-                    </h4>
-                    <div
-                      style={{
-                        marginTop: 2,
-                        fontSize: 11.5,
-                        fontWeight: 700,
-                        letterSpacing: '0.04em',
-                        textTransform: 'uppercase',
-                        color: '#0ea5e9',
-                      }}
-                    >
-                      {activeCorridor.officeCode}
-                    </div>
-                  </div>
-
-                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                    <div
-                      style={{
-                        fontSize: 16,
-                        fontWeight: 700,
-                        fontFamily: 'monospace',
-                        color: 'var(--text-main)',
-                      }}
-                    >
-                      {activeCorridor.sentCount.toLocaleString()}
-                    </div>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                      {Math.round((activeCorridor.sentCount / totalCorridorVolume) * 100)}% of total
-                    </div>
-                  </div>
-                </div>
-
-                {/* 4-Metric Hairline Strip */}
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(4, 1fr)',
-                    borderBottom: '1px solid var(--border)',
-                    padding: '8px 0',
-                    textAlign: 'center',
-                  }}
-                >
-                  <div>
-                    <div
-                      style={{
-                        fontSize: 12,
-                        fontWeight: 700,
-                        fontFamily: 'monospace',
-                        color: '#f59e0b',
-                      }}
-                    >
-                      {formatCompactCount(activeCorridor.inTransitCount)}
-                    </div>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>In Transit</div>
-                  </div>
-                  <div style={{ borderLeft: '1px solid var(--border)' }}>
-                    <div
-                      style={{
-                        fontSize: 12,
-                        fontWeight: 700,
-                        fontFamily: 'monospace',
-                        color: '#0ea5e9',
-                      }}
-                    >
-                      {formatCompactCount(activeCorridor.atDeskCount)}
-                    </div>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>At Desk</div>
-                  </div>
-                  <div style={{ borderLeft: '1px solid var(--border)' }}>
-                    <div
-                      style={{
-                        fontSize: 12,
-                        fontWeight: 700,
-                        fontFamily: 'monospace',
-                        color: '#10b981',
-                      }}
-                    >
-                      {formatCompactCount(activeCorridor.completedCount)}
-                    </div>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Done</div>
-                  </div>
-                  <div style={{ borderLeft: '1px solid var(--border)' }}>
-                    <div
-                      style={{
-                        fontSize: 12,
-                        fontWeight: 700,
-                        fontFamily: 'monospace',
-                        color: 'var(--text-main)',
-                      }}
-                    >
-                      {activeCorridor.avgAckHours}
-                    </div>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Avg Ack</div>
-                  </div>
-                </div>
-
-                {/* Recent Transfers on Route */}
-                <div style={{ marginTop: 10 }}>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      fontSize: 11.5,
-                      color: 'var(--text-muted)',
-                      marginBottom: 4,
-                    }}
-                  >
-                    <span style={{ fontWeight: 600 }}>Recent Transfers</span>
-                    <span style={{ fontFamily: 'monospace' }}>
-                      {Math.round(activeCorridor.softRatio * 100)}% Soft ·{' '}
-                      {100 - Math.round(activeCorridor.softRatio * 100)}% Hard
-                    </span>
-                  </div>
-
-                  {activeCorridor.recentDocs.length === 0 ? (
-                    <div
-                      style={{
-                        padding: '10px 0',
-                        fontSize: 12,
-                        color: 'var(--text-muted)',
-                      }}
-                    >
-                      No routed documents recorded for this office yet.
-                    </div>
-                  ) : (
-                    <div>
-                      {activeCorridor.recentDocs.map((doc) => {
-                        const dotColor =
-                          doc.stateLabel === 'In Transit'
-                            ? '#f59e0b'
-                            : doc.stateLabel === 'At Desk'
-                              ? '#0ea5e9'
-                              : '#10b981';
-                        return (
-                          <div
-                            key={doc.id}
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => openDocument(doc.id)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                e.preventDefault();
-                                openDocument(doc.id);
-                              }
-                            }}
-                            style={{
-                              padding: '7px 0',
-                              borderBottom: '1px solid var(--border)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              gap: 10,
-                              cursor: 'pointer',
-                            }}
-                          >
-                            <div style={{ minWidth: 0 }}>
-                              <div
-                                style={{
-                                  fontSize: 12.5,
-                                  fontWeight: 600,
-                                  color: 'var(--text-main)',
-                                  whiteSpace: 'nowrap',
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                }}
-                              >
-                                {doc.title}
-                              </div>
-                              <div
-                                style={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: 6,
-                                  fontSize: 11,
-                                  fontFamily: 'monospace',
-                                  color: 'var(--text-muted)',
-                                  marginTop: 2,
-                                }}
-                              >
-                                <span
-                                  style={{
-                                    width: 6,
-                                    height: 6,
-                                    borderRadius: 999,
-                                    background: dotColor,
-                                    display: 'inline-block',
-                                  }}
-                                />
-                                <span>{doc.trackingCode}</span>
-                                <span>·</span>
-                                <span>{doc.stateLabel}</span>
-                              </div>
-                            </div>
-                            <span
-                              style={{
-                                fontSize: 11,
-                                fontFamily: 'monospace',
-                                color: 'var(--text-muted)',
-                                flexShrink: 0,
-                              }}
-                            >
-                              {doc.formatLabel}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div
-                style={{
-                  paddingTop: 10,
-                  marginTop: 10,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  fontSize: 12,
-                }}
-              >
-                <span style={{ color: 'var(--text-muted)' }}>Select a route to inspect</span>
+        {journeyDocuments.length > 0 ? (
+          <div className="custody-doc-strip" role="tablist" aria-label="Select tracked document">
+            {journeyDocuments.map((doc) => {
+              const isSelected = activeJourneyDoc?.id === doc.id;
+              const isCompleted =
+                doc.lifecycleStatus === 'approved' || doc.lifecycleStatus === 'archived';
+              const hasPending = doc.transactions.some((tx) => tx.status === 'pending');
+              const dotColor = isCompleted
+                ? '#34D399'
+                : hasPending || doc.lifecycleStatus === 'in_transit'
+                  ? '#F3B32A'
+                  : doc.lifecycleStatus === 'returned_for_revision'
+                    ? '#FB7185'
+                    : '#2DD4BF';
+              return (
                 <button
+                  key={doc.id}
                   type="button"
-                  onClick={() => navigate('inbox')}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    padding: 0,
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: 'var(--primary)',
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 4,
-                  }}
+                  role="tab"
+                  aria-selected={isSelected}
+                  data-testid={`custody-doc-pill-${doc.id}`}
+                  className={`custody-doc-pill ${isSelected ? 'is-active' : ''}`}
+                  onClick={() => setSelectedJourneyDocId(doc.id)}
                 >
-                  Open Inbox Queue <ArrowUpRight size={13} />
+                  <span className="custody-doc-pill-dot" style={{ background: dotColor }} />
+                  <span className="mono">{doc.trackingCode}</span>
+                  <span>· {doc.currentOffice.code}</span>
                 </button>
-              </div>
-            </div>
-          ) : null}
-        </div>
+              );
+            })}
+          </div>
+        ) : null}
+
+        {!activeJourneyDoc ? (
+          <div
+            style={{
+              padding: '36px 12px',
+              textAlign: 'center',
+              fontSize: 13,
+              color: 'var(--text-muted)',
+            }}
+          >
+            {flowScope === 'user'
+              ? 'No outgoing documents sent by you yet.'
+              : 'No outgoing documents sent by your office yet.'}
+          </div>
+        ) : (
+          <CustodyJourneyRoad document={activeJourneyDoc} onOpenDocument={openDocument} />
+        )}
       </section>
 
       {/* SECTION 2: High-Scale Interactive 3D <Folder /> Document Organizer */}
