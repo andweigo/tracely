@@ -6,6 +6,8 @@ import { useWebApp } from '../state/WebAppContext';
 import { normalizeWebErrorMessage } from '../services/webApiClient';
 import { AppIconBadge } from '../components/AppIconBadge';
 import { IdentityWalletCard } from '../components/IdentityWalletCard';
+import { LegalPolicyModal } from '../components/LegalPolicyModal';
+import { LegalDocumentType } from '../domain/legalPolicies';
 
 type AuthMode = 'signin' | 'register' | 'forgot';
 
@@ -65,6 +67,8 @@ export const LoginPage: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
   const [infoBanner, setInfoBanner] = useState<string | null>(null);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [legalModalTab, setLegalModalTab] = useState<LegalDocumentType | null>(null);
 
   const availableOffices = offices.length > 0 ? offices : DEFAULT_OFFICES;
   const isCustomOffice = selectedOfficeCode === CUSTOM_OFFICE_KEY;
@@ -140,6 +144,10 @@ export const LoginPage: React.FC = () => {
     e.preventDefault();
     setFormError(null);
     setInfoBanner(null);
+    if (!acceptedTerms) {
+      setFormError('Please agree to the Terms and Conditions and Privacy Policy to continue.');
+      return;
+    }
     try {
       const outcome = await registerAccount({
         fullName,
@@ -677,6 +685,86 @@ export const LoginPage: React.FC = () => {
               />
             </div>
 
+            <div
+              className="card-soft"
+              style={{
+                padding: '10px 12px',
+                borderRadius: 12,
+                fontSize: 12,
+                lineHeight: 1.5,
+                color: 'var(--text-secondary)',
+              }}
+            >
+              <strong style={{ display: 'block', color: 'var(--navy-ink)', marginBottom: 2 }}>
+                Device &amp; Service Permissions
+              </strong>
+              Tracely may request Browser Notifications (custody alerts), Camera access (QR
+              scanning when used), and Local Storage &amp; Live Sync. You can review or adjust all
+              permissions anytime in Settings.
+            </div>
+
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 9,
+                fontSize: 12.5,
+                lineHeight: 1.5,
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+              }}
+            >
+              <input
+                type="checkbox"
+                data-testid="web-register-terms-checkbox"
+                checked={acceptedTerms}
+                onChange={(e) => {
+                  setFormError(null);
+                  setAcceptedTerms(e.target.checked);
+                }}
+                style={{ marginTop: 3, width: 16, height: 16, accentColor: 'var(--navy)' }}
+              />
+              <span>
+                I have read and agree to the{' '}
+                <button
+                  type="button"
+                  data-testid="web-register-terms-link"
+                  onClick={() => setLegalModalTab('terms')}
+                  style={{
+                    border: 'none',
+                    background: 'none',
+                    padding: 0,
+                    color: 'var(--navy)',
+                    fontWeight: 700,
+                    textDecoration: 'underline',
+                    cursor: 'pointer',
+                    fontSize: 'inherit',
+                  }}
+                >
+                  Terms and Conditions
+                </button>{' '}
+                and{' '}
+                <button
+                  type="button"
+                  data-testid="web-register-privacy-link"
+                  onClick={() => setLegalModalTab('privacy')}
+                  style={{
+                    border: 'none',
+                    background: 'none',
+                    padding: 0,
+                    color: 'var(--navy)',
+                    fontWeight: 700,
+                    textDecoration: 'underline',
+                    cursor: 'pointer',
+                    fontSize: 'inherit',
+                  }}
+                >
+                  Privacy Policy
+                </button>
+                .
+              </span>
+            </label>
+
             <button
               type="submit"
               className="btn btn-primary"
@@ -694,7 +782,9 @@ export const LoginPage: React.FC = () => {
             paddingTop: 12,
             borderTop: '1px solid var(--border)',
             display: 'flex',
-            justifyContent: 'center',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 8,
           }}
         >
           <a
@@ -704,8 +794,47 @@ export const LoginPage: React.FC = () => {
           >
             <Smartphone size={13} /> Download Tracely Android App (.apk)
           </a>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12 }}>
+            <button
+              type="button"
+              onClick={() => setLegalModalTab('terms')}
+              style={{
+                border: 'none',
+                background: 'none',
+                padding: 0,
+                color: 'var(--text-secondary)',
+                fontWeight: 600,
+                cursor: 'pointer',
+                fontSize: 12,
+              }}
+            >
+              Terms &amp; Conditions
+            </button>
+            <span style={{ color: 'var(--text-muted)' }}>·</span>
+            <button
+              type="button"
+              onClick={() => setLegalModalTab('privacy')}
+              style={{
+                border: 'none',
+                background: 'none',
+                padding: 0,
+                color: 'var(--text-secondary)',
+                fontWeight: 600,
+                cursor: 'pointer',
+                fontSize: 12,
+              }}
+            >
+              Privacy Policy
+            </button>
+          </div>
         </div>
       </div>
+
+      <LegalPolicyModal
+        open={legalModalTab !== null}
+        initialTab={legalModalTab ?? 'terms'}
+        onClose={() => setLegalModalTab(null)}
+      />
     </div>
   );
 };

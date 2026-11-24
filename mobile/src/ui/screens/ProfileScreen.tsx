@@ -17,7 +17,6 @@ import {
   RefreshCw,
   ShieldCheck,
   Smartphone,
-  Trash2,
   UserCog,
   UserPlus,
   Users,
@@ -825,7 +824,6 @@ export const ProfileScreen: React.FC = () => {
               }}
               style={[styles.wipeBtn, isBusy && styles.disabled]}
             >
-              <Trash2 size={15} color="#FFFFFF" />
               <LogOut size={15} color="#FFFFFF" />
               <Text style={styles.wipeBtnText}>Sign Out & Wipe Local Cache</Text>
             </Pressable>

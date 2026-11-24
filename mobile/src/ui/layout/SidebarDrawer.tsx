@@ -55,7 +55,6 @@ export const SidebarDrawer: React.FC = () => {
     unreadNotificationCount,
     pendingOfflineCount,
     workloadSummary,
-    isOnline,
   } = useAppServices();
 
   const insets = useSafeAreaInsets();
@@ -275,17 +274,6 @@ export const SidebarDrawer: React.FC = () => {
               <LogOut size={18} strokeWidth={2} color={SDO_COLORS.rose} />
               <Text style={styles.signOutLabel}>Sign Out</Text>
             </Pressable>
-
-            <View style={styles.footer}>
-              <View style={styles.statusRow}>
-                <View
-                  style={[styles.statusDot, isOnline ? styles.dotOnline : styles.dotOffline]}
-                />
-                <Text style={styles.statusLabel}>
-                  {isOnline ? 'Online' : 'Offline queue'}
-                </Text>
-              </View>
-            </View>
           </View>
         </Animated.View>
       </View>
@@ -422,36 +410,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: SDO_COLORS.rose,
-  },
-  footer: {
-    gap: 3,
-    paddingHorizontal: 4,
-  },
-  statusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  statusDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
-  },
-  dotOnline: {
-    backgroundColor: SDO_COLORS.emerald,
-  },
-  dotOffline: {
-    backgroundColor: SDO_COLORS.amber,
-  },
-  statusLabel: {
-    fontFamily: SDO_FONTS.sans,
-    fontSize: 12,
-    fontWeight: '600',
-    color: SDO_COLORS.textPrimary,
-  },
-  apiHost: {
-    fontSize: 10,
-    fontFamily: SDO_FONTS.mono,
-    color: SDO_COLORS.textMuted,
   },
 });

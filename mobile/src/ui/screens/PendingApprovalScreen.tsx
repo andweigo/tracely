@@ -14,12 +14,10 @@ import {
   Lock,
   LogIn,
   RefreshCw,
-  Server,
   ShieldAlert,
 } from 'lucide-react-native';
 import { useAppServices } from '../../state/AppServiceContext';
 import { AppIconBadge } from '../components/AppIconBadge';
-import { ServerEndpointModal } from '../sheets/ServerEndpointModal';
 import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 
 const AUTO_POLL_MS = 15_000;
@@ -34,7 +32,6 @@ export const PendingApprovalScreen: React.FC = () => {
   } = useAppServices();
 
   const [checking, setChecking] = useState(false);
-  const [serverModalOpen, setServerModalOpen] = useState(false);
 
   useEffect(() => {
     if (!pendingRegistration) return;
@@ -258,15 +255,6 @@ export const PendingApprovalScreen: React.FC = () => {
           ) : null}
         </View>
 
-        <Pressable
-          testID="mobile-pending-server-endpoint-btn"
-          onPress={() => setServerModalOpen(true)}
-          style={styles.serverLinkBtn}
-        >
-          <Server size={12} color={SDO_COLORS.navy} />
-          <Text style={styles.serverLinkText}>Server Endpoint</Text>
-        </Pressable>
-
         <View style={styles.securityFooter}>
           <Lock size={12} color={SDO_COLORS.textMuted} />
           <Text style={styles.securityFooterText}>
@@ -274,8 +262,6 @@ export const PendingApprovalScreen: React.FC = () => {
           </Text>
         </View>
       </ScrollView>
-
-      <ServerEndpointModal open={serverModalOpen} onClose={() => setServerModalOpen(false)} />
     </View>
   );
 };
@@ -431,24 +417,6 @@ const styles = StyleSheet.create({
   },
   disabled: {
     opacity: 0.55,
-  },
-  serverLinkBtn: {
-    alignSelf: 'center',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: SDO_COLORS.border,
-    backgroundColor: SDO_COLORS.surfaceSoft,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-  },
-  serverLinkText: {
-    fontFamily: SDO_FONTS.sans,
-    fontSize: 12,
-    fontWeight: '700',
-    color: SDO_COLORS.navy,
   },
   securityFooter: {
     flexDirection: 'row',

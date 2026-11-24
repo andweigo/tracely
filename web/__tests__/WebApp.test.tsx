@@ -3001,11 +3001,15 @@ describe('DocsTracker Web App', () => {
     fireEvent.click(screen.getByTestId('folder-group-category'));
     fireEvent.click(screen.getByTestId('folder-group-stage'));
 
-    // Settings & System Information screen (Developer: Andrei Obligar, zero company/system secrets)
+    // Settings & System Information screen (Developer: Andrei Obligar, Permissions, Legal, zero secrets)
     fireEvent.click(screen.getByTestId('web-sidebar-settings-btn'));
     expect(await screen.findByTestId('web-settings-page')).toBeTruthy();
+    expect(screen.getByTestId('web-settings-permissions-card')).toBeTruthy();
     expect(screen.getByTestId('web-system-developer').textContent).toBe('Andrei Obligar');
     const settingsText = screen.getByTestId('web-settings-page').textContent ?? '';
+    expect(settingsText).toContain('Device & Service Permissions');
+    expect(settingsText).toContain('Terms & Conditions');
+    expect(settingsText).toContain('Privacy Policy');
     expect(settingsText).not.toMatch(/DepEd|SDO|Sanctum|Bearer|http:\/\/|https:\/\//i);
   });
 
@@ -3052,6 +3056,18 @@ describe('DocsTracker Web App', () => {
     fireEvent.change(screen.getByLabelText('Designation / Position'), { target: { value: 'Records Clerk' } });
     fireEvent.change(screen.getByLabelText('Create Password'), { target: { value: 'Tracely#2026!' } });
     fireEvent.change(screen.getByLabelText('Confirm Password'), { target: { value: 'Tracely#2026!' } });
+    // Attempting to submit without accepting Terms & Privacy Policy shows consent notice
+    fireEvent.click(screen.getByRole('button', { name: 'Submit Registration' }));
+    expect(
+      await screen.findByText('Please agree to the Terms and Conditions and Privacy Policy to continue.'),
+    ).toBeTruthy();
+
+    // Open and inspect Privacy Policy modal, close it, then accept consent and submit
+    fireEvent.click(screen.getByTestId('web-register-privacy-link'));
+    expect(await screen.findByTestId('web-legal-policy-modal')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+
+    fireEvent.click(screen.getByTestId('web-register-terms-checkbox'));
     fireEvent.click(screen.getByRole('button', { name: 'Submit Registration' }));
 
     expect(await screen.findByTestId('web-pending-approval-page')).toBeTruthy();
@@ -3207,6 +3223,7 @@ describe('DocsTracker Web App', () => {
     fireEvent.change(screen.getByLabelText('Designation / Position'), { target: { value: 'Records Clerk' } });
     fireEvent.change(screen.getByLabelText('Create Password'), { target: { value: 'Tracely#2026!' } });
     fireEvent.change(screen.getByLabelText('Confirm Password'), { target: { value: 'Tracely#2026!' } });
+    fireEvent.click(screen.getByTestId('web-register-terms-checkbox'));
     fireEvent.click(screen.getByRole('button', { name: /Submit Registration/i }));
 
     expect((await screen.findAllByText('No internet connection. Please try again.')).length).toBeGreaterThan(0);

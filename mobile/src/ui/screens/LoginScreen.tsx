@@ -18,16 +18,16 @@ import {
   Eye,
   EyeOff,
   Lock,
-  Server,
   Sparkles,
 } from 'lucide-react-native';
 import { OfficeSummary } from '../../domain/entities/Personnel';
+import { LegalDocumentType } from '../../domain/legal/LegalPolicies';
 import { AUTH_INPUT_LIMITS, AuthInputPolicy } from '../../domain/security/AuthInputPolicy';
 import { normalizeMobileErrorMessage } from '../../network/ApiClient';
 import { useAppServices } from '../../state/AppServiceContext';
 import { AppIconBadge } from '../components/AppIconBadge';
 import { MobileIdentityWalletCard } from '../components/MobileIdentityWalletCard';
-import { ServerEndpointModal } from '../sheets/ServerEndpointModal';
+import { LegalPolicySheet } from '../sheets/LegalPolicySheet';
 import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 
 type AuthMode = 'signin' | 'register' | 'forgot';
@@ -168,7 +168,8 @@ export const LoginScreen: React.FC = () => {
   );
 
   const [authMode, setAuthMode] = useState<AuthMode>('signin');
-  const [serverModalOpen, setServerModalOpen] = useState(false);
+  const [legalSheetTab, setLegalSheetTab] = useState<LegalDocumentType | null>(null);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [lanyardDragging, setLanyardDragging] = useState(false);
   const [identifier, setIdentifier] = useState(prefillLoginIdentifier);
 
@@ -279,6 +280,10 @@ export const LoginScreen: React.FC = () => {
 
   const handleRegister = async () => {
     setFormError(null);
+    if (!acceptedTerms) {
+      setFormError('Please agree to the Terms and Conditions and Privacy Policy to continue.');
+      return;
+    }
     try {
       const effectiveOfficeCode = isCustomOffice
         ? customOfficeCode
@@ -784,6 +789,50 @@ export const LoginScreen: React.FC = () => {
               errorText={confirmMismatch}
             />
 
+            <View style={styles.permissionsNoteBox}>
+              <Text style={styles.permissionsNoteTitle}>Device &amp; Service Permissions</Text>
+              <Text style={styles.permissionsNoteBody}>
+                Tracely may request Camera (QR scanning &amp; proof capture), Notifications
+                (custody alerts), and Local Storage &amp; Live Sync (offline queue). You can manage
+                all permissions anytime in Settings.
+              </Text>
+            </View>
+
+            <View style={styles.consentRow}>
+              <Pressable
+                testID="mobile-register-terms-checkbox"
+                onPress={() => {
+                  setFormError(null);
+                  setAcceptedTerms((prev) => !prev);
+                }}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: acceptedTerms }}
+                accessibilityLabel="Agree to Terms and Conditions and Privacy Policy"
+                style={[styles.checkboxBox, acceptedTerms && styles.checkboxBoxChecked]}
+              >
+                {acceptedTerms ? <Check size={13} color="#FFFFFF" strokeWidth={3} /> : null}
+              </Pressable>
+              <Text style={styles.consentText}>
+                I have read and agree to the{' '}
+                <Text
+                  testID="mobile-register-terms-link"
+                  style={styles.consentLink}
+                  onPress={() => setLegalSheetTab('terms')}
+                >
+                  Terms and Conditions
+                </Text>{' '}
+                and{' '}
+                <Text
+                  testID="mobile-register-privacy-link"
+                  style={styles.consentLink}
+                  onPress={() => setLegalSheetTab('privacy')}
+                >
+                  Privacy Policy
+                </Text>
+                .
+              </Text>
+            </View>
+
             <Pressable
               onPress={handleRegister}
               disabled={isBusy}
@@ -803,14 +852,23 @@ export const LoginScreen: React.FC = () => {
           </View>
         )}
 
-        <Pressable
-          testID="mobile-login-server-endpoint-btn"
-          onPress={() => setServerModalOpen(true)}
-          style={styles.serverLinkBtn}
-        >
-          <Server size={12} color={SDO_COLORS.navy} />
-          <Text style={styles.serverLinkText}>Server Endpoint</Text>
-        </Pressable>
+        <View style={styles.legalLinksRow}>
+          <Pressable
+            onPress={() => setLegalSheetTab('terms')}
+            accessibilityRole="button"
+            hitSlop={8}
+          >
+            <Text style={styles.legalFooterLink}>Terms &amp; Conditions</Text>
+          </Pressable>
+          <Text style={styles.legalDot}>·</Text>
+          <Pressable
+            onPress={() => setLegalSheetTab('privacy')}
+            accessibilityRole="button"
+            hitSlop={8}
+          >
+            <Text style={styles.legalFooterLink}>Privacy Policy</Text>
+          </Pressable>
+        </View>
 
         <View style={styles.securityFooter}>
           <Lock size={12} color={SDO_COLORS.textMuted} />
@@ -820,7 +878,11 @@ export const LoginScreen: React.FC = () => {
         </View>
       </ScrollView>
 
-      <ServerEndpointModal open={serverModalOpen} onClose={() => setServerModalOpen(false)} />
+      <LegalPolicySheet
+        open={legalSheetTab !== null}
+        initialTab={legalSheetTab ?? 'terms'}
+        onClose={() => setLegalSheetTab(null)}
+      />
     </View>
   );
 };
@@ -863,23 +925,77 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: SDO_COLORS.navy,
   },
-  serverLinkBtn: {
-    alignSelf: 'center',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    borderRadius: 999,
+  permissionsNoteBox: {
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: SDO_COLORS.border,
     backgroundColor: SDO_COLORS.surfaceSoft,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 3,
   },
-  serverLinkText: {
+  permissionsNoteTitle: {
+    fontFamily: SDO_FONTS.sans,
+    fontSize: 11.5,
+    fontWeight: '800',
+    color: SDO_COLORS.navyInk,
+  },
+  permissionsNoteBody: {
+    fontFamily: SDO_FONTS.sans,
+    fontSize: 11,
+    lineHeight: 16,
+    color: SDO_COLORS.textSecondary,
+  },
+  consentRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    paddingVertical: 2,
+  },
+  checkboxBox: {
+    width: 20,
+    height: 20,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: SDO_COLORS.border,
+    backgroundColor: SDO_COLORS.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  },
+  checkboxBoxChecked: {
+    backgroundColor: SDO_COLORS.navy,
+    borderColor: SDO_COLORS.navy,
+  },
+  consentText: {
+    flex: 1,
+    fontFamily: SDO_FONTS.sans,
+    fontSize: 12,
+    lineHeight: 18,
+    color: SDO_COLORS.textSecondary,
+  },
+  consentLink: {
+    fontFamily: SDO_FONTS.sans,
+    fontWeight: '700',
+    color: SDO_COLORS.navy,
+    textDecorationLine: 'underline',
+  },
+  legalLinksRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  legalFooterLink: {
     fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.navy,
+  },
+  legalDot: {
+    fontFamily: SDO_FONTS.sans,
+    fontSize: 12,
+    color: SDO_COLORS.textMuted,
   },
   pendingBanner: {
     flexDirection: 'row',

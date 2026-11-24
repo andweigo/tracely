@@ -24,7 +24,6 @@ import {
   Settings,
   SlidersHorizontal,
   Smartphone,
-  Trash2,
   UserCircle2,
 } from 'lucide-react-native';
 import {
@@ -585,7 +584,6 @@ export const UserProfileScreen: React.FC = () => {
                 }}
                 style={[styles.wipeBtn, isBusy && styles.disabled]}
               >
-                <Trash2 size={15} color="#FFFFFF" />
                 <LogOut size={15} color="#FFFFFF" />
                 <Text style={styles.wipeBtnText}>Sign Out & Wipe Local Cache</Text>
               </Pressable>

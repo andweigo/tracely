@@ -1955,13 +1955,15 @@ describe('DocsTracker React Native App', () => {
     const dashAvatar = renderer.root.findByProps({ testID: 'mobile-dashboard-avatar' });
     expect(JSON.stringify(dashAvatar.props.style)).toContain('#0F766E');
 
-    // Open Settings & System Information screen from Dashboard Sidebar
+    // Open Settings & System Information screen from Dashboard Sidebar (no Online badge in sidebar)
     const dashSidebarBtn2 = renderer.root.findByProps({
       testID: 'mobile-dashboard-sidebar-btn',
     });
     await ReactTestRenderer.act(async () => {
       dashSidebarBtn2.props.onPress();
     });
+    const sidebarOpenText = extractRenderedText(renderer.toJSON());
+    expect(sidebarOpenText).not.toContain('Offline queue');
     const settingsDrawerBtn = renderer.root.findByProps({ testID: 'sidebar-settings-item' });
     await ReactTestRenderer.act(async () => {
       settingsDrawerBtn.props.onPress();
@@ -1970,11 +1972,17 @@ describe('DocsTracker React Native App', () => {
     expect(
       renderer.root.findAllByProps({ testID: 'mobile-settings-screen' }).length,
     ).toBeGreaterThan(0);
+    expect(
+      renderer.root.findAllByProps({ testID: 'mobile-settings-permissions-card' }).length,
+    ).toBeGreaterThan(0);
     const devText = extractInstanceText(
       renderer.root.findByProps({ testID: 'mobile-system-developer' }),
     );
     expect(devText).toContain('Andrei Obligar');
     const settingsFullText = extractRenderedText(renderer.toJSON());
+    expect(settingsFullText).toContain('Device & Service Permissions');
+    expect(settingsFullText).toContain('Terms & Conditions');
+    expect(settingsFullText).toContain('Privacy Policy');
     expect(settingsFullText).not.toMatch(/DepEd|SDO|Sanctum|Bearer|http:\/\/|https:\/\//i);
 
     // Tapping Back from Settings returns cleanly to Dashboard instead of exiting
@@ -2093,6 +2101,9 @@ describe('DocsTracker React Native App', () => {
 
     const renderer = await mountApp(<App dependencies={deps} requireAuth firstVisitSkeletonMs={0} />);
 
+    // Login & registration must not expose Server Endpoint card
+    expect(extractRenderedText(renderer.toJSON())).not.toContain('Server Endpoint');
+
     // Open Create Account tab
     const registerTab = renderer.root.findAll(
       (node) =>
@@ -2123,6 +2134,7 @@ describe('DocsTracker React Native App', () => {
     await fillByPlaceholder('At least', 'Tracely#2026!');
     await fillByPlaceholder('Re-enter password', 'Tracely#2026!');
 
+    // Submitting without accepting Terms & Privacy Policy shows consent prompt
     const submitBtn = renderer.root.findAll(
       (node) =>
         typeof node.props.onPress === 'function' &&
@@ -2130,6 +2142,23 @@ describe('DocsTracker React Native App', () => {
     );
     await ReactTestRenderer.act(async () => {
       await submitBtn[submitBtn.length - 1].props.onPress();
+    });
+    expect(extractRenderedText(renderer.toJSON())).toContain(
+      'Please agree to the Terms and Conditions and Privacy Policy to continue.',
+    );
+
+    // Check Terms & Privacy consent checkbox and submit
+    const consentBox = renderer.root.findByProps({ testID: 'mobile-register-terms-checkbox' });
+    await ReactTestRenderer.act(async () => {
+      consentBox.props.onPress();
+    });
+    const submitBtnReady = renderer.root.findAll(
+      (node) =>
+        typeof node.props.onPress === 'function' &&
+        extractInstanceText(node).trim() === 'Submit Registration',
+    );
+    await ReactTestRenderer.act(async () => {
+      await submitBtnReady[submitBtnReady.length - 1].props.onPress();
     });
 
     // Redirected straight to PendingApprovalScreen
