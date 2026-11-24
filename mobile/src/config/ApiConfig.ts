@@ -6,10 +6,14 @@ const STORAGE_KEY_API_URL = '@sdo_doctrack/api_base_url';
 export const PRODUCTION_API_BASE_URL =
   'https://backend-production-43015d9a.up.railway.app/api/v1';
 export const LOCAL_DEV_API_BASE_URL = 'http://127.0.0.1:8000/api/v1';
-export const DEFAULT_API_BASE_URL =
-  typeof __DEV__ !== 'undefined' && __DEV__
+
+export function getDefaultApiBaseUrl(): string {
+  return typeof __DEV__ !== 'undefined' && __DEV__
     ? LOCAL_DEV_API_BASE_URL
     : PRODUCTION_API_BASE_URL;
+}
+
+export const DEFAULT_API_BASE_URL = getDefaultApiBaseUrl();
 
 /**
  * Auth gate flag for mobile-first UI build before Laravel Sanctum auth endpoints are connected.
@@ -24,7 +28,7 @@ export const AUTH_REQUIRED = true;
 export class ApiConfig {
   private _baseUrl: string;
 
-  constructor(initialBaseUrl: string = DEFAULT_API_BASE_URL) {
+  constructor(initialBaseUrl: string = getDefaultApiBaseUrl()) {
     this._baseUrl = ApiConfig.normalizeAndValidate(initialBaseUrl);
   }
 
@@ -33,22 +37,26 @@ export class ApiConfig {
   }
 
   public async loadSavedBaseUrl(): Promise<string> {
+    const defaultUrl = getDefaultApiBaseUrl();
     try {
       const saved = await AsyncStorage.getItem(STORAGE_KEY_API_URL);
       if (saved) {
         const normalized = ApiConfig.normalizeAndValidate(saved);
-        if (
+        const isDevBuild = typeof __DEV__ !== 'undefined' && __DEV__;
+        const isLegacyPlaceholder =
           normalized.startsWith('https://api.tracely.app') ||
-          normalized.startsWith('https://doctrack.depedormin.gov.ph')
-        ) {
+          normalized.startsWith('https://doctrack.depedormin.gov.ph');
+        const isLocalHttp = normalized.startsWith('http://');
+
+        if (isLegacyPlaceholder || (!isDevBuild && isLocalHttp)) {
           await AsyncStorage.removeItem(STORAGE_KEY_API_URL);
-          this._baseUrl = DEFAULT_API_BASE_URL;
+          this._baseUrl = defaultUrl;
           return this._baseUrl;
         }
         this._baseUrl = normalized;
       }
     } catch {
-      // Keep default endpoint if storage read fails
+      this._baseUrl = defaultUrl;
     }
     return this._baseUrl;
   }
@@ -61,7 +69,7 @@ export class ApiConfig {
   }
 
   public async resetBaseUrl(): Promise<void> {
-    this._baseUrl = DEFAULT_API_BASE_URL;
+    this._baseUrl = getDefaultApiBaseUrl();
     await AsyncStorage.removeItem(STORAGE_KEY_API_URL);
   }
 

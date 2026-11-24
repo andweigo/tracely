@@ -17,6 +17,7 @@ import {
   Eye,
   EyeOff,
   Lock,
+  Server,
   Sparkles,
 } from 'lucide-react-native';
 import { OfficeSummary } from '../../domain/entities/Personnel';
@@ -24,6 +25,7 @@ import { AUTH_INPUT_LIMITS, AuthInputPolicy } from '../../domain/security/AuthIn
 import { useAppServices } from '../../state/AppServiceContext';
 import { AppIconBadge } from '../components/AppIconBadge';
 import { MobileIdentityWalletCard } from '../components/MobileIdentityWalletCard';
+import { ServerEndpointModal } from '../sheets/ServerEndpointModal';
 import { SDO_COLORS } from '../theme/tokens';
 
 type AuthMode = 'signin' | 'register' | 'forgot';
@@ -161,6 +163,7 @@ export const LoginScreen: React.FC = () => {
   );
 
   const [authMode, setAuthMode] = useState<AuthMode>('signin');
+  const [serverModalOpen, setServerModalOpen] = useState(false);
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
 
@@ -766,6 +769,15 @@ export const LoginScreen: React.FC = () => {
           </View>
         )}
 
+        <Pressable
+          testID="mobile-login-server-endpoint-btn"
+          onPress={() => setServerModalOpen(true)}
+          style={styles.serverLinkBtn}
+        >
+          <Server size={12} color={SDO_COLORS.navy} />
+          <Text style={styles.serverLinkText}>Server Endpoint</Text>
+        </Pressable>
+
         <View style={styles.securityFooter}>
           <Lock size={12} color={SDO_COLORS.textMuted} />
           <Text style={styles.securityFooterText}>
@@ -773,6 +785,8 @@ export const LoginScreen: React.FC = () => {
           </Text>
         </View>
       </ScrollView>
+
+      <ServerEndpointModal open={serverModalOpen} onClose={() => setServerModalOpen(false)} />
     </View>
   );
 };
@@ -810,6 +824,23 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
   },
   backPillText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: SDO_COLORS.navy,
+  },
+  serverLinkBtn: {
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: SDO_COLORS.border,
+    backgroundColor: SDO_COLORS.surfaceSoft,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+  },
+  serverLinkText: {
     fontSize: 12,
     fontWeight: '700',
     color: SDO_COLORS.navy,

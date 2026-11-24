@@ -197,6 +197,20 @@ describe('Production OOP Domain & RA 10173 Security Rules', () => {
     await freshConfig.setBaseUrl('https://doctrack.depedormin.gov.ph/api/v1');
     expect(await freshConfig.loadSavedBaseUrl()).toBe('http://127.0.0.1:8000/api/v1');
 
+    // In release builds (!__DEV__), stale dev loopback URLs saved in AsyncStorage must auto-reset to Railway production
+    const globalWithDev = globalThis as { __DEV__?: boolean };
+    const previousDev = globalWithDev.__DEV__;
+    try {
+      await AsyncStorage.setItem('@sdo_doctrack/api_base_url', 'http://127.0.0.1:8000/api/v1');
+      globalWithDev.__DEV__ = false;
+      const prodConfig = new ApiConfig();
+      expect(await prodConfig.loadSavedBaseUrl()).toBe(
+        'https://backend-production-43015d9a.up.railway.app/api/v1',
+      );
+    } finally {
+      globalWithDev.__DEV__ = previousDev;
+    }
+
     const personnel = DocumentMapper.toPersonnel({
       id: 'usr-api-1',
       employee_id: 'SDO-9001',
