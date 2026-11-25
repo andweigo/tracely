@@ -4,7 +4,7 @@ import { Archive, CheckCircle2, Search } from 'lucide-react-native';
 import { DocumentLifecycleStatus } from '../../domain/enums/DomainEnums';
 import { useAppServices } from '../../state/AppServiceContext';
 import { EmptyState } from '../components/EmptyState';
-import { MobileHeaderActions } from '../components/MobileHeaderActions';
+import { MobileScreenHeader } from '../components/MobileTopBars';
 import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 
 type CompletedFilter = 'all' | 'approved' | 'archived';
@@ -48,10 +48,7 @@ export const CompletedScreen: React.FC = () => {
 
   return (
     <View style={styles.screen}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Completed</Text>
-        <MobileHeaderActions variant="soft" />
-      </View>
+      <MobileScreenHeader title="Completed" />
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.chipRow}>

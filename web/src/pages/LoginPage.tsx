@@ -480,53 +480,40 @@ export const LoginPage: React.FC = () => {
             />
 
             <div className="field-group">
-              <div className="field-label-row">
-                <label className="field-label" htmlFor="reg-name">
-                  Full Name
-                </label>
-                <span className="field-hint">
-                  {fullName.length}/{AUTH_INPUT_LIMITS.fullNameMax}
-                </span>
-              </div>
+              <label className="field-label" htmlFor="reg-name">
+                Full Name
+              </label>
               <input
                 id="reg-name"
                 className="input"
                 maxLength={AUTH_INPUT_LIMITS.fullNameMax}
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                placeholder="e.g. Juan Dela Crus"
+                placeholder="e.g. Juan Dela Cruz"
               />
             </div>
 
             <div className="hardcopy-row" style={{ gridTemplateColumns: '1fr 1fr' }}>
               <div className="field-group">
-                <div className="field-label-row">
-                  <label className="field-label" htmlFor="reg-emp">
-                    Employee ID
-                  </label>
-                  <span className="field-hint">
-                    {employeeId.length}/{AUTH_INPUT_LIMITS.employeeIdMax}
-                  </span>
-                </div>
+                <label className="field-label" htmlFor="reg-emp">
+                  Employee ID
+                </label>
                 <input
                   id="reg-emp"
                   className="input mono"
+                  style={{ textTransform: 'uppercase' }}
                   maxLength={AUTH_INPUT_LIMITS.employeeIdMax}
                   value={employeeId}
-                  onChange={(e) => setEmployeeId(e.target.value.toUpperCase())}
+                  onChange={(e) => setEmployeeId(e.target.value)}
+                  onBlur={() => setEmployeeId((prev) => prev.trim().toUpperCase())}
                   placeholder="e.g. EMP-2026-0142"
                 />
               </div>
 
               <div className="field-group">
-                <div className="field-label-row">
-                  <label className="field-label" htmlFor="reg-email">
-                    Work Email
-                  </label>
-                  <span className="field-hint">
-                    {email.length}/{AUTH_INPUT_LIMITS.emailMax}
-                  </span>
-                </div>
+                <label className="field-label" htmlFor="reg-email">
+                  Work Email
+                </label>
                 <input
                   id="reg-email"
                   type="email"
@@ -540,21 +527,16 @@ export const LoginPage: React.FC = () => {
             </div>
 
             <div className="field-group">
-              <div className="field-label-row">
-                <label className="field-label" htmlFor="reg-pos">
-                  Designation / Position
-                </label>
-                <span className="field-hint">
-                  {position.length}/{AUTH_INPUT_LIMITS.positionMax}
-                </span>
-              </div>
+              <label className="field-label" htmlFor="reg-pos">
+                Position
+              </label>
               <input
                 id="reg-pos"
                 className="input"
                 maxLength={AUTH_INPUT_LIMITS.positionMax}
                 value={position}
                 onChange={(e) => setPosition(e.target.value)}
-                placeholder="e.g. Administrative Officer IV"
+                placeholder="e.g. Administrative Officer"
               />
             </div>
 

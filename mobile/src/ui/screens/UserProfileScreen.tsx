@@ -34,6 +34,7 @@ import { RoutingScope } from '../../domain/enums/DomainEnums';
 import { DISPOSITION_REMARK_PRESETS } from '../../repositories/contracts/IDocumentRepository';
 import { useAppServices } from '../../state/AppServiceContext';
 import { MobileIdentityWalletCard } from '../components/MobileIdentityWalletCard';
+import { MobileScreenHeader } from '../components/MobileTopBars';
 import { AuditInspectorSheet } from '../sheets/AuditInspectorSheet';
 import {
   ActiveSessionsModal,
@@ -138,17 +139,7 @@ export const UserProfileScreen: React.FC = () => {
 
   return (
     <View style={styles.screen} testID="mobile-user-profile-screen">
-      <View style={styles.topHeader}>
-        <Pressable
-          onPress={() => goBack()}
-          accessibilityLabel="Back to Desk Profile"
-          style={styles.circleBtn}
-        >
-          <ArrowLeft size={18} color={SDO_COLORS.navyInk} />
-        </Pressable>
-        <Text style={styles.headerTitle}>User Profile & Settings</Text>
-        <View style={styles.circlePlaceholder} />
-      </View>
+      <MobileScreenHeader title="Edit Profile" rightSlot={<View />} />
 
       <ScrollView
         contentContainerStyle={styles.container}

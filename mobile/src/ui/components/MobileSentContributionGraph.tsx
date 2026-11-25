@@ -1,5 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  GestureResponderEvent,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import Svg, { Rect } from 'react-native-svg';
 import { Document } from '../../domain/entities/Document';
 import { Personnel } from '../../domain/entities/Personnel';
 import { ReceiptStatus } from '../../domain/enums/DomainEnums';
@@ -32,6 +40,7 @@ const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Se
 const CELL_SIZE = 11;
 const CELL_GAP = 3;
 const COL_STEP = CELL_SIZE + CELL_GAP;
+const GRID_HEIGHT = 7 * CELL_SIZE + 6 * CELL_GAP;
 
 function toLocalDateKey(date: Date): string {
   const y = date.getFullYear();
@@ -171,6 +180,8 @@ export function buildMobileLocalSentContributions(
 
 interface CalendarCell {
   readonly key: string;
+  readonly col: number;
+  readonly row: number;
   readonly count: number;
   readonly level: 0 | 1 | 2 | 3 | 4;
   readonly inRange: boolean;
@@ -192,6 +203,7 @@ function buildCalendarGrid(
   gridEnd.setDate(gridEnd.getDate() + (6 - gridEnd.getDay()));
 
   const weeks: Array<Array<CalendarCell>> = [];
+  const flatCells: Array<CalendarCell> = [];
   const monthLabels: Array<{ colIndex: number; label: string }> = [];
 
   const cursor = new Date(gridStart);
@@ -213,7 +225,11 @@ function buildCalendarGrid(
         monthForCol = cursor.getMonth();
       }
 
-      week.push({ key, count, level, inRange });
+      const cell: CalendarCell = { key, col: colIndex, row: dow, count, level, inRange };
+      week.push(cell);
+      if (inRange) {
+        flatCells.push(cell);
+      }
       cursor.setDate(cursor.getDate() + 1);
     }
 
@@ -226,7 +242,7 @@ function buildCalendarGrid(
     weeks.push(week);
   }
 
-  return { weeks, monthLabels };
+  return { weeks, flatCells, monthLabels };
 }
 
 interface MobileSentContributionGraphProps {
@@ -238,183 +254,186 @@ interface MobileSentContributionGraphProps {
   readonly testID?: string;
 }
 
-export const MobileSentContributionGraph: React.FC<MobileSentContributionGraphProps> = ({
-  report,
-  scope: controlledScope,
-  onScopeChange,
-  defaultScope = 'user',
-  showScopeToggle = true,
-  testID = 'mobile-sent-contributions',
-}) => {
-  const [internalScope, setInternalScope] = useState<MobileContributionScope>(defaultScope);
-  const [selectedCell, setSelectedCell] = useState<CalendarCell | null>(null);
-  const scrollRef = useRef<React.ComponentRef<typeof ScrollView> | null>(null);
+/**
+ * Single-SVG GitHub-style daily contribution heatmap optimized for low-end devices
+ * (renders 1 SVG view instead of 371 individual native Pressable views).
+ */
+export const MobileSentContributionGraph: React.FC<MobileSentContributionGraphProps> = React.memo(
+  ({
+    report,
+    scope: controlledScope,
+    onScopeChange,
+    defaultScope = 'user',
+    showScopeToggle = true,
+    testID = 'mobile-sent-contributions',
+  }) => {
+    const [internalScope, setInternalScope] = useState<MobileContributionScope>(defaultScope);
+    const [selectedCell, setSelectedCell] = useState<CalendarCell | null>(null);
+    const scrollRef = useRef<React.ComponentRef<typeof ScrollView> | null>(null);
 
-  const activeScope = controlledScope ?? internalScope;
-  const setScope = (next: MobileContributionScope) => {
-    setSelectedCell(null);
-    if (onScopeChange) {
-      onScopeChange(next);
-    } else {
-      setInternalScope(next);
-    }
-  };
+    const activeScope = controlledScope ?? internalScope;
+    const setScope = (next: MobileContributionScope) => {
+      setSelectedCell(null);
+      if (onScopeChange) {
+        onScopeChange(next);
+      } else {
+        setInternalScope(next);
+      }
+    };
 
-  const series = activeScope === 'user' ? report.user : report.office;
+    const series = activeScope === 'user' ? report.user : report.office;
 
-  const grid = useMemo(
-    () => buildCalendarGrid(report.startDate, report.endDate, series.days, series.peakCount),
-    [report.startDate, report.endDate, series.days, series.peakCount],
-  );
+    const grid = useMemo(
+      () => buildCalendarGrid(report.startDate, report.endDate, series.days, series.peakCount),
+      [report.startDate, report.endDate, series.days, series.peakCount],
+    );
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      scrollRef.current?.scrollToEnd({ animated: false });
-    }, 40);
-    return () => clearTimeout(timer);
-  }, [activeScope, grid.weeks.length]);
+    useEffect(() => {
+      const timer = setTimeout(() => {
+        scrollRef.current?.scrollToEnd({ animated: false });
+      }, 40);
+      return () => clearTimeout(timer);
+    }, [activeScope, grid.weeks.length]);
 
-  const noun = series.total === 1 ? 'document' : 'documents';
-  const heading =
-    activeScope === 'user'
-      ? `${series.total.toLocaleString()} ${noun} sent in the last year`
-      : `${series.total.toLocaleString()} ${noun} sent by ${series.officeCode ?? 'office'} in the last year`;
+    const handleGridPress = (e: GestureResponderEvent) => {
+      const { locationX, locationY } = e.nativeEvent;
+      const col = Math.floor(locationX / COL_STEP);
+      const row = Math.floor(locationY / COL_STEP);
+      const week = grid.weeks[col];
+      const cell = week?.[row];
+      if (!cell || !cell.inRange) return;
+      setSelectedCell((prev) => (prev?.key === cell.key ? null : cell));
+    };
 
-  const gridWidth = grid.weeks.length * COL_STEP;
+    const noun = series.total === 1 ? 'document' : 'documents';
+    const heading =
+      activeScope === 'user'
+        ? `${series.total.toLocaleString()} ${noun} sent in the last year`
+        : `${series.total.toLocaleString()} ${noun} sent by ${series.officeCode ?? 'office'} in the last year`;
 
-  return (
-    <View testID={testID} style={styles.wrap}>
-      <View style={styles.headerRow}>
-        <Text style={styles.heading}>{heading}</Text>
+    const gridWidth = Math.max(COL_STEP, grid.weeks.length * COL_STEP);
 
-        {showScopeToggle ? (
-          <View style={styles.toggle}>
-            <Pressable
-              onPress={() => setScope('user')}
-              style={[styles.toggleBtn, activeScope === 'user' && styles.toggleBtnActive]}
-            >
-              <Text
-                style={[styles.toggleText, activeScope === 'user' && styles.toggleTextActive]}
+    return (
+      <View testID={testID} style={styles.wrap}>
+        <View style={styles.headerRow}>
+          <Text style={styles.heading}>{heading}</Text>
+
+          {showScopeToggle ? (
+            <View style={styles.toggle}>
+              <Pressable
+                onPress={() => setScope('user')}
+                style={[styles.toggleBtn, activeScope === 'user' && styles.toggleBtnActive]}
               >
-                My Sent ({report.user.total})
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={() => setScope('office')}
-              style={[styles.toggleBtn, activeScope === 'office' && styles.toggleBtnActive]}
-            >
-              <Text
-                style={[styles.toggleText, activeScope === 'office' && styles.toggleTextActive]}
+                <Text
+                  style={[styles.toggleText, activeScope === 'user' && styles.toggleTextActive]}
+                >
+                  My Sent ({report.user.total})
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setScope('office')}
+                style={[styles.toggleBtn, activeScope === 'office' && styles.toggleBtnActive]}
               >
-                {report.office.officeCode ?? 'Office'} ({report.office.total})
-              </Text>
-            </Pressable>
-          </View>
-        ) : null}
-      </View>
-
-      <View style={styles.frame}>
-        <View style={styles.chartRow}>
-          {/* Pinned Weekday Labels */}
-          <View style={styles.weekdayAxis}>
-            <View style={{ height: 18 }} />
-            <View style={styles.weekdayCol}>
-              <Text style={styles.weekdaySpacer}> </Text>
-              <Text style={styles.weekdayLabel}>Mon</Text>
-              <Text style={styles.weekdaySpacer}> </Text>
-              <Text style={styles.weekdayLabel}>Wed</Text>
-              <Text style={styles.weekdaySpacer}> </Text>
-              <Text style={styles.weekdayLabel}>Fri</Text>
-              <Text style={styles.weekdaySpacer}> </Text>
+                <Text
+                  style={[styles.toggleText, activeScope === 'office' && styles.toggleTextActive]}
+                >
+                  {report.office.officeCode ?? 'Office'} ({report.office.total})
+                </Text>
+              </Pressable>
             </View>
-          </View>
+          ) : null}
+        </View>
 
-          {/* Horizontally Scrollable 53-Week Grid */}
-          <ScrollView
-            ref={scrollRef}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingRight: 4 }}
-            onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: false })}
-          >
-            <View>
-              <View style={[styles.monthRow, { width: gridWidth }]}>
-                {grid.monthLabels.map((m) => (
-                  <Text
-                    key={`${m.label}-${m.colIndex}`}
-                    style={[styles.monthLabel, { left: m.colIndex * COL_STEP }]}
-                  >
-                    {m.label}
-                  </Text>
-                ))}
+        <View style={styles.frame}>
+          <View style={styles.chartRow}>
+            <View style={styles.weekdayAxis}>
+              <View style={{ height: 18 }} />
+              <View style={styles.weekdayCol}>
+                <Text style={styles.weekdaySpacer}> </Text>
+                <Text style={styles.weekdayLabel}>Mon</Text>
+                <Text style={styles.weekdaySpacer}> </Text>
+                <Text style={styles.weekdayLabel}>Wed</Text>
+                <Text style={styles.weekdaySpacer}> </Text>
+                <Text style={styles.weekdayLabel}>Fri</Text>
+                <Text style={styles.weekdaySpacer}> </Text>
               </View>
+            </View>
 
-              <View style={styles.weeksRow}>
-                {grid.weeks.map((week, wIdx) => (
-                  <View key={wIdx} style={styles.weekCol}>
-                    {week.map((cell) => {
-                      if (!cell.inRange) {
-                        return <View key={cell.key} style={styles.cellPlaceholder} />;
-                      }
+            <ScrollView
+              ref={scrollRef}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingRight: 4 }}
+              onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: false })}
+            >
+              <View>
+                <View style={[styles.monthRow, { width: gridWidth }]}>
+                  {grid.monthLabels.map((m) => (
+                    <Text
+                      key={`${m.label}-${m.colIndex}`}
+                      style={[styles.monthLabel, { left: m.colIndex * COL_STEP }]}
+                    >
+                      {m.label}
+                    </Text>
+                  ))}
+                </View>
+
+                <Pressable onPress={handleGridPress}>
+                  <Svg width={gridWidth} height={GRID_HEIGHT}>
+                    {grid.flatCells.map((cell) => {
                       const isSelected = selectedCell?.key === cell.key;
                       return (
-                        <Pressable
+                        <Rect
                           key={cell.key}
-                          onPress={() =>
-                            setSelectedCell((prev) => (prev?.key === cell.key ? null : cell))
-                          }
-                          hitSlop={2}
-                          accessibilityLabel={`${cell.count} sent on ${formatReadableDate(cell.key)}`}
-                          style={[
-                            styles.cell,
-                            {
-                              backgroundColor: LEVEL_COLORS[cell.level],
-                              borderColor: isSelected
-                                ? SDO_COLORS.navyInk
-                                : LEVEL_BORDERS[cell.level],
-                              borderWidth: isSelected ? 1.5 : 1,
-                            },
-                          ]}
+                          x={cell.col * COL_STEP}
+                          y={cell.row * COL_STEP}
+                          width={CELL_SIZE}
+                          height={CELL_SIZE}
+                          rx={2.5}
+                          ry={2.5}
+                          fill={LEVEL_COLORS[cell.level]}
+                          stroke={isSelected ? SDO_COLORS.navyInk : LEVEL_BORDERS[cell.level]}
+                          strokeWidth={isSelected ? 1.5 : 0.8}
                         />
                       );
                     })}
-                  </View>
-                ))}
+                  </Svg>
+                </Pressable>
               </View>
+            </ScrollView>
+          </View>
+
+          <View style={styles.footerRow}>
+            <Text style={styles.footerText} numberOfLines={2}>
+              {selectedCell
+                ? `${selectedCell.count === 0 ? 'No documents' : `${selectedCell.count} ${selectedCell.count === 1 ? 'document' : 'documents'}`} sent on ${formatReadableDate(selectedCell.key)}`
+                : series.total > 0
+                  ? `${series.activeDays} active ${series.activeDays === 1 ? 'day' : 'days'}${series.peakCount > 0 ? ` · Peak ${series.peakCount}/day` : ''}${series.currentStreak > 1 ? ` · ${series.currentStreak}d streak` : ''}`
+                  : 'Tap any day after sending documents.'}
+            </Text>
+
+            <View style={styles.legendRow}>
+              <Text style={styles.legendLabel}>Less</Text>
+              {LEVEL_COLORS.map((color, idx) => (
+                <View
+                  key={idx}
+                  style={[
+                    styles.legendSwatch,
+                    {
+                      backgroundColor: color,
+                      borderColor: LEVEL_BORDERS[idx],
+                    },
+                  ]}
+                />
+              ))}
+              <Text style={styles.legendLabel}>More</Text>
             </View>
-          </ScrollView>
-        </View>
-
-        <View style={styles.footerRow}>
-          <Text style={styles.footerText} numberOfLines={2}>
-            {selectedCell
-              ? `${selectedCell.count === 0 ? 'No documents' : `${selectedCell.count} ${selectedCell.count === 1 ? 'document' : 'documents'}`} sent on ${formatReadableDate(selectedCell.key)}`
-              : series.total > 0
-                ? `${series.activeDays} active ${series.activeDays === 1 ? 'day' : 'days'}${series.peakCount > 0 ? ` · Peak ${series.peakCount}/day` : ''}${series.currentStreak > 1 ? ` · ${series.currentStreak}d streak` : ''}`
-                : 'Tap any day after sending documents.'}
-          </Text>
-
-          <View style={styles.legendRow}>
-            <Text style={styles.legendLabel}>Less</Text>
-            {LEVEL_COLORS.map((color, idx) => (
-              <View
-                key={idx}
-                style={[
-                  styles.legendSwatch,
-                  {
-                    backgroundColor: color,
-                    borderColor: LEVEL_BORDERS[idx],
-                  },
-                ]}
-              />
-            ))}
-            <Text style={styles.legendLabel}>More</Text>
           </View>
         </View>
       </View>
-    </View>
-  );
-};
+    );
+  },
+);
 
 const styles = StyleSheet.create({
   wrap: {
@@ -499,22 +518,6 @@ const styles = StyleSheet.create({
     fontFamily: SDO_FONTS.sans,
     fontWeight: '500',
     color: SDO_COLORS.textMuted,
-  },
-  weeksRow: {
-    flexDirection: 'row',
-    gap: CELL_GAP,
-  },
-  weekCol: {
-    gap: CELL_GAP,
-  },
-  cell: {
-    width: CELL_SIZE,
-    height: CELL_SIZE,
-    borderRadius: 2.5,
-  },
-  cellPlaceholder: {
-    width: CELL_SIZE,
-    height: CELL_SIZE,
   },
   footerRow: {
     flexDirection: 'row',

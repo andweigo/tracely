@@ -27,6 +27,7 @@ import { AvailabilityStatus, SystemRole } from '../../domain/enums/DomainEnums';
 import { useAppServices } from '../../state/AppServiceContext';
 import { AvailabilityBadge } from '../components/Badges';
 import { MobileIdentityWalletCard } from '../components/MobileIdentityWalletCard';
+import { MobileScreenHeader } from '../components/MobileTopBars';
 import {
   buildMobileLocalSentContributions,
   MobileSentContributionGraph,
@@ -157,23 +158,18 @@ export const ProfileScreen: React.FC = () => {
 
   return (
     <View style={styles.screen}>
-      <View style={styles.topHeader}>
-        <Pressable
-          onPress={() => goBack()}
-          accessibilityLabel="Back to inbox"
-          style={styles.circleBtn}
-        >
-          <ArrowLeft size={18} color={SDO_COLORS.navyInk} />
-        </Pressable>
-        <Text style={styles.headerTitle}>Profile & Security</Text>
-        <Pressable
-          onPress={() => setShowAudit(true)}
-          accessibilityLabel="Inspect audit trail"
-          style={styles.circleBtn}
-        >
-          <FileText size={18} color={SDO_COLORS.navyInk} />
-        </Pressable>
-      </View>
+      <MobileScreenHeader
+        title="Profile"
+        rightSlot={
+          <Pressable
+            onPress={() => setShowAudit(true)}
+            accessibilityLabel="Inspect audit trail"
+            style={styles.circleBtn}
+          >
+            <FileText size={18} color={SDO_COLORS.navyInk} />
+          </Pressable>
+        }
+      />
 
       <ScrollView
         contentContainerStyle={styles.container}

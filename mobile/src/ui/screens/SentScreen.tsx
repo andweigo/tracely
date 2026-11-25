@@ -27,7 +27,7 @@ import { DocumentViewerBridge } from '../../domain/security/DocumentViewerBridge
 import { useAppServices } from '../../state/AppServiceContext';
 import { CopyFormatBadge, SlaBadge } from '../components/Badges';
 import { EmptyState } from '../components/EmptyState';
-import { MobileHeaderActions } from '../components/MobileHeaderActions';
+import { MobileScreenHeader } from '../components/MobileTopBars';
 import { OpaqueQrModal } from '../sheets/OpaqueQrModal';
 import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 import { formatClockTime, formatCompactDate, formatRelativeTime } from '../utils/formatters';
@@ -184,21 +184,17 @@ export const SentScreen: React.FC = () => {
   }, [pagination.safePage, pagination.totalPages]);
 
   return (
-    <ScrollView
-      contentContainerStyle={styles.container}
-      keyboardShouldPersistTaps="handled"
-      keyboardDismissMode="on-drag"
-      automaticallyAdjustKeyboardInsets
-      refreshControl={
-        <RefreshControl refreshing={isRefreshing} onRefresh={() => refreshWorkspace().catch(() => {})} />
-      }
-    >
-      <View style={styles.topHeader}>
-        <View style={styles.headerCopy}>
-          <Text style={styles.screenTitle}>Sent Files</Text>
-        </View>
-        <MobileHeaderActions variant="outlined" />
-      </View>
+    <View style={{ flex: 1, backgroundColor: SDO_COLORS.bg }}>
+      <MobileScreenHeader title="Sent" />
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        automaticallyAdjustKeyboardInsets
+        refreshControl={
+          <RefreshControl refreshing={isRefreshing} onRefresh={() => refreshWorkspace().catch(() => {})} />
+        }
+      >
 
       <View style={styles.statsGrid}>
         <View style={styles.statTile}>
@@ -490,7 +486,8 @@ export const SentScreen: React.FC = () => {
           onClose={() => setQrDoc(null)}
         />
       ) : null}
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 };
 

@@ -32,7 +32,7 @@ import { useAppServices } from '../../state/AppServiceContext';
 import { ConfidentialityBadge, SlaBadge } from '../components/Badges';
 import { MobileCustodyJourneyRoad } from '../components/MobileCustodyJourneyRoad';
 import { MobileFolder, MobileFolderSheetItem } from '../components/MobileFolder';
-import { MobileHeaderActions } from '../components/MobileHeaderActions';
+import { MobilePrimaryHeader } from '../components/MobileTopBars';
 import { MobileIdentityWalletCard } from '../components/MobileIdentityWalletCard';
 import {
   buildMobileLocalSentContributions,
@@ -181,8 +181,13 @@ export const DashboardScreen: React.FC = () => {
     return journeyDocuments[0];
   }, [journeyDocuments, selectedJourneyDocId]);
 
+  const lastScrollYRef = useRef(0);
   const handleDashboardScroll = (ev: NativeSyntheticEvent<NativeScrollEvent>) => {
-    setScrollY(ev.nativeEvent.contentOffset.y);
+    const nextY = Math.round(ev.nativeEvent.contentOffset.y);
+    if (Math.abs(nextY - lastScrollYRef.current) >= 24) {
+      lastScrollYRef.current = nextY;
+      setScrollY(nextY);
+    }
   };
 
   const handleScrollViewLayout = (ev: LayoutChangeEvent) => {
@@ -424,42 +429,13 @@ export const DashboardScreen: React.FC = () => {
     setLedgerPage(1);
   };
 
-  const firstName = actor ? (actor.fullName.split(' ')[0] ?? actor.fullName) : 'Tracely';
-  const avatarInitials = actor ? actor.initials : 'TR';
-
   return (
     <View testID="mobile-dashboard-screen" style={styles.screen}>
-      {/* Main Screen Top Bar with Profile Pill + Sidebar Menu Button */}
-      <View style={styles.topHeader}>
-        <Pressable
-          onPress={() => setActiveTab('profile')}
-          accessibilityLabel="Open profile"
-          style={styles.profilePill}
-        >
-          <View
-            testID="mobile-dashboard-avatar"
-            style={[
-              styles.avatar,
-              actor?.avatarColor ? { backgroundColor: actor.avatarColor } : null,
-            ]}
-          >
-            <Text style={styles.avatarText}>{avatarInitials}</Text>
-          </View>
-          <View style={styles.profileTextWrap}>
-            <View style={styles.greetingRow}>
-              <Text style={styles.greeting}>
-                {actor ? `Hey, ${firstName}` : 'Tracely'}
-              </Text>
-              <ChevronDown size={14} color={SDO_COLORS.textSecondary} />
-            </View>
-            <Text style={styles.subGreeting}>
-              {actor ? `${actor.office.code} · Dashboard` : 'Dashboard'}
-            </Text>
-          </View>
-        </Pressable>
-
-        <MobileHeaderActions sidebarTestID="mobile-dashboard-sidebar-btn" variant="outlined" />
-      </View>
+      <MobilePrimaryHeader
+        subtitle={actor ? `${actor.office.code} · Dashboard` : 'Dashboard'}
+        avatarTestID="mobile-dashboard-avatar"
+        sidebarTestID="mobile-dashboard-sidebar-btn"
+      />
 
       <ScrollView
         ref={scrollViewRef}
@@ -467,7 +443,7 @@ export const DashboardScreen: React.FC = () => {
         keyboardShouldPersistTaps="handled"
         scrollEnabled={!lanyardDragging}
         onScroll={handleDashboardScroll}
-        scrollEventThrottle={16}
+        scrollEventThrottle={48}
         onLayout={handleScrollViewLayout}
         refreshControl={
           <RefreshControl refreshing={isRefreshing} onRefresh={refreshWorkspace} />
@@ -639,7 +615,34 @@ export const DashboardScreen: React.FC = () => {
         {/* SECTION 2: Folders (Appearance configured in Settings) */}
         <View testID="mobile-folder-organizer" style={styles.sectionBlock}>
           <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionTitle}>Folders</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Text style={styles.sectionTitle}>Folders</Text>
+              <Pressable
+                onPress={() => setActiveTab('settings')}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel="Customize folder style in Settings"
+                style={{
+                  paddingHorizontal: 8,
+                  paddingVertical: 3,
+                  borderRadius: 6,
+                  borderWidth: 1,
+                  borderColor: SDO_COLORS.border,
+                  backgroundColor: SDO_COLORS.surface,
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: SDO_FONTS.sans,
+                    fontSize: 11,
+                    fontWeight: '600',
+                    color: SDO_COLORS.textSecondary,
+                  }}
+                >
+                  Style
+                </Text>
+              </Pressable>
+            </View>
 
             <View style={styles.segmentedControl}>
               <Pressable

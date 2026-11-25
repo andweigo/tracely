@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Check,
   CheckCircle2,
   ChevronDown,
   ChevronUp,
@@ -13,9 +14,11 @@ import {
   Printer,
   QrCode,
   RefreshCw,
+  Search,
   Send,
   Smartphone,
   Trash2,
+  X,
 } from 'lucide-react';
 import {
   ConfidentialityTier,
@@ -221,10 +224,40 @@ export const SendPage: React.FC = () => {
     };
   }, []);
 
+  const [recipientDropdownOpen, setRecipientDropdownOpen] = useState(false);
+  const [recipientQuery, setRecipientQuery] = useState('');
+  const recipientPickerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!recipientDropdownOpen) return;
+    const handleOutside = (event: MouseEvent) => {
+      if (
+        recipientPickerRef.current &&
+        !recipientPickerRef.current.contains(event.target as Node)
+      ) {
+        setRecipientDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, [recipientDropdownOpen]);
+
   const recipients = useMemo(
     () => personnelDirectory.filter((person) => person.id !== actor?.id),
     [personnelDirectory, actor],
   );
+
+  const filteredRecipients = useMemo(() => {
+    const q = recipientQuery.trim().toLowerCase();
+    if (!q) return recipients;
+    return recipients.filter(
+      (p) =>
+        p.fullName.toLowerCase().includes(q) ||
+        p.office.code.toLowerCase().includes(q) ||
+        p.office.name.toLowerCase().includes(q) ||
+        p.position.toLowerCase().includes(q),
+    );
+  }, [recipients, recipientQuery]);
 
   const recentRecipients = useMemo(
     () =>
@@ -919,49 +952,196 @@ export const SendPage: React.FC = () => {
           ) : null}
         </div>
 
-        <div className="field-group">
+        <div className="field-group" ref={recipientPickerRef} style={{ position: 'relative' }}>
           <div className="field-label-row">
             <span className="field-label">Send To</span>
-            <span className="field-hint">Optional — leave Keep local to file only</span>
           </div>
-          {recentRecipients.length > 0 ? (
-            <div className="recent-recipients-bar" aria-label="Recent recipients">
-              <span className="field-hint" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                <Clock size={12} /> Recent:
-              </span>
-              {recentRecipients.map((person) => (
-                <button
-                  key={`recent-${person.id}`}
-                  type="button"
-                  className={`sub-chip ${recipientUserId === person.id ? 'sub-chip-active' : ''}`}
-                  onClick={() => setRecipientUserId(person.id)}
-                >
-                  {person.office.code} · {person.fullName.split(' ')[0]}
-                </button>
-              ))}
+
+          <button
+            type="button"
+            data-testid="web-send-recipient-dropdown"
+            onClick={() => {
+              setRecipientDropdownOpen((prev) => !prev);
+              setRecipientQuery('');
+            }}
+            className="input"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 10,
+              cursor: 'pointer',
+              background: 'var(--surface)',
+              textAlign: 'left',
+            }}
+          >
+            <span
+              style={{
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                color: selectedRecipient ? 'var(--text-primary)' : 'var(--text-muted)',
+                fontWeight: selectedRecipient ? 600 : 500,
+              }}
+            >
+              {selectedRecipient
+                ? `${selectedRecipient.office.code} · ${selectedRecipient.fullName} (${selectedRecipient.office.name})`
+                : 'Keep local (optional recipient)'}
+            </span>
+            <ChevronDown size={16} color="var(--text-muted)" style={{ flexShrink: 0 }} />
+          </button>
+
+          {recipientDropdownOpen ? (
+            <div
+              data-testid="web-send-recipient-menu"
+              style={{
+                position: 'absolute',
+                top: 'calc(100% + 6px)',
+                left: 0,
+                right: 0,
+                zIndex: 40,
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                borderRadius: 12,
+                boxShadow: '0 12px 28px rgba(15, 23, 42, 0.12)',
+                overflow: 'hidden',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '8px 10px',
+                  borderBottom: '1px solid var(--border)',
+                  background: 'var(--surface-soft)',
+                }}
+              >
+                <Search size={14} color="var(--text-muted)" />
+                <input
+                  type="text"
+                  autoFocus
+                  data-testid="web-send-recipient-search"
+                  value={recipientQuery}
+                  onChange={(e) => setRecipientQuery(e.target.value)}
+                  placeholder="Search name, office, or position..."
+                  style={{
+                    flex: 1,
+                    border: 'none',
+                    outline: 'none',
+                    background: 'transparent',
+                    fontSize: 13,
+                    color: 'var(--text-primary)',
+                  }}
+                />
+                {recipientQuery ? (
+                  <button
+                    type="button"
+                    onClick={() => setRecipientQuery('')}
+                    style={{ border: 'none', background: 'transparent', padding: 2, color: 'var(--text-muted)' }}
+                    aria-label="Clear search"
+                  >
+                    <X size={13} />
+                  </button>
+                ) : null}
+              </div>
+
+              <div style={{ maxHeight: 260, overflowY: 'auto' }}>
+                {!recipientQuery.trim() ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRecipientUserId('');
+                      setRecipientDropdownOpen(false);
+                    }}
+                    style={{
+                      width: '100%',
+                      border: 'none',
+                      borderBottom: '1px solid var(--border)',
+                      background: !recipientUserId ? 'var(--sky-soft)' : 'transparent',
+                      padding: '9px 12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 8,
+                      textAlign: 'left',
+                      fontSize: 13,
+                      fontWeight: !recipientUserId ? 700 : 500,
+                      color: 'var(--text-primary)',
+                    }}
+                  >
+                    <span>Keep local (Hold at my desk)</span>
+                    {!recipientUserId ? <Check size={14} color="var(--navy)" /> : null}
+                  </button>
+                ) : null}
+
+                {!recipientQuery.trim() && recentRecipients.length > 0 ? (
+                  <div style={{ padding: '6px 10px 4px', borderBottom: '1px solid var(--border)' }}>
+                    <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Clock size={11} /> RECENT
+                    </div>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', paddingBottom: 4 }}>
+                      {recentRecipients.map((person) => (
+                        <button
+                          key={`recent-${person.id}`}
+                          type="button"
+                          className={`sub-chip ${recipientUserId === person.id ? 'sub-chip-active' : ''}`}
+                          onClick={() => {
+                            setRecipientUserId(person.id);
+                            setRecipientDropdownOpen(false);
+                          }}
+                        >
+                          {person.office.code} · {person.fullName.split(' ')[0]}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
+                {filteredRecipients.length === 0 ? (
+                  <div style={{ padding: '16px 12px', textAlign: 'center', fontSize: 12.5, color: 'var(--text-muted)' }}>
+                    No matching personnel found.
+                  </div>
+                ) : (
+                  filteredRecipients.map((person) => {
+                    const selected = recipientUserId === person.id;
+                    return (
+                      <button
+                        key={person.id}
+                        type="button"
+                        onClick={() => {
+                          setRecipientUserId(person.id);
+                          setRecipientDropdownOpen(false);
+                        }}
+                        style={{
+                          width: '100%',
+                          border: 'none',
+                          borderBottom: '1px solid var(--border)',
+                          background: selected ? 'var(--sky-soft)' : 'transparent',
+                          padding: '9px 12px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: 10,
+                          textAlign: 'left',
+                        }}
+                      >
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <div style={{ fontSize: 13, fontWeight: selected ? 700 : 600, color: 'var(--text-primary)' }}>
+                            {person.fullName}
+                          </div>
+                          <div style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>
+                            {person.office.code} · {person.office.name} · {person.position}
+                          </div>
+                        </div>
+                        {selected ? <Check size={14} color="var(--navy)" /> : null}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
             </div>
           ) : null}
-          <div className="recipient-strip">
-            <button
-              type="button"
-              className={`recipient-chip ${!recipientUserId ? 'recipient-chip-active' : ''}`}
-              onClick={() => setRecipientUserId('')}
-            >
-              Keep local
-            </button>
-            {recipients.map((person) => (
-              <button
-                key={person.id}
-                type="button"
-                className={`recipient-chip ${
-                  recipientUserId === person.id ? 'recipient-chip-active' : ''
-                }`}
-                onClick={() => setRecipientUserId(person.id)}
-              >
-                {person.office.code} · {person.fullName.split(' ')[0]}
-              </button>
-            ))}
-          </div>
         </div>
 
         {recipientUserId ? (

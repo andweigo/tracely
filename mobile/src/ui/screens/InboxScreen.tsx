@@ -28,7 +28,7 @@ import {
 import { useAppServices } from '../../state/AppServiceContext';
 import { SlaBadge } from '../components/Badges';
 import { EmptyState } from '../components/EmptyState';
-import { MobileHeaderActions } from '../components/MobileHeaderActions';
+import { MobilePrimaryHeader } from '../components/MobileTopBars';
 import { ScanToReceiveCard } from '../components/ScanToReceiveCard';
 import { SealedQrCard } from '../components/SealedQrCard';
 import { TrackingGroupedList } from '../components/TrackingLocationCard';
@@ -248,45 +248,22 @@ export const InboxScreen: React.FC = () => {
     });
   }, [trackedSnapshots, queueTab, chip, query]);
 
-  const firstName = actor ? (actor.fullName.split(' ')[0] ?? actor.fullName) : 'Tracely';
-  const avatarInitials = actor ? actor.initials : 'TR';
   const officeSubtitle = actor
     ? `${actor.office.code} · ${AVAILABILITY_LABEL[actor.availability]}`
-    : 'Tracely · Pre-Auth';
+    : 'Inbox';
 
   return (
-    <ScrollView
-      contentContainerStyle={styles.container}
-      keyboardShouldPersistTaps="handled"
-      keyboardDismissMode="on-drag"
-      automaticallyAdjustKeyboardInsets
-      refreshControl={
-        <RefreshControl refreshing={isRefreshing} onRefresh={refreshWorkspace} />
-      }
-    >
-      <View style={styles.topHeader}>
-        <Pressable onPress={() => setActiveTab('profile')} style={styles.profilePill}>
-          <View
-            style={[
-              styles.avatar,
-              actor?.avatarColor ? { backgroundColor: actor.avatarColor } : null,
-            ]}
-          >
-            <Text style={styles.avatarText}>{avatarInitials}</Text>
-          </View>
-          <View style={styles.profileTextWrap}>
-            <View style={styles.greetingRow}>
-              <Text style={styles.greeting}>
-                {actor ? `Hey, ${firstName}` : 'Tracely'}
-              </Text>
-              <ChevronDown size={14} color={SDO_COLORS.textSecondary} />
-            </View>
-            <Text style={styles.subGreeting}>{officeSubtitle}</Text>
-          </View>
-        </Pressable>
-
-        <MobileHeaderActions variant="outlined" />
-      </View>
+    <View style={styles.screen}>
+      <MobilePrimaryHeader subtitle={officeSubtitle} />
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        automaticallyAdjustKeyboardInsets
+        refreshControl={
+          <RefreshControl refreshing={isRefreshing} onRefresh={refreshWorkspace} />
+        }
+      >
 
       <View style={styles.searchRow}>
         <View style={styles.searchBox}>
@@ -698,10 +675,15 @@ export const InboxScreen: React.FC = () => {
         />
       ) : null}
     </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: SDO_COLORS.bg,
+  },
   container: {
     paddingHorizontal: 18,
     paddingTop: 12,

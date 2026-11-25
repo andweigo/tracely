@@ -26,7 +26,8 @@ import {
 } from '../../domain/security/DevicePermissionsBridge';
 import { useAppServices } from '../../state/AppServiceContext';
 import { AppIconBadge } from '../components/AppIconBadge';
-import { MobileHeaderActions } from '../components/MobileHeaderActions';
+import { MobileFolder } from '../components/MobileFolder';
+import { MobileScreenHeader } from '../components/MobileTopBars';
 import { LegalPolicySheet } from '../sheets/LegalPolicySheet';
 import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 
@@ -138,17 +139,7 @@ export const SettingsScreen: React.FC = () => {
 
   return (
     <View testID="mobile-settings-screen" style={styles.screen}>
-      <View style={styles.topHeader}>
-        <Pressable
-          onPress={() => goBack()}
-          accessibilityLabel="Back to dashboard"
-          style={styles.circleBtn}
-        >
-          <ArrowLeft size={18} color={SDO_COLORS.navyInk} />
-        </Pressable>
-        <Text style={styles.headerTitle}>Settings</Text>
-        <MobileHeaderActions variant="soft" />
-      </View>
+      <MobileScreenHeader title="Settings" />
 
       <ScrollView contentContainerStyle={styles.container}>
         {/* System Identity Header */}
@@ -164,7 +155,21 @@ export const SettingsScreen: React.FC = () => {
         <View testID="mobile-settings-folder-prefs-card" style={styles.sectionCard}>
           <View style={styles.sectionHeader}>
             <Folder size={15} color={SDO_COLORS.navy} />
-            <Text style={styles.sectionTitle}>Folder Preferences</Text>
+            <Text style={styles.sectionTitle}>Folder Design</Text>
+          </View>
+
+          <View style={{ alignItems: 'center', paddingVertical: 8 }}>
+            <MobileFolder
+              label="Preview"
+              color="#0ea5e9"
+              mode={folderAppearance.mode}
+              variant={folderAppearance.variant}
+              layout={folderAppearance.layout}
+              items={[
+                { id: 'prev-1', title: 'Budget Memo', description: 'FIN · Sample file' },
+                { id: 'prev-2', title: 'Travel Order', description: 'HR · Sample file' },
+              ]}
+            />
           </View>
 
           <View style={styles.prefGroup}>

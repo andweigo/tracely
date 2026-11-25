@@ -12,6 +12,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { AppIconBadge } from '../components/AppIconBadge';
+import { Folder as FolderPreview } from '../components/Folder';
 import { LegalPolicyModal } from '../components/LegalPolicyModal';
 import { LegalDocumentType } from '../domain/legalPolicies';
 import { useWebApp } from '../state/WebAppContext';
@@ -125,7 +126,7 @@ export const SettingsPage: React.FC = () => {
             Tracely
           </h3>
           <p style={{ margin: '2px 0 0', fontSize: 12.5, color: 'var(--text-secondary)' }}>
-            v1.0.10
+            v1.0.11
           </p>
         </div>
       </div>
@@ -139,8 +140,29 @@ export const SettingsPage: React.FC = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <Folder size={16} color="var(--navy)" />
           <h4 className="section-title" style={{ fontSize: 15 }}>
-            Folder Preferences
+            Folder Design
           </h4>
+        </div>
+
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            padding: '10px 0 4px',
+          }}
+        >
+          <FolderPreview
+            color="#0ea5e9"
+            size={0.82}
+            mode={folderAppearance.mode}
+            variant={folderAppearance.variant}
+            layout={folderAppearance.layout}
+            intro={false}
+            items={[
+              { title: 'Budget Memo', description: 'FIN · Preview sheet' },
+              { title: 'Travel Order', description: 'HR · Preview sheet' },
+            ]}
+          />
         </div>
 
         <div

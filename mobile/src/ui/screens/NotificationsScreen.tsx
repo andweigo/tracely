@@ -14,6 +14,7 @@ import { PrivacySafeNotification } from '../../repositories/contracts/IDocumentR
 import { useAppServices } from '../../state/AppServiceContext';
 import { OfflineStatusBadge } from '../components/Badges';
 import { EmptyState } from '../components/EmptyState';
+import { MobileScreenHeader } from '../components/MobileTopBars';
 import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 import { formatBytes } from '../utils/formatters';
 
@@ -148,37 +149,23 @@ export const NotificationsScreen: React.FC = () => {
 
   return (
     <View style={styles.screen}>
-      <View style={styles.topHeader}>
-        <Pressable
-          onPress={() => goBack()}
-          accessibilityLabel="Back"
-          style={styles.circleBtn}
-        >
-          <ArrowLeft size={18} color={SDO_COLORS.navyInk} />
-        </Pressable>
-
-        <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>Notifications</Text>
-          {unreadNotificationCount > 0 ? (
-            <View testID="alerts-header-badge" style={styles.headerBadge}>
-              <Text style={styles.headerBadgeText}>
-                {unreadNotificationCount > 99 ? '99+' : String(unreadNotificationCount)}
-              </Text>
-            </View>
-          ) : null}
-        </View>
-
-        <Pressable
-          disabled={isBusy || unreadNotificationCount === 0}
-          onPress={() => {
-            markAllNotificationsRead().catch(() => {});
-          }}
-          accessibilityLabel="Mark all read"
-          style={[styles.circleBtn, unreadNotificationCount === 0 && styles.circleBtnMuted]}
-        >
-          <CheckCheck size={18} color={SDO_COLORS.navyInk} />
-        </Pressable>
-      </View>
+      <MobileScreenHeader
+        title="Notifications"
+        badgeCount={unreadNotificationCount}
+        badgeTestID="alerts-header-badge"
+        rightSlot={
+          <Pressable
+            disabled={isBusy || unreadNotificationCount === 0}
+            onPress={() => {
+              markAllNotificationsRead().catch(() => {});
+            }}
+            accessibilityLabel="Mark all read"
+            style={[styles.circleBtn, unreadNotificationCount === 0 && styles.circleBtnMuted]}
+          >
+            <CheckCheck size={18} color={SDO_COLORS.navyInk} />
+          </Pressable>
+        }
+      />
 
       <ScrollView
         contentContainerStyle={styles.container}

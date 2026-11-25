@@ -11,7 +11,7 @@ import {
 import { ArrowLeft, MapPin, Search, X } from 'lucide-react-native';
 import type { DocumentTrackingSnapshot } from '../../domain/security/AccessPolicy';
 import { useAppServices } from '../../state/AppServiceContext';
-import { MobileHeaderActions } from '../components/MobileHeaderActions';
+import { MobileScreenHeader } from '../components/MobileTopBars';
 import {
   TrackingGroupedList,
   TrackingLocationCard,
@@ -97,17 +97,7 @@ export const TrackScreen: React.FC = () => {
 
   return (
     <View style={styles.screen}>
-      <View style={styles.topHeader}>
-        <Pressable
-          onPress={() => goBack()}
-          accessibilityLabel="Back to inbox"
-          style={styles.circleBtn}
-        >
-          <ArrowLeft size={18} color={SDO_COLORS.navyInk} />
-        </Pressable>
-        <Text style={styles.headerTitle}>Tracking</Text>
-        <MobileHeaderActions variant="soft" />
-      </View>
+      <MobileScreenHeader title="Tracking" />
 
       <ScrollView
         contentContainerStyle={styles.container}

@@ -403,12 +403,12 @@ export const DashboardPage: React.FC = () => {
     <div
       className="dashboard-screen"
       data-testid="web-dashboard-page"
-      style={{ display: 'flex', flexDirection: 'column', gap: 44, padding: '10px 6px 36px' }}
+      style={{ display: 'flex', flexDirection: 'column', gap: 20, padding: '4px 0 24px' }}
     >
-      {/* SECTION 0: User Identity & Desk Pass Wallet Lanyard */}
+      {/* SECTION 0: User Identity & Desk Pass */}
       <section
         style={{
-          paddingBottom: 32,
+          paddingBottom: 18,
           borderBottom: '1px solid var(--border)',
         }}
       >
@@ -427,7 +427,7 @@ export const DashboardPage: React.FC = () => {
           actionLabel="Send Document"
           onActionClick={() => navigate('send')}
           defaultMasked={true}
-          lanyardHeight={365}
+          lanyardHeight={260}
         />
       </section>
 
@@ -437,8 +437,8 @@ export const DashboardPage: React.FC = () => {
         style={{
           display: 'flex',
           flexDirection: 'column',
-          gap: 16,
-          paddingBottom: 32,
+          gap: 12,
+          paddingBottom: 18,
           borderBottom: '1px solid var(--border)',
         }}
       >
@@ -570,7 +570,7 @@ export const DashboardPage: React.FC = () => {
       {/* SECTION 1B: Daily Sent Contributions Graph (GitHub-style) */}
       <section
         style={{
-          paddingBottom: 32,
+          paddingBottom: 18,
           borderBottom: '1px solid var(--border)',
         }}
       >
@@ -588,7 +588,7 @@ export const DashboardPage: React.FC = () => {
       {/* SECTION 2: Folders */}
       <section
         data-testid="web-folder-organizer"
-        style={{ display: 'flex', flexDirection: 'column', gap: 22 }}
+        style={{ display: 'flex', flexDirection: 'column', gap: 14 }}
       >
         <div
           style={{
@@ -599,16 +599,34 @@ export const DashboardPage: React.FC = () => {
             gap: 12,
           }}
         >
-          <h3
-            style={{
-              margin: 0,
-              fontSize: 16,
-              fontWeight: 700,
-              color: 'var(--text-main)',
-            }}
-          >
-            Folders
-          </h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <h3
+              style={{
+                margin: 0,
+                fontSize: 15,
+                fontWeight: 700,
+                color: 'var(--text-main)',
+              }}
+            >
+              Folders
+            </h3>
+            <button
+              type="button"
+              onClick={() => navigate('settings')}
+              style={{
+                border: '1px solid var(--border)',
+                borderRadius: 6,
+                padding: '3px 8px',
+                fontSize: 11,
+                fontWeight: 600,
+                background: 'var(--surface)',
+                color: 'var(--text-muted)',
+                cursor: 'pointer',
+              }}
+            >
+              Style
+            </button>
+          </div>
 
           {/* Grouping Control (Appearance options now live in Settings) */}
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>

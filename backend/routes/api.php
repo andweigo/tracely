@@ -23,6 +23,12 @@ Route::prefix('v1')->group(function (): void {
     Route::get('/mobile-release/latest', [MobileReleaseController::class, 'latestRelease'])
         ->middleware('throttle:mobile-download-page');
 
+    Route::get('/system/status', function () {
+        return response()->json([
+            'data' => \App\Models\SystemSetting::allGovernanceSettings(),
+        ]);
+    });
+
     Route::post('/auth/login', [AuthController::class, 'login'])
         ->middleware('throttle:auth-login');
     Route::post('/auth/register', [AuthController::class, 'register'])

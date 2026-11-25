@@ -107,6 +107,14 @@ class AuthController extends Controller
         $this->assertStrongPassword($validated['password']);
 
         $employeeId = strtoupper(trim($validated['employee_id']));
+        if (\App\Models\SystemSetting::getBool('registration_paused', false)) {
+            throw new ApiDomainException(
+                'REGISTRATION_PAUSED',
+                'New account registration is currently paused by your administrator.',
+                403,
+            );
+        }
+
         $email = strtolower(trim($validated['email']));
         $officeCode = strtoupper(trim($validated['office_code']));
 

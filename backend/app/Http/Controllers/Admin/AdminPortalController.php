@@ -3,17 +3,21 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AdminActionHistory;
 use App\Models\AuditLog;
 use App\Models\DevicePushToken;
 use App\Models\Document;
 use App\Models\DocumentCategory;
+use App\Models\DocumentUnlockChallenge;
 use App\Models\ExternalMilestone;
 use App\Models\Office;
 use App\Models\PushDeliveryLog;
 use App\Models\RoutingTransaction;
 use App\Models\SlaPolicy;
+use App\Models\SystemSetting;
 use App\Models\User;
 use App\Models\UserNotification;
+use App\Services\AdminActionRecallService;
 use App\Services\AuditLogger;
 use App\Services\RealtimeEventHub;
 use App\Services\SentContributionService;
@@ -26,6 +30,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
@@ -43,6 +48,7 @@ class AdminPortalController extends Controller
         private readonly StalledDocumentAlertService $stalledAlerts,
         private readonly StorageIntegrityService $integrity,
         private readonly SentContributionService $contributions,
+        private readonly AdminActionRecallService $recallService,
     ) {}
 
     public function showLogin(Request $request): View|RedirectResponse
@@ -207,6 +213,7 @@ class AdminPortalController extends Controller
             'sessions',
             'integrity',
             'diagnostics',
+            'system',
             'audit',
         ];
         if (! in_array($activeSection, $validSections, true)) {
@@ -489,6 +496,14 @@ class AdminPortalController extends Controller
         }
 
         $sentContributions = $this->contributions->forAdminOverview($offices);
+        $recentAdminActions = Schema::hasTable('admin_action_histories')
+            ? AdminActionHistory::query()->orderByDesc('created_at')->limit(25)->get()
+            : collect();
+        $systemSettings = SystemSetting::allGovernanceSettings();
+        $metaPath = storage_path('app/public/downloads/tracely-release.json');
+        $mobileReleaseMeta = is_file($metaPath)
+            ? (json_decode((string) @file_get_contents($metaPath), true) ?: null)
+            : null;
 
         return view('admin::studio', [
             'admin' => $admin,
@@ -515,6 +530,9 @@ class AdminPortalController extends Controller
             'officeMatrix' => $officeMatrix,
             'autoSweepSummary' => $autoSweepSummary,
             'sentContributions' => $sentContributions,
+            'recentAdminActions' => $recentAdminActions,
+            'systemSettings' => $systemSettings,
+            'mobileReleaseMeta' => $mobileReleaseMeta,
         ]);
     }
 
@@ -527,6 +545,11 @@ class AdminPortalController extends Controller
         if (! $target) {
             return $this->backToSection('approvals', null, 'Pending account was not found.');
         }
+
+        $beforeAttrs = [
+            'approval_status' => $target->approval_status,
+            'active' => $target->active,
+        ];
 
         $target->update([
             'approval_status' => 'approved',
@@ -545,9 +568,22 @@ class AdminPortalController extends Controller
 
         $this->realtime->publish('directory_updated', [$admin->office_id, $target->office_id], [$target->id]);
 
+        $action = $this->recallService->record(
+            $admin,
+            'user.approve',
+            "Approved {$target->full_name} ({$target->employee_id})",
+            ['user_id' => $target->id, 'attributes' => $beforeAttrs],
+            ['approval_status' => 'approved', 'active' => true],
+            true,
+            'user',
+            $target->id,
+        );
+
         return $this->backToSection(
             (string) $request->input('return_section', 'approvals'),
             "Approved {$target->full_name} ({$target->employee_id}) — user can now sign in.",
+            null,
+            $action,
         );
     }
 
@@ -558,7 +594,15 @@ class AdminPortalController extends Controller
         $pending = User::query()->where('approval_status', 'pending')->get();
         $count = $pending->count();
 
+        $beforeUsers = [];
         foreach ($pending as $user) {
+            $beforeUsers[] = [
+                'id' => $user->id,
+                'attributes' => [
+                    'approval_status' => $user->approval_status,
+                    'active' => $user->active,
+                ],
+            ];
             $user->update([
                 'approval_status' => 'approved',
                 'active' => true,
@@ -574,15 +618,26 @@ class AdminPortalController extends Controller
             );
         }
 
+        $action = null;
         if ($count > 0) {
             $this->realtime->publish(
                 'directory_updated',
                 array_values(array_unique(array_merge([$admin->office_id], $pending->pluck('office_id')->all()))),
                 $pending->pluck('id')->all(),
             );
+            $action = $this->recallService->record(
+                $admin,
+                'user.approve_all',
+                "Approved {$count} pending user account(s)",
+                ['users' => $beforeUsers],
+                ['count' => $count],
+                true,
+                'user',
+                null,
+            );
         }
 
-        return $this->backToSection('approvals', "Approved {$count} pending user account(s).");
+        return $this->backToSection('approvals', "Approved {$count} pending user account(s).", null, $action);
     }
 
     public function rejectUser(Request $request, string $id): RedirectResponse
@@ -603,6 +658,11 @@ class AdminPortalController extends Controller
             return $this->backToSection('approvals', null, 'You cannot reject your own account.');
         }
 
+        $beforeAttrs = [
+            'approval_status' => $target->approval_status,
+            'active' => $target->active,
+        ];
+
         $target->update([
             'approval_status' => 'rejected',
             'active' => false,
@@ -621,7 +681,18 @@ class AdminPortalController extends Controller
 
         $this->realtime->publish('directory_updated', [$admin->office_id, $target->office_id], [$target->id]);
 
-        return $this->backToSection('approvals', "Rejected registration request for {$target->full_name}.");
+        $action = $this->recallService->record(
+            $admin,
+            'user.reject',
+            "Rejected {$target->full_name} ({$target->employee_id})",
+            ['user_id' => $target->id, 'attributes' => $beforeAttrs],
+            ['approval_status' => 'rejected', 'active' => false],
+            true,
+            'user',
+            $target->id,
+        );
+
+        return $this->backToSection('approvals', "Rejected registration request for {$target->full_name}.", null, $action);
     }
 
     public function provisionUser(Request $request): RedirectResponse
@@ -693,6 +764,17 @@ class AdminPortalController extends Controller
 
         $this->realtime->publish('directory_updated', [$admin->office_id, $office->id], [$created->id]);
 
+        $action = $this->recallService->record(
+            $admin,
+            'user.provision',
+            "Added user {$created->full_name} ({$created->employee_id})",
+            null,
+            ['user_id' => $created->id],
+            true,
+            'user',
+            $created->id,
+        );
+
         $returnSection = (string) $request->input('return_section', 'personnel');
         if (! in_array($returnSection, ['personnel', 'admins', 'overview'], true)) {
             $returnSection = 'personnel';
@@ -701,6 +783,8 @@ class AdminPortalController extends Controller
         return $this->backToSection(
             $returnSection,
             "Provisioned & activated {$created->full_name} ({$created->employee_id}) in {$office->code} ({$office->name}).",
+            null,
+            $action,
         );
     }
 
@@ -773,9 +857,22 @@ class AdminPortalController extends Controller
 
         $this->realtime->publish('directory_updated', [$admin->office_id, $office->id], [$created->id]);
 
+        $action = $this->recallService->record(
+            $admin,
+            'admin.provision',
+            "Added admin {$created->full_name} ({$created->employee_id})",
+            null,
+            ['user_id' => $created->id],
+            true,
+            'user',
+            $created->id,
+        );
+
         return $this->backToSection(
             'admins',
             "Added administrator {$created->full_name} ({$created->employee_id}) with ".($created->role === 'ict_admin' ? 'ICT Admin' : 'Records Admin').' access.',
+            null,
+            $action,
         );
     }
 
@@ -833,6 +930,15 @@ class AdminPortalController extends Controller
             ? Carbon::parse((string) $validated['availability_until'])->endOfDay()
             : null;
 
+        $beforeAttrs = [
+            'role' => $target->role,
+            'office_id' => $target->office_id,
+            'position' => $target->position,
+            'availability' => $target->availability,
+            'availability_until' => $target->availability_until?->toDateTimeString(),
+            'delegate_id' => $target->delegate_id,
+        ];
+
         $target->update([
             'role' => $validated['role'],
             'office_id' => $office->id,
@@ -855,9 +961,20 @@ class AdminPortalController extends Controller
 
         $this->realtime->publish('directory_updated', [$admin->office_id, $office->id], [$target->id]);
 
+        $action = $this->recallService->record(
+            $admin,
+            'user.update',
+            "Updated {$target->full_name} ({$office->code})",
+            ['user_id' => $target->id, 'attributes' => $beforeAttrs],
+            ['role' => $target->role, 'office_id' => $office->id],
+            true,
+            'user',
+            $target->id,
+        );
+
         $destSection = $this->isAuthorizedAdmin($target) ? 'admins' : 'personnel';
 
-        return $this->backToSection($destSection, "Updated assignment for {$target->full_name} ({$office->code}).");
+        return $this->backToSection($destSection, "Updated assignment for {$target->full_name} ({$office->code}).", null, $action);
     }
 
     public function resetUserPassword(Request $request, string $id): RedirectResponse
@@ -879,6 +996,7 @@ class AdminPortalController extends Controller
             return $this->backToSection($fallbackSection, null, 'Account was not found.');
         }
 
+        $previousHash = (string) $target->getRawOriginal('password');
         $target->update([
             'password' => $validated['new_password'],
         ]);
@@ -895,6 +1013,17 @@ class AdminPortalController extends Controller
 
         $this->realtime->publish('session_revoked', [$target->office_id], [$target->id]);
 
+        $action = $this->recallService->record(
+            $admin,
+            'user.reset_password',
+            "Reset password for {$target->full_name} ({$target->employee_id})",
+            ['user_id' => $target->id, 'attributes' => ['password' => $previousHash]],
+            ['reset' => true],
+            true,
+            'user',
+            $target->id,
+        );
+
         $destSection = $request->filled('return_section')
             ? $fallbackSection
             : ($this->isAuthorizedAdmin($target) ? 'admins' : 'personnel');
@@ -902,6 +1031,8 @@ class AdminPortalController extends Controller
         return $this->backToSection(
             $destSection,
             "Password reset for {$target->full_name} ({$target->employee_id}) — existing device tokens revoked.",
+            null,
+            $action,
         );
     }
 
@@ -928,6 +1059,7 @@ class AdminPortalController extends Controller
             return $this->backToSection($destSection, null, 'You cannot deactivate your own active admin account.');
         }
 
+        $beforeActive = (bool) $target->active;
         $nextActive = ! $target->active;
         $target->update(['active' => $nextActive]);
         if (! $nextActive) {
@@ -945,9 +1077,22 @@ class AdminPortalController extends Controller
 
         $this->realtime->publish('directory_updated', [$admin->office_id, $target->office_id], [$target->id]);
 
+        $action = $this->recallService->record(
+            $admin,
+            'user.toggle_active',
+            ($nextActive ? 'Reactivated ' : 'Deactivated ').$target->full_name,
+            ['user_id' => $target->id, 'attributes' => ['active' => $beforeActive]],
+            ['active' => $nextActive],
+            true,
+            'user',
+            $target->id,
+        );
+
         return $this->backToSection(
             $destSection,
             ($nextActive ? 'Reactivated ' : 'Deactivated ').$target->full_name.'.',
+            null,
+            $action,
         );
     }
 
@@ -1002,6 +1147,11 @@ class AdminPortalController extends Controller
         $reason = trim($validated['reason']);
         $now = now();
         $movedCodes = [];
+        $beforeDocs = $heldDocs->map(fn (Document $d) => [
+            'id' => $d->id,
+            'current_holder_id' => $d->current_holder_id,
+            'current_office_id' => $d->current_office_id,
+        ])->values()->all();
 
         DB::transaction(function () use ($admin, $source, $target, $heldDocs, $reason, $now, &$movedCodes): void {
             foreach ($heldDocs as $doc) {
@@ -1088,9 +1238,22 @@ class AdminPortalController extends Controller
 
         $count = count($movedCodes);
 
+        $action = $this->recallService->record(
+            $admin,
+            'user.reassign_custody',
+            "Reassigned {$count} doc(s) from {$source->full_name} to {$target->full_name}",
+            ['documents' => $beforeDocs],
+            ['target_user_id' => $target->id, 'count' => $count],
+            true,
+            'user',
+            $source->id,
+        );
+
         return $this->backToSection(
             $returnSection,
             "Reassigned {$count} active document(s) from {$source->full_name} to {$target->full_name} ({$target->office?->code}): ".implode(', ', array_slice($movedCodes, 0, 4)).($count > 4 ? '…' : ''),
+            null,
+            $action,
         );
     }
 
@@ -1124,6 +1287,17 @@ class AdminPortalController extends Controller
         );
 
         $this->realtime->publish('session_revoked', [$target->office_id], [$target->id]);
+
+        $this->recallService->record(
+            $admin,
+            'session.revoke_user',
+            "Signed out {$revokedCount} session(s) for {$target->full_name}",
+            null,
+            ['revoked_count' => $revokedCount],
+            false,
+            'user',
+            $target->id,
+        );
 
         return $this->backToSection(
             $returnSection,
@@ -1166,7 +1340,18 @@ class AdminPortalController extends Controller
 
         $this->realtime->publish('office_updated', [$admin->office_id, $office->id]);
 
-        return $this->backToSection('offices', "Registered office {$office->code} — {$office->name}.");
+        $action = $this->recallService->record(
+            $admin,
+            'office.create',
+            "Created office {$office->code} — {$office->name}",
+            null,
+            ['office_id' => $office->id],
+            true,
+            'office',
+            $office->id,
+        );
+
+        return $this->backToSection('offices', "Registered office {$office->code} — {$office->name}.", null, $action);
     }
 
     public function updateOffice(Request $request, string $id): RedirectResponse
@@ -1193,6 +1378,11 @@ class AdminPortalController extends Controller
             return $this->backToSection('offices', null, "Another office already uses code {$code}.");
         }
 
+        $beforeAttrs = [
+            'code' => $office->code,
+            'name' => $office->name,
+        ];
+
         $office->update([
             'code' => $code,
             'name' => trim($validated['name']),
@@ -1209,7 +1399,18 @@ class AdminPortalController extends Controller
 
         $this->realtime->publish('office_updated', [$admin->office_id, $office->id]);
 
-        return $this->backToSection('offices', "Updated office {$office->code}.");
+        $action = $this->recallService->record(
+            $admin,
+            'office.update',
+            "Updated office {$office->code}",
+            ['office_id' => $office->id, 'attributes' => $beforeAttrs],
+            ['code' => $office->code, 'name' => $office->name],
+            true,
+            'office',
+            $office->id,
+        );
+
+        return $this->backToSection('offices', "Updated office {$office->code}.", null, $action);
     }
 
     public function createCategory(Request $request): RedirectResponse
@@ -1252,7 +1453,18 @@ class AdminPortalController extends Controller
 
         $this->realtime->publish('category_declared', [$admin->office_id], [$admin->id]);
 
-        return $this->backToSection('categories', "Added global category {$cat->code} — {$cat->name}.");
+        $action = $this->recallService->record(
+            $admin,
+            'category.create',
+            "Created category {$cat->code} — {$cat->name}",
+            null,
+            ['category_id' => $cat->id],
+            true,
+            'category',
+            $cat->id,
+        );
+
+        return $this->backToSection('categories', "Added global category {$cat->code} — {$cat->name}.", null, $action);
     }
 
     public function updateCategory(Request $request, string $id): RedirectResponse
@@ -1270,6 +1482,11 @@ class AdminPortalController extends Controller
             return $this->backToSection('categories', null, 'Document category was not found.');
         }
 
+        $beforeAttrs = [
+            'code' => $category->code,
+            'name' => $category->name,
+        ];
+
         $category->update([
             'code' => strtoupper(trim($validated['code'])),
             'name' => trim($validated['name']),
@@ -1286,7 +1503,18 @@ class AdminPortalController extends Controller
 
         $this->realtime->publish('category_declared', [$admin->office_id], [$admin->id]);
 
-        return $this->backToSection('categories', "Updated category {$category->code} — {$category->name}.");
+        $action = $this->recallService->record(
+            $admin,
+            'category.update',
+            "Updated category {$category->code} — {$category->name}",
+            ['category_id' => $category->id, 'attributes' => $beforeAttrs],
+            ['code' => $category->code, 'name' => $category->name],
+            true,
+            'category',
+            $category->id,
+        );
+
+        return $this->backToSection('categories', "Updated category {$category->code} — {$category->name}.", null, $action);
     }
 
     public function deleteCategory(Request $request, string $id): RedirectResponse
@@ -1304,6 +1532,16 @@ class AdminPortalController extends Controller
         }
 
         $usedCount = Document::query()->where('category_id', $category->id)->count();
+        $movedDocIds = $usedCount > 0 ? Document::query()->where('category_id', $category->id)->pluck('id')->all() : [];
+        $beforeCat = [
+            'id' => $category->id,
+            'name' => $category->name,
+            'code' => $category->code,
+            'declared_by_office_code' => $category->declared_by_office_code,
+            'declared_by_office_name' => $category->declared_by_office_name,
+            'is_global' => (bool) $category->is_global,
+            'usage_count' => (int) $category->usage_count,
+        ];
         $name = $category->name;
         $code = $category->code;
         $reassignedTo = null;
@@ -1367,7 +1605,18 @@ class AdminPortalController extends Controller
             ? "Deleted category {$code} — {$name} and reassigned {$usedCount} document(s) to {$reassignedTo->code}."
             : "Deleted category {$code} — {$name}.";
 
-        return $this->backToSection('categories', $toast);
+        $action = $this->recallService->record(
+            $admin,
+            'category.delete',
+            "Deleted category {$code} — {$name}",
+            ['category' => $beforeCat, 'doc_ids' => $movedDocIds],
+            ['deleted' => true],
+            true,
+            'category',
+            $beforeCat['id'],
+        );
+
+        return $this->backToSection('categories', $toast, null, $action);
     }
 
     public function notifyOffice(Request $request, string $id): RedirectResponse
@@ -1389,6 +1638,11 @@ class AdminPortalController extends Controller
             return $this->backToSection($returnSection, null, 'Document was not found.');
         }
 
+        $beforeNotifIds = UserNotification::query()
+            ->where('document_id', $doc->id)
+            ->pluck('id')
+            ->all();
+
         $sent = $this->stalledAlerts->notifyOfficeForDocument(
             $doc,
             $admin,
@@ -1396,9 +1650,28 @@ class AdminPortalController extends Controller
             false,
         );
 
+        $newNotifIds = UserNotification::query()
+            ->where('document_id', $doc->id)
+            ->whereNotIn('id', $beforeNotifIds)
+            ->pluck('id')
+            ->all();
+
+        $action = $this->recallService->record(
+            $admin,
+            'document.notify_office',
+            "Sent alert to {$sent['targetOfficeCode']} for {$doc->tracking_code}",
+            null,
+            ['notification_ids' => $newNotifIds],
+            $newNotifIds !== [],
+            'document',
+            $doc->id,
+        );
+
         return $this->backToSection(
             $returnSection,
             "Follow-up alert sent to {$sent['targetOfficeCode']} ({$sent['targetOfficeName']}) for {$doc->tracking_code}.",
+            null,
+            $action,
         );
     }
 
@@ -1421,6 +1694,15 @@ class AdminPortalController extends Controller
         $isActive = $request->has('active') ? (bool) $request->boolean('active') : true;
 
         $existing = SlaPolicy::query()->where('category_id', $category->id)->first();
+        $beforePolicy = $existing ? [
+            'id' => $existing->id,
+            'category_id' => $existing->category_id,
+            'target_hours' => $existing->target_hours,
+            'stalled_alert_hours' => $existing->stalled_alert_hours,
+            'escalation_hours' => $existing->escalation_hours,
+            'escalate_to_office_id' => $existing->escalate_to_office_id,
+            'active' => (bool) $existing->active,
+        ] : null;
         $policy = SlaPolicy::query()->updateOrCreate(
             ['category_id' => $category->id],
             [
@@ -1446,9 +1728,22 @@ class AdminPortalController extends Controller
 
         $this->realtime->publish('sla_policy_updated', [$admin->office_id], [$admin->id]);
 
+        $action = $this->recallService->record(
+            $admin,
+            'sla_policy.save',
+            "Saved SLA policy for {$category->code}",
+            ['category_id' => $category->id, 'policy' => $beforePolicy],
+            ['target_hours' => $policy->target_hours, 'stalled_alert_hours' => $policy->stalled_alert_hours],
+            true,
+            'sla_policy',
+            $category->id,
+        );
+
         return $this->backToSection(
             'sla-policies',
             "Saved SLA policy for {$category->code} ({$policy->target_hours}h target, {$policy->stalled_alert_hours}h alert).",
+            null,
+            $action,
         );
     }
 
@@ -1463,6 +1758,15 @@ class AdminPortalController extends Controller
         }
 
         $catCode = $policy->category?->code ?? 'Category';
+        $beforePolicy = [
+            'id' => $policy->id,
+            'category_id' => $policy->category_id,
+            'target_hours' => $policy->target_hours,
+            'stalled_alert_hours' => $policy->stalled_alert_hours,
+            'escalation_hours' => $policy->escalation_hours,
+            'escalate_to_office_id' => $policy->escalate_to_office_id,
+            'active' => (bool) $policy->active,
+        ];
         $policy->delete();
 
         $this->audit->record(
@@ -1476,7 +1780,18 @@ class AdminPortalController extends Controller
 
         $this->realtime->publish('sla_policy_updated', [$admin->office_id], [$admin->id]);
 
-        return $this->backToSection('sla-policies', "Reset {$catCode} back to default division SLA rules.");
+        $action = $this->recallService->record(
+            $admin,
+            'sla_policy.delete',
+            "Reset SLA policy for {$catCode}",
+            ['policy' => $beforePolicy],
+            ['deleted' => true],
+            true,
+            'sla_policy',
+            $beforePolicy['category_id'],
+        );
+
+        return $this->backToSection('sla-policies', "Reset {$catCode} back to default division SLA rules.", null, $action);
     }
 
     public function runStalledSweep(Request $request): RedirectResponse
@@ -1572,6 +1887,17 @@ class AdminPortalController extends Controller
 
         $this->realtime->publish('session_revoked', [], $staffIds);
 
+        $this->recallService->record(
+            $admin,
+            'session.revoke_all_staff',
+            "Emergency kill-switch: signed out {$revokedCount} staff session(s)",
+            null,
+            ['revoked_count' => $revokedCount],
+            false,
+            'system',
+            'sessions',
+        );
+
         return $this->backToSection(
             'sessions',
             "Kill-switch complete: signed out {$revokedCount} active staff device session(s).",
@@ -1619,9 +1945,11 @@ class AdminPortalController extends Controller
         $sampleDoc = Document::query()->first();
 
         $lockPreview = "Tracely diagnostic ping from Admin ({$admin->full_name}) at ".now()->format('h:i A').'.';
+        $diagNotifId = null;
         if ($sampleDoc) {
+            $diagNotifId = 'notif-'.Str::uuid()->toString();
             UserNotification::query()->create([
-                'id' => 'notif-'.Str::uuid()->toString(),
+                'id' => $diagNotifId,
                 'target_user_id' => $target->id,
                 'target_office_id' => $target->office_id,
                 'document_id' => $sampleDoc->id,
@@ -1651,6 +1979,17 @@ class AdminPortalController extends Controller
             'Tracely Admin Portal',
         );
 
+        $action = $this->recallService->record(
+            $admin,
+            'user.direct_notice',
+            "Sent diagnostic ping to {$target->full_name}",
+            null,
+            ['notification_ids' => $diagNotifId ? [$diagNotifId] : []],
+            $diagNotifId !== null,
+            'notification',
+            $diagNotifId,
+        );
+
         $fcmHint = $this->realtime->fcmConfigured()
             ? ($tokenCount > 0 ? "FCM push sent to {$tokenCount} device(s)." : 'No registered phone push tokens found — delivered via SSE/Pulse only.')
             : 'Delivered via Realtime Pulse/SSE (FCM_SERVER_KEY not configured on server).';
@@ -1658,6 +1997,8 @@ class AdminPortalController extends Controller
         return $this->backToSection(
             'diagnostics',
             "Diagnostic ping dispatched to {$target->full_name} ({$target->office?->code}). {$fcmHint}",
+            null,
+            $action,
         );
     }
 
@@ -1882,6 +2223,17 @@ class AdminPortalController extends Controller
             return $this->backToSection('custody', null, 'Only in-transit documents awaiting receipt can be recalled.');
         }
 
+        $beforeDoc = [
+            'id' => $doc->id,
+            'lifecycle_status' => $doc->lifecycle_status,
+            'current_office_id' => $doc->current_office_id,
+            'current_holder_id' => $doc->current_holder_id,
+        ];
+        $beforeTx = [
+            'id' => $latest->id,
+            'receipt_status' => $latest->receipt_status,
+        ];
+
         $latest->update([
             'receipt_status' => 'recalled',
             'remarks' => trim(($latest->remarks ? $latest->remarks.' · ' : '').'Recalled by Tracely Admin Portal'),
@@ -1909,7 +2261,18 @@ class AdminPortalController extends Controller
             $doc->id,
         );
 
-        return $this->backToSection('custody', "Recalled {$doc->tracking_code} back to originating custody.");
+        $action = $this->recallService->record(
+            $admin,
+            'document.recall',
+            "Recalled pending transfer {$doc->tracking_code}",
+            ['document' => $beforeDoc, 'transaction' => $beforeTx],
+            ['lifecycle_status' => 'in_review'],
+            true,
+            'document',
+            $doc->id,
+        );
+
+        return $this->backToSection('custody', "Recalled {$doc->tracking_code} back to originating custody.", null, $action);
     }
 
     public function completeDocument(Request $request, string $id): RedirectResponse
@@ -1925,6 +2288,13 @@ class AdminPortalController extends Controller
         if (! $doc) {
             return $this->backToSection('custody', null, 'Document was not found.');
         }
+
+        $beforeDoc = [
+            'id' => $doc->id,
+            'lifecycle_status' => $doc->lifecycle_status,
+            'current_office_id' => $doc->current_office_id,
+            'current_holder_id' => $doc->current_holder_id,
+        ];
 
         $doc->update([
             'lifecycle_status' => $validated['status'],
@@ -1946,9 +2316,22 @@ class AdminPortalController extends Controller
             $doc->id,
         );
 
+        $action = $this->recallService->record(
+            $admin,
+            'document.complete',
+            "Marked {$doc->tracking_code} as ".strtoupper($validated['status']),
+            ['document' => $beforeDoc],
+            ['lifecycle_status' => $validated['status']],
+            true,
+            'document',
+            $doc->id,
+        );
+
         return $this->backToSection(
             'custody',
             "Marked {$doc->tracking_code} as ".strtoupper($validated['status']).'.',
+            null,
+            $action,
         );
     }
 
@@ -2305,8 +2688,12 @@ class AdminPortalController extends Controller
         return $user->role === 'unit_head' && in_array($officeCode, ['HR', 'EXEC', 'ADMIN', 'OSDS', 'ICT'], true);
     }
 
-    private function backToSection(string $section, ?string $toast = null, ?string $error = null): RedirectResponse
-    {
+    private function backToSection(
+        string $section,
+        ?string $toast = null,
+        ?string $error = null,
+        ?AdminActionHistory $recallAction = null,
+    ): RedirectResponse {
         $redirect = redirect()->route('admin.dashboard', ['section' => $section]);
         if ($toast) {
             $redirect->with('admin_toast', $toast);
@@ -2314,7 +2701,489 @@ class AdminPortalController extends Controller
         if ($error) {
             $redirect->with('admin_error', $error);
         }
+        if ($recallAction && $recallAction->reversible) {
+            $redirect->with('admin_recall_id', $recallAction->id);
+            $redirect->with('admin_recall_summary', $recallAction->summary);
+        }
 
         return $redirect;
+    }
+
+    public function recallAdminAction(Request $request, string $id): RedirectResponse
+    {
+        $admin = $this->requireAdmin($request);
+        $returnSection = (string) $request->input('return_section', 'system');
+
+        if (! Schema::hasTable('admin_action_histories')) {
+            return $this->backToSection($returnSection, null, 'Action history table is unavailable.');
+        }
+
+        /** @var AdminActionHistory|null $history */
+        $history = AdminActionHistory::query()->find($id);
+        if (! $history) {
+            return $this->backToSection($returnSection, null, 'Admin action record was not found.');
+        }
+
+        $result = $this->recallService->recall($admin, $history);
+
+        return $result['ok']
+            ? $this->backToSection($returnSection, $result['message'])
+            : $this->backToSection($returnSection, null, $result['message']);
+    }
+
+    public function sendDirectNotice(Request $request): RedirectResponse
+    {
+        $admin = $this->requireAdmin($request);
+        $validated = $request->validate([
+            'target_scope' => ['required', 'in:user,office'],
+            'target_user_id' => ['nullable', 'string', 'max:64'],
+            'target_office_id' => ['nullable', 'string', 'max:64'],
+            'title' => ['required', 'string', 'min:3', 'max:120'],
+            'message' => ['required', 'string', 'min:3', 'max:400'],
+        ]);
+
+        $recipients = collect();
+        $scopeDesc = '';
+        if ($validated['target_scope'] === 'user') {
+            $u = User::query()->with('office')->find((string) ($validated['target_user_id'] ?? ''));
+            if (! $u) {
+                return $this->backToSection('system', null, 'Select a valid recipient user.');
+            }
+            $recipients = collect([$u]);
+            $scopeDesc = $u->full_name;
+        } else {
+            $office = Office::query()->find((string) ($validated['target_office_id'] ?? ''));
+            if (! $office) {
+                return $this->backToSection('system', null, 'Select a valid target office.');
+            }
+            $recipients = User::query()->where('office_id', $office->id)->where('active', true)->get();
+            $scopeDesc = $office->code.' office';
+        }
+
+        if ($recipients->isEmpty()) {
+            return $this->backToSection('system', null, 'No active recipients found for that target.');
+        }
+
+        $notifIds = [];
+        $now = now();
+        $title = trim($validated['title']);
+        $body = trim($validated['message']);
+        $anchorDocId = Document::query()->latest('updated_at')->value('id');
+
+        if ($anchorDocId) {
+            foreach ($recipients as $recipient) {
+                $nid = 'ntf-'.Str::uuid()->toString();
+                UserNotification::query()->create([
+                    'id' => $nid,
+                    'target_user_id' => $recipient->id,
+                    'target_office_id' => $recipient->office_id,
+                    'document_id' => $anchorDocId,
+                    'title' => $title,
+                    'content' => $body,
+                    'lock_screen_preview' => 'New notice from Admin.',
+                    'authenticated_detail' => $body,
+                    'received_at' => $now,
+                    'read' => false,
+                ]);
+                $notifIds[] = $nid;
+            }
+        }
+
+        $this->audit->record(
+            $admin,
+            'admin_direct_notice',
+            null,
+            null,
+            "Sent notice \"{$title}\" to {$scopeDesc} (".count($notifIds).' recipient(s)).',
+            'Tracely Admin Portal',
+        );
+
+        $this->realtime->publish(
+            'notification_created',
+            array_values(array_unique($recipients->pluck('office_id')->all())),
+            $recipients->pluck('id')->all(),
+        );
+
+        $action = $this->recallService->record(
+            $admin,
+            'user.direct_notice',
+            "Sent notice \"{$title}\" to {$scopeDesc}",
+            null,
+            ['notification_ids' => $notifIds],
+            true,
+            'notification',
+            $notifIds[0] ?? null,
+        );
+
+        return $this->backToSection(
+            'system',
+            "Sent notice to {$scopeDesc} (".count($notifIds).' recipient(s)).',
+            null,
+            $action,
+        );
+    }
+
+    public function bulkTransferUsers(Request $request): RedirectResponse
+    {
+        $admin = $this->requireAdmin($request);
+        $validated = $request->validate([
+            'from_office_id' => ['required', 'string', 'max:64'],
+            'to_office_id' => ['required', 'string', 'max:64', 'different:from_office_id'],
+        ]);
+
+        $fromOffice = Office::query()->find($validated['from_office_id']);
+        $toOffice = Office::query()->find($validated['to_office_id']);
+        if (! $fromOffice || ! $toOffice) {
+            return $this->backToSection('system', null, 'Select valid source and destination offices.');
+        }
+
+        $users = User::query()
+            ->where('office_id', $fromOffice->id)
+            ->where('id', '!=', $admin->id)
+            ->get();
+
+        if ($users->isEmpty()) {
+            return $this->backToSection('system', null, "No transferable staff found in {$fromOffice->code}.");
+        }
+
+        $beforeUsers = [];
+        foreach ($users as $u) {
+            $beforeUsers[] = [
+                'id' => $u->id,
+                'attributes' => ['office_id' => $u->office_id],
+            ];
+            $u->update(['office_id' => $toOffice->id]);
+        }
+
+        $this->audit->record(
+            $admin,
+            'admin_bulk_office_transfer',
+            null,
+            null,
+            "Transferred {$users->count()} staff from {$fromOffice->code} to {$toOffice->code}.",
+            'Tracely Admin Portal',
+        );
+        $this->realtime->publish('directory_updated', [$fromOffice->id, $toOffice->id], $users->pluck('id')->all());
+
+        $action = $this->recallService->record(
+            $admin,
+            'user.bulk_transfer',
+            "Transferred {$users->count()} staff from {$fromOffice->code} to {$toOffice->code}",
+            ['users' => $beforeUsers],
+            ['to_office_id' => $toOffice->id],
+            true,
+            'office',
+            $toOffice->id,
+        );
+
+        return $this->backToSection(
+            'system',
+            "Transferred {$users->count()} user(s) from {$fromOffice->code} to {$toOffice->code}.",
+            null,
+            $action,
+        );
+    }
+
+    public function archiveUser(Request $request, string $id): RedirectResponse
+    {
+        $admin = $this->requireAdmin($request);
+        /** @var User|null $target */
+        $target = User::query()->with('office')->find($id);
+        if (! $target) {
+            return $this->backToSection('personnel', null, 'Account was not found.');
+        }
+        if ($target->id === $admin->id) {
+            return $this->backToSection('personnel', null, 'You cannot archive your own active admin account.');
+        }
+
+        $beforeAttrs = [
+            'active' => $target->active,
+            'approval_status' => $target->approval_status,
+            'availability' => $target->availability,
+        ];
+
+        $heldDocs = Document::query()
+            ->where('current_holder_id', $target->id)
+            ->whereNotIn('lifecycle_status', ['approved', 'archived'])
+            ->get();
+
+        $reassignedSnaps = [];
+        $fallbackCustodian = User::query()
+            ->where('office_id', $target->office_id)
+            ->where('id', '!=', $target->id)
+            ->where('active', true)
+            ->first() ?? $admin;
+
+        foreach ($heldDocs as $doc) {
+            $reassignedSnaps[] = [
+                'id' => $doc->id,
+                'current_holder_id' => $doc->current_holder_id,
+                'current_office_id' => $doc->current_office_id,
+            ];
+            $doc->update([
+                'current_holder_id' => $fallbackCustodian->id,
+                'current_office_id' => $fallbackCustodian->office_id,
+            ]);
+        }
+
+        $target->update([
+            'active' => false,
+            'approval_status' => 'rejected',
+            'availability' => 'on_leave',
+        ]);
+        $target->tokens()->delete();
+
+        $this->audit->record(
+            $admin,
+            'account_archived',
+            null,
+            null,
+            "Archived account {$target->full_name} ({$target->employee_id}) and reassigned {$heldDocs->count()} active document(s) to {$fallbackCustodian->full_name}.",
+            'Tracely Admin Portal',
+        );
+        $this->realtime->publish('directory_updated', [$admin->office_id, $target->office_id], [$target->id]);
+
+        $action = $this->recallService->record(
+            $admin,
+            'user.archive',
+            "Archived {$target->full_name} ({$target->employee_id})",
+            [
+                'user_id' => $target->id,
+                'attributes' => $beforeAttrs,
+                'reassigned_docs' => $reassignedSnaps,
+            ],
+            ['archived' => true],
+            true,
+            'user',
+            $target->id,
+        );
+
+        return $this->backToSection(
+            'personnel',
+            "Archived {$target->full_name} (reassigned {$heldDocs->count()} active doc(s)).",
+            null,
+            $action,
+        );
+    }
+
+    public function mergeOffices(Request $request): RedirectResponse
+    {
+        $admin = $this->requireAdmin($request);
+        $validated = $request->validate([
+            'source_office_id' => ['required', 'string', 'max:64'],
+            'target_office_id' => ['required', 'string', 'max:64', 'different:source_office_id'],
+        ]);
+
+        $source = Office::query()->find($validated['source_office_id']);
+        $target = Office::query()->find($validated['target_office_id']);
+        if (! $source || ! $target) {
+            return $this->backToSection('system', null, 'Select valid source and target offices.');
+        }
+        if ($source->id === $admin->office_id) {
+            return $this->backToSection('system', null, 'Cannot merge your own currently signed-in admin office.');
+        }
+
+        $userIds = User::query()->where('office_id', $source->id)->pluck('id')->all();
+        $docIds = Document::query()->where('current_office_id', $source->id)->pluck('id')->all();
+
+        $beforeOffice = ['id' => $source->id, 'code' => $source->code, 'name' => $source->name];
+
+        DB::transaction(function () use ($source, $target, $userIds, $docIds): void {
+            if ($userIds !== []) {
+                User::query()->whereIn('id', $userIds)->update(['office_id' => $target->id]);
+            }
+            if ($docIds !== []) {
+                Document::query()->whereIn('id', $docIds)->update(['current_office_id' => $target->id]);
+            }
+            $hasOriginRefs = Document::query()->where('origin_office_id', $source->id)->exists()
+                || RoutingTransaction::query()
+                    ->where('from_office_id', $source->id)
+                    ->orWhere('to_office_id', $source->id)
+                    ->exists();
+            if (! $hasOriginRefs) {
+                $source->delete();
+            }
+        });
+
+        $this->audit->record(
+            $admin,
+            'office_merged',
+            null,
+            null,
+            "Merged {$source->code} into {$target->code} (".count($userIds).' staff, '.count($docIds).' active docs moved).',
+            'Tracely Admin Portal',
+        );
+        $this->realtime->publish('directory_updated', [$target->id, $admin->office_id], $userIds);
+
+        $action = $this->recallService->record(
+            $admin,
+            'office.merge',
+            "Merged office {$source->code} into {$target->code}",
+            ['office' => $beforeOffice, 'user_ids' => $userIds, 'doc_ids' => $docIds],
+            ['target_office_id' => $target->id],
+            true,
+            'office',
+            $source->id,
+        );
+
+        return $this->backToSection(
+            'system',
+            "Merged {$source->code} into {$target->code}.",
+            null,
+            $action,
+        );
+    }
+
+    public function saveSystemSettings(Request $request): RedirectResponse
+    {
+        $admin = $this->requireAdmin($request);
+        $validated = $request->validate([
+            'organization_name' => ['required', 'string', 'min:2', 'max:80'],
+            'announcement_banner' => ['nullable', 'string', 'max:260'],
+            'default_sla_hours' => ['required', 'integer', 'min:1', 'max:720'],
+            'stalled_threshold_hours' => ['required', 'integer', 'min:1', 'max:720'],
+            'registration_paused' => ['nullable'],
+            'maintenance_mode' => ['nullable'],
+        ]);
+
+        $before = SystemSetting::allGovernanceSettings();
+        $next = [
+            'organization_name' => trim($validated['organization_name']),
+            'announcement_banner' => trim((string) ($validated['announcement_banner'] ?? '')),
+            'default_sla_hours' => (int) $validated['default_sla_hours'],
+            'stalled_threshold_hours' => (int) $validated['stalled_threshold_hours'],
+            'registration_paused' => $request->boolean('registration_paused'),
+            'maintenance_mode' => $request->boolean('maintenance_mode'),
+        ];
+
+        SystemSetting::saveMany($next, $admin->id);
+
+        $this->audit->record(
+            $admin,
+            'system_settings_updated',
+            null,
+            null,
+            'Updated system settings (org='.$next['organization_name'].', reg_paused='.($next['registration_paused'] ? 'yes' : 'no').', maintenance='.($next['maintenance_mode'] ? 'yes' : 'no').').',
+            'Tracely Admin Portal',
+        );
+
+        $action = $this->recallService->record(
+            $admin,
+            'system.settings',
+            'Updated system settings & announcement',
+            ['settings' => $before],
+            ['settings' => $next],
+            true,
+            'system',
+            'settings',
+        );
+
+        return $this->backToSection('system', 'System settings saved.', null, $action);
+    }
+
+    public function runSystemCleanup(Request $request): RedirectResponse
+    {
+        $admin = $this->requireAdmin($request);
+        $expiredChallenges = Schema::hasTable('document_unlock_challenges')
+            ? DocumentUnlockChallenge::query()->where('expires_at', '<', now()->subDay())->delete()
+            : 0;
+        $oldPushLogs = Schema::hasTable('push_delivery_logs')
+            ? PushDeliveryLog::query()->where('created_at', '<', now()->subDays(30))->delete()
+            : 0;
+
+        $summary = "Cleaned {$expiredChallenges} expired QR challenge(s) and {$oldPushLogs} old push log(s)";
+        $this->audit->record($admin, 'system_cleanup', null, null, $summary.'.', 'Tracely Admin Portal');
+        $this->recallService->record($admin, 'system.cleanup', $summary, null, null, false, 'system', 'cleanup');
+
+        return $this->backToSection('system', $summary.'.');
+    }
+
+    public function publishAndroidApk(Request $request): RedirectResponse
+    {
+        $admin = $this->requireAdmin($request);
+        $validated = $request->validate([
+            'version' => ['required', 'string', 'max:32'],
+            'notes' => ['nullable', 'string', 'max:300'],
+            'apk' => ['required', 'file', 'max:153600'],
+        ]);
+
+        $uploaded = $request->file('apk');
+        if (! $uploaded || ! $uploaded->isValid() || ! str_ends_with(strtolower($uploaded->getClientOriginalName()), '.apk')) {
+            return $this->backToSection('system', null, 'Please upload a valid .apk file.');
+        }
+
+        $magic = @file_get_contents((string) $uploaded->getRealPath(), false, null, 0, 4);
+        if ($magic !== "PK\x03\x04") {
+            return $this->backToSection('system', null, 'Uploaded file is not a valid Android APK archive.');
+        }
+
+        $apkFullPath = storage_path('app/public/downloads/tracely.apk');
+        $metaFullPath = storage_path('app/public/downloads/tracely-release.json');
+        File::ensureDirectoryExists(dirname($apkFullPath), 0775, true);
+
+        $tmpTarget = $apkFullPath.'.tmp';
+        $uploaded->move(dirname($apkFullPath), basename($tmpTarget));
+        @rename($tmpTarget, $apkFullPath);
+        @chmod($apkFullPath, 0644);
+
+        $sizeBytes = (int) (@filesize($apkFullPath) ?: 0);
+        $meta = [
+            'version' => trim($validated['version']),
+            'file_name' => 'tracely.apk',
+            'size_bytes' => $sizeBytes,
+            'size_mb' => round($sizeBytes / 1048576, 2),
+            'sha256' => hash_file('sha256', $apkFullPath) ?: '',
+            'notes' => trim((string) ($validated['notes'] ?? '')),
+            'uploaded_at' => now()->toIso8601String(),
+            'uploaded_by' => $admin->full_name,
+        ];
+        File::put($metaFullPath, json_encode($meta, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+
+        $this->audit->record(
+            $admin,
+            'mobile_release_published',
+            null,
+            null,
+            "Published Android APK v{$meta['version']} ({$meta['size_mb']} MB) via Admin Portal.",
+            'Tracely Admin Portal',
+        );
+
+        $this->recallService->record(
+            $admin,
+            'system.publish_apk',
+            "Published Android APK v{$meta['version']}",
+            null,
+            ['version' => $meta['version']],
+            false,
+            'system',
+            'apk',
+        );
+
+        return $this->backToSection('system', "Published Android APK v{$meta['version']} ({$meta['size_mb']} MB).");
+    }
+
+    public function exportSystemBackup(Request $request): Response
+    {
+        $admin = $this->requireAdmin($request);
+        $payload = [
+            'exported_at' => now()->toIso8601String(),
+            'exported_by' => $admin->full_name,
+            'settings' => SystemSetting::allGovernanceSettings(),
+            'offices' => Office::query()->orderBy('code')->get()->toArray(),
+            'users' => User::query()->orderBy('employee_id')->get(['id', 'employee_id', 'full_name', 'email', 'position', 'office_id', 'role', 'active', 'approval_status', 'availability', 'created_at'])->toArray(),
+            'categories' => DocumentCategory::query()->orderBy('code')->get()->toArray(),
+            'sla_policies' => SlaPolicy::query()->get()->toArray(),
+            'documents_count' => Document::query()->count(),
+            'audit_logs_recent' => AuditLog::query()->orderByDesc('created_at')->limit(500)->get()->toArray(),
+        ];
+
+        $this->audit->record($admin, 'system_backup_exported', null, null, 'Exported full system JSON backup.', 'Tracely Admin Portal');
+
+        $filename = 'tracely-backup-'.now()->format('Y-m-d-His').'.json';
+
+        return response(json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), 200, [
+            'Content-Type' => 'application/json',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+        ]);
     }
 }

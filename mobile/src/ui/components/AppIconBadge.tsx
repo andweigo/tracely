@@ -202,43 +202,7 @@ export function AppIconBadge({
     ]);
 
     sequenceRef.current = assembly;
-    assembly.start(({ finished }) => {
-      if (!finished || process.env.JEST_WORKER_ID) return;
-
-      const ambient = Animated.loop(
-        Animated.sequence([
-          Animated.delay(1400),
-          Animated.parallel([
-            Animated.timing(routeWave, {
-              toValue: 1,
-              duration: 1150,
-              easing: Easing.inOut(Easing.sin),
-              useNativeDriver: false,
-            }),
-            Animated.timing(glossSweep, {
-              toValue: 1,
-              duration: 1050,
-              easing: easeOut,
-              useNativeDriver: false,
-            }),
-          ]),
-          Animated.parallel([
-            Animated.timing(routeWave, {
-              toValue: 0,
-              duration: 0,
-              useNativeDriver: false,
-            }),
-            Animated.timing(glossSweep, {
-              toValue: -1,
-              duration: 0,
-              useNativeDriver: false,
-            }),
-          ]),
-        ]),
-      );
-      loopRef.current = ambient;
-      ambient.start();
-    });
+    assembly.start();
   }, [
     animated,
     dot0Prog,

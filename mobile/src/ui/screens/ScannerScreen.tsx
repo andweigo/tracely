@@ -12,7 +12,7 @@ import {
 import { Document } from '../../domain/entities/Document';
 import { DocumentCopyFormat } from '../../domain/enums/DomainEnums';
 import { useAppServices } from '../../state/AppServiceContext';
-import { MobileHeaderActions } from '../components/MobileHeaderActions';
+import { MobileScreenHeader } from '../components/MobileTopBars';
 import { ScanToReceiveCard } from '../components/ScanToReceiveCard';
 import { SealedQrCard } from '../components/SealedQrCard';
 import { ActionRemarksSheet } from '../sheets/ActionRemarksSheet';
@@ -59,17 +59,7 @@ export const ScannerScreen: React.FC = () => {
 
   return (
     <View style={styles.screen}>
-      <View style={styles.topHeader}>
-        <Pressable
-          onPress={() => goBack()}
-          accessibilityLabel="Back to inbox"
-          style={styles.circleBtn}
-        >
-          <ArrowLeft size={18} color={SDO_COLORS.navyInk} />
-        </Pressable>
-        <Text style={styles.headerTitle}>QR Scanner</Text>
-        <MobileHeaderActions variant="soft" />
-      </View>
+      <MobileScreenHeader title="Scan QR" />
 
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         {scannerTarget ? (

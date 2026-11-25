@@ -78,6 +78,10 @@
       'title' => 'Push & Realtime',
       'sub' => 'Live sync status and push notifications',
     ],
+    'system' => [
+      'title' => 'System & Controls',
+      'sub' => 'Settings, notices, bulk actions, APK release, and action recall',
+    ],
     'audit' => [
       'title' => 'Audit Log',
       'sub' => 'Account and document activity history',
@@ -326,6 +330,19 @@
             <path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/>
           </svg>
           <span>Push &amp; Realtime</span>
+        </span>
+      </button>
+
+      <button
+        type="button"
+        class="nav-item {{ $activeSection === 'system' ? 'nav-item-active' : '' }}"
+        data-section-target="system"
+      >
+        <span class="nav-item-left">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+          <span>System &amp; Controls</span>
         </span>
       </button>
 
@@ -1123,11 +1140,18 @@
                         Reset Password
                       </button>
 
-                      <form method="POST" action="{{ route('admin.users.toggle-active', $person->id) }}" style="margin: 0;">
+                      <form method="POST" action="{{ route('admin.users.toggle-active', $person->id) }}" data-confirm-action="{{ $person->active ? 'Deactivate' : 'Reactivate' }} {{ $person->full_name }}" style="margin: 0;">
                         @csrf
                         <input type="hidden" name="return_section" value="personnel" />
                         <button type="submit" class="btn {{ $person->active ? 'btn-danger' : 'btn-primary' }} btn-sm">
                           {{ $person->active ? 'Deactivate' : 'Reactivate' }}
+                        </button>
+                      </form>
+
+                      <form method="POST" action="{{ route('admin.users.archive', $person->id) }}" data-confirm-action="Archive {{ $person->full_name }} and reassign active documents" style="margin: 0;">
+                        @csrf
+                        <button type="submit" class="btn btn-ghost btn-sm" style="color: var(--rose-text);">
+                          Archive
                         </button>
                       </form>
                     </div>
@@ -2303,6 +2327,372 @@
       </section>
 
       <!-- =====================================================================
+           SECTION: SYSTEM & CONTROLS (Settings, Notices, Bulk Actions, Recall)
+           ===================================================================== -->
+      <section
+        id="panel-system"
+        data-section-panel="system"
+        style="display: {{ $activeSection === 'system' ? 'flex' : 'none' }}; flex-direction: column; gap: 18px;"
+      >
+        <!-- Recent Admin Actions & Recall Log -->
+        <div class="surface-card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Recent Admin Actions &amp; Recall</h2>
+              <p class="card-subtitle">Every admin action requires your password and can be recalled here</p>
+            </div>
+            <span class="pill pill-slate">{{ $recentAdminActions->count() }} recent</span>
+          </div>
+
+          <div class="table-scroll">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Admin</th>
+                  <th>Action</th>
+                  <th>Status</th>
+                  <th style="text-align: right;">Follow-Up</th>
+                </tr>
+              </thead>
+              <tbody>
+                @forelse ($recentAdminActions as $act)
+                  <tr>
+                    <td class="mono" style="font-size: 12px; color: var(--text-muted); white-space: nowrap;">
+                      {{ optional($act->created_at)->format('M d, H:i') }}
+                    </td>
+                    <td style="font-weight: 600; white-space: nowrap;">{{ $act->admin_name }}</td>
+                    <td>{{ $act->summary }}</td>
+                    <td>
+                      @if ($act->recalled_at)
+                        <span class="pill pill-amber">Recalled by {{ $act->recalled_by_name }}</span>
+                      @elseif ($act->reversible)
+                        <span class="pill pill-emerald">Applied</span>
+                      @else
+                        <span class="pill pill-slate">Logged</span>
+                      @endif
+                    </td>
+                    <td style="text-align: right; white-space: nowrap;">
+                      @if ($act->reversible && ! $act->recalled_at)
+                        <form
+                          method="POST"
+                          action="{{ route('admin.actions.recall', $act->id) }}"
+                          data-confirm-action="Recall action: {{ $act->summary }}"
+                          style="margin: 0; display: inline;"
+                        >
+                          @csrf
+                          <input type="hidden" name="return_section" value="system" />
+                          <button type="submit" class="btn btn-amber-soft btn-sm">Recall</button>
+                        </form>
+                      @else
+                        <span style="font-size: 12px; color: var(--text-muted);">—</span>
+                      @endif
+                    </td>
+                  </tr>
+                @empty
+                  <tr>
+                    <td colspan="5" style="text-align: center; padding: 20px; color: var(--text-muted);">
+                      No admin actions recorded yet.
+                    </td>
+                  </tr>
+                @endforelse
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- System Settings & Announcement -->
+        <div class="surface-card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">System Settings &amp; Announcement</h2>
+              <p class="card-subtitle">Global defaults, registration lock, maintenance mode, and banner</p>
+            </div>
+          </div>
+
+          <form
+            method="POST"
+            action="{{ route('admin.system.settings') }}"
+            data-confirm-action="Save system settings and announcement"
+            style="padding: 18px 20px; display: flex; flex-direction: column; gap: 14px;"
+          >
+            @csrf
+            <div class="field-grid-2">
+              <div class="field-group">
+                <label class="field-label" for="sys-org-name">Organization Name</label>
+                <input
+                  id="sys-org-name"
+                  name="organization_name"
+                  type="text"
+                  class="input"
+                  value="{{ $systemSettings['organization_name'] ?? 'Tracely' }}"
+                  maxlength="80"
+                  required
+                />
+              </div>
+              <div class="field-group">
+                <label class="field-label" for="sys-banner">Announcement Banner (optional)</label>
+                <input
+                  id="sys-banner"
+                  name="announcement_banner"
+                  type="text"
+                  class="input"
+                  value="{{ $systemSettings['announcement_banner'] ?? '' }}"
+                  maxlength="260"
+                  placeholder="Leave blank for no active banner"
+                />
+              </div>
+            </div>
+
+            <div class="field-grid-2">
+              <div class="field-group">
+                <label class="field-label" for="sys-default-sla">Default SLA Target (Hours)</label>
+                <input
+                  id="sys-default-sla"
+                  name="default_sla_hours"
+                  type="number"
+                  min="1"
+                  max="720"
+                  class="input mono"
+                  value="{{ $systemSettings['default_sla_hours'] ?? 48 }}"
+                  required
+                />
+              </div>
+              <div class="field-group">
+                <label class="field-label" for="sys-stalled-hours">Stalled Alert Threshold (Hours)</label>
+                <input
+                  id="sys-stalled-hours"
+                  name="stalled_threshold_hours"
+                  type="number"
+                  min="1"
+                  max="720"
+                  class="input mono"
+                  value="{{ $systemSettings['stalled_threshold_hours'] ?? 24 }}"
+                  required
+                />
+              </div>
+            </div>
+
+            <div style="display: flex; flex-wrap: wrap; gap: 20px; padding: 6px 0;">
+              <label style="display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; cursor: pointer;">
+                <input
+                  type="checkbox"
+                  name="registration_paused"
+                  value="1"
+                  {{ ! empty($systemSettings['registration_paused']) ? 'checked' : '' }}
+                />
+                <span>Pause new user self-registration</span>
+              </label>
+
+              <label style="display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; cursor: pointer;">
+                <input
+                  type="checkbox"
+                  name="maintenance_mode"
+                  value="1"
+                  {{ ! empty($systemSettings['maintenance_mode']) ? 'checked' : '' }}
+                />
+                <span>Show maintenance notice</span>
+              </label>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end;">
+              <button type="submit" class="btn btn-primary btn-sm">Save System Settings</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- 2-Column Operations Grid: Direct Notice + Bulk Office Actions -->
+        <div class="field-grid-2" style="align-items: start; gap: 18px;">
+          <!-- Direct Notice -->
+          <div class="surface-card">
+            <div class="card-header">
+              <div>
+                <h2 class="card-title">Send Direct Notice</h2>
+                <p class="card-subtitle">Deliver an alert to a single user or an entire office</p>
+              </div>
+            </div>
+
+            <form
+              method="POST"
+              action="{{ route('admin.users.direct-notice') }}"
+              data-confirm-action="Send direct notice to selected recipient(s)"
+              style="padding: 16px 18px; display: flex; flex-direction: column; gap: 12px;"
+            >
+              @csrf
+              <div class="field-group">
+                <label class="field-label" for="notice-scope">Recipient Type</label>
+                <select id="notice-scope" name="target_scope" class="select">
+                  <option value="user">Specific User</option>
+                  <option value="office">Entire Office</option>
+                </select>
+              </div>
+
+              <div class="field-group" id="notice-user-wrap">
+                <label class="field-label" for="notice-user-id">User</label>
+                <select id="notice-user-id" name="target_user_id" class="select">
+                  @foreach ($rosterUsers->merge($adminAccounts)->sortBy('full_name') as $u)
+                    <option value="{{ $u->id }}">{{ $u->full_name }} ({{ $u->office?->code ?? 'HQ' }})</option>
+                  @endforeach
+                </select>
+              </div>
+
+              <div class="field-group" id="notice-office-wrap" style="display: none;">
+                <label class="field-label" for="notice-office-id">Office</label>
+                <select id="notice-office-id" name="target_office_id" class="select">
+                  @foreach ($offices as $off)
+                    <option value="{{ $off->id }}">{{ $off->code }} — {{ $off->name }}</option>
+                  @endforeach
+                </select>
+              </div>
+
+              <div class="field-group">
+                <label class="field-label" for="notice-title">Title</label>
+                <input id="notice-title" name="title" type="text" class="input" maxlength="120" placeholder="e.g. Monthly submission reminder" required />
+              </div>
+
+              <div class="field-group">
+                <label class="field-label" for="notice-message">Message</label>
+                <textarea id="notice-message" name="message" class="input" rows="3" maxlength="400" placeholder="Write a short message..." required style="height: auto; padding: 10px 12px;"></textarea>
+              </div>
+
+              <div style="display: flex; justify-content: flex-end;">
+                <button type="submit" class="btn btn-primary btn-sm">Send Notice</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Bulk Staff Transfer & Office Merge -->
+          <div style="display: flex; flex-direction: column; gap: 18px;">
+            <div class="surface-card">
+              <div class="card-header">
+                <div>
+                  <h2 class="card-title">Bulk Transfer Staff</h2>
+                  <p class="card-subtitle">Move all staff from one office to another</p>
+                </div>
+              </div>
+              <form
+                method="POST"
+                action="{{ route('admin.users.bulk-transfer') }}"
+                data-confirm-action="Bulk transfer staff between offices"
+                style="padding: 16px 18px; display: flex; flex-direction: column; gap: 12px;"
+              >
+                @csrf
+                <div class="field-grid-2">
+                  <div class="field-group">
+                    <label class="field-label" for="bulk-from-office">From Office</label>
+                    <select id="bulk-from-office" name="from_office_id" class="select" required>
+                      @foreach ($offices as $off)
+                        <option value="{{ $off->id }}">{{ $off->code }} — {{ $off->name }}</option>
+                      @endforeach
+                    </select>
+                  </div>
+                  <div class="field-group">
+                    <label class="field-label" for="bulk-to-office">To Office</label>
+                    <select id="bulk-to-office" name="to_office_id" class="select" required>
+                      @foreach ($offices as $off)
+                        <option value="{{ $off->id }}">{{ $off->code }} — {{ $off->name }}</option>
+                      @endforeach
+                    </select>
+                  </div>
+                </div>
+                <div style="display: flex; justify-content: flex-end;">
+                  <button type="submit" class="btn btn-secondary btn-sm">Transfer Staff</button>
+                </div>
+              </form>
+            </div>
+
+            <div class="surface-card">
+              <div class="card-header">
+                <div>
+                  <h2 class="card-title">Merge Office</h2>
+                  <p class="card-subtitle">Combine a retiring office's staff and active docs into another</p>
+                </div>
+              </div>
+              <form
+                method="POST"
+                action="{{ route('admin.offices.merge') }}"
+                data-confirm-action="Merge source office into destination office"
+                style="padding: 16px 18px; display: flex; flex-direction: column; gap: 12px;"
+              >
+                @csrf
+                <div class="field-grid-2">
+                  <div class="field-group">
+                    <label class="field-label" for="merge-source-office">Retiring Office</label>
+                    <select id="merge-source-office" name="source_office_id" class="select" required>
+                      @foreach ($offices as $off)
+                        <option value="{{ $off->id }}">{{ $off->code }} — {{ $off->name }}</option>
+                      @endforeach
+                    </select>
+                  </div>
+                  <div class="field-group">
+                    <label class="field-label" for="merge-target-office">Destination Office</label>
+                    <select id="merge-target-office" name="target_office_id" class="select" required>
+                      @foreach ($offices as $off)
+                        <option value="{{ $off->id }}">{{ $off->code }} — {{ $off->name }}</option>
+                      @endforeach
+                    </select>
+                  </div>
+                </div>
+                <div style="display: flex; justify-content: flex-end;">
+                  <button type="submit" class="btn btn-danger btn-sm">Merge Office</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Release, Maintenance Cleanup & Backup -->
+        <div class="surface-card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Android APK Publisher &amp; Maintenance</h2>
+              <p class="card-subtitle">
+                @if ($mobileReleaseMeta)
+                  Live APK: v{{ $mobileReleaseMeta['version'] ?? '?' }} · {{ $mobileReleaseMeta['size_mb'] ?? '?' }} MB
+                @else
+                  Upload a signed Android .apk for the download page
+                @endif
+              </p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <form method="POST" action="{{ route('admin.system.cleanup') }}" data-confirm-action="Clean expired QR tokens and old push logs" style="margin: 0;">
+                @csrf
+                <button type="submit" class="btn btn-secondary btn-sm">Run Cleanup</button>
+              </form>
+              <a href="{{ route('admin.system.backup') }}" class="btn btn-secondary btn-sm">Download Backup JSON</a>
+            </div>
+          </div>
+
+          <form
+            method="POST"
+            action="{{ route('admin.system.publish-apk') }}"
+            enctype="multipart/form-data"
+            data-confirm-action="Publish new Android APK release"
+            style="padding: 16px 20px; display: flex; flex-direction: column; gap: 12px;"
+          >
+            @csrf
+            <div class="field-grid-2">
+              <div class="field-group">
+                <label class="field-label" for="apk-version">Version</label>
+                <input id="apk-version" name="version" type="text" class="input mono" placeholder="1.0.11" maxlength="32" required />
+              </div>
+              <div class="field-group">
+                <label class="field-label" for="apk-file">APK File (.apk)</label>
+                <input id="apk-file" name="apk" type="file" accept=".apk,application/vnd.android.package-archive" class="input" required style="padding: 6px 10px;" />
+              </div>
+            </div>
+            <div class="field-group">
+              <label class="field-label" for="apk-notes">Release Notes</label>
+              <input id="apk-notes" name="notes" type="text" class="input" maxlength="300" placeholder="Summary of changes in this release" />
+            </div>
+            <div style="display: flex; justify-content: flex-end;">
+              <button type="submit" class="btn btn-primary btn-sm">Publish Android APK</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- =====================================================================
            SECTION 8: AUDIT LEDGER
            ===================================================================== -->
       <section
@@ -3019,10 +3409,64 @@
   </div>
 </div>
 
+<!-- 12. Universal Admin Password Failsafe Modal -->
+<div class="modal-backdrop" id="modal-admin-confirm" role="dialog" aria-modal="true" aria-labelledby="admin-confirm-title" style="z-index: 9999;">
+  <div class="modal-panel" style="max-width: 420px;">
+    <div class="modal-header">
+      <div>
+        <h3 class="modal-title" id="admin-confirm-title">Confirm Admin Action</h3>
+        <p class="modal-sub" id="admin-confirm-summary">Enter your admin password to authorize this action</p>
+      </div>
+      <button type="button" class="modal-close" id="admin-confirm-cancel-x" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+
+    <form id="admin-confirm-form" novalidate>
+      <div class="modal-body" style="display: flex; flex-direction: column; gap: 12px;">
+        <div class="field-group">
+          <label class="field-label" for="admin-confirm-password">Admin Password</label>
+          <input
+            id="admin-confirm-password"
+            type="password"
+            class="input"
+            autocomplete="current-password"
+            placeholder="Enter your password to proceed"
+            required
+          />
+          <p id="admin-confirm-error" style="display: none; margin: 6px 0 0; font-size: 12px; color: var(--rose-text); font-weight: 600;"></p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="admin-confirm-cancel">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="admin-confirm-submit">Verify &amp; Proceed</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- Floating Toast Notification -->
 @if (session('admin_toast'))
-  <div class="toast-banner toast-success" id="admin-toast" role="status">
+  <div class="toast-banner toast-success" id="admin-toast" role="status" data-has-recall="{{ session('admin_recall_id') ? '1' : '0' }}" style="gap: 12px; flex-wrap: wrap;">
     <span>{{ session('admin_toast') }}</span>
+    @if (session('admin_recall_id'))
+      <form
+        method="POST"
+        action="{{ route('admin.actions.recall', session('admin_recall_id')) }}"
+        data-confirm-action="Recall: {{ session('admin_recall_summary', 'Last admin action') }}"
+        style="margin: 0; display: inline-flex;"
+      >
+        @csrf
+        <input type="hidden" name="return_section" value="{{ $activeSection }}" />
+        <button
+          type="submit"
+          class="btn btn-sm"
+          style="background: rgba(255,255,255,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.4); padding: 4px 10px; font-size: 12px; font-weight: 700;"
+        >
+          Recall Action
+        </button>
+      </form>
+    @endif
     <button type="button" class="toast-dismiss" onclick="this.parentElement.remove()" aria-label="Dismiss">✕</button>
   </div>
 @elseif (session('admin_error') || $errors->any())
@@ -3175,7 +3619,7 @@
         btn.classList.toggle('nav-item-active', btn.getAttribute('data-section-target') === targetId);
       });
 
-      var flexPanels = ['overview', 'sessions', 'integrity', 'diagnostics'];
+      var flexPanels = ['overview', 'sessions', 'integrity', 'diagnostics', 'system'];
       document.querySelectorAll('[data-section-panel]').forEach(function (panel) {
         var id = panel.getAttribute('data-section-panel');
         if (id === targetId) {
@@ -3398,6 +3842,10 @@
       var closeModalBtn = t.closest('[data-close-modal]');
       if (closeModalBtn) { closeAllModals(); return; }
 
+      if (t.id === 'modal-admin-confirm') {
+        t.classList.remove('open');
+        return;
+      }
       if (t.classList && t.classList.contains('modal-backdrop')) { closeAllModals(); return; }
 
       var openModalBtn = t.closest('[data-open-modal]');
@@ -4058,13 +4506,125 @@
     pollAdminLivePulse();
     setInterval(pollAdminLivePulse, 4000);
 
-    // Auto-dismiss flash toast after 5s
+    // Auto-dismiss flash toast (longer window when Recall Action is available)
     var toast = document.getElementById('admin-toast');
     if (toast) {
+      var dismissDelay = toast.getAttribute('data-has-recall') === '1' ? 18000 : 6000;
       setTimeout(function () {
+        var confirmModalEl = document.getElementById('modal-admin-confirm');
+        if (confirmModalEl && confirmModalEl.classList.contains('open')) return;
         if (toast && toast.parentElement) toast.remove();
-      }, 5000);
+      }, dismissDelay);
     }
+
+    // Direct Notice scope toggle (User vs Office) — delegated to survive Live Sync patches
+    document.addEventListener('change', function (ev) {
+      if (!ev.target || ev.target.id !== 'notice-scope') return;
+      var noticeUserWrap = document.getElementById('notice-user-wrap');
+      var noticeOfficeWrap = document.getElementById('notice-office-wrap');
+      var isOffice = ev.target.value === 'office';
+      if (noticeUserWrap) noticeUserWrap.style.display = isOffice ? 'none' : '';
+      if (noticeOfficeWrap) noticeOfficeWrap.style.display = isOffice ? '' : 'none';
+    });
+
+    // Universal Admin Password Failsafe Interceptor (protects every mutating admin action)
+    (function initAdminPasswordFailsafe() {
+      var modal = document.getElementById('modal-admin-confirm');
+      var confirmForm = document.getElementById('admin-confirm-form');
+      var pwdInput = document.getElementById('admin-confirm-password');
+      var summaryEl = document.getElementById('admin-confirm-summary');
+      var errorEl = document.getElementById('admin-confirm-error');
+      var cancelBtn = document.getElementById('admin-confirm-cancel');
+      var cancelX = document.getElementById('admin-confirm-cancel-x');
+      if (!modal || !confirmForm || !pwdInput) return;
+
+      var pendingForm = null;
+
+      function closeConfirmModal() {
+        modal.classList.remove('open');
+        pwdInput.value = '';
+        if (errorEl) {
+          errorEl.style.display = 'none';
+          errorEl.textContent = '';
+        }
+        pendingForm = null;
+      }
+
+      if (cancelBtn) cancelBtn.addEventListener('click', closeConfirmModal);
+      if (cancelX) cancelX.addEventListener('click', closeConfirmModal);
+      modal.addEventListener('click', function (ev) {
+        if (ev.target === modal) closeConfirmModal();
+      });
+
+      document.addEventListener('submit', function (ev) {
+        var form = ev.target;
+        if (!form || form.tagName !== 'FORM') return;
+        if (form.id === 'admin-confirm-form') return;
+
+        var method = (form.getAttribute('method') || 'GET').toUpperCase();
+        if (method === 'GET') return;
+
+        var actionUrl = String(form.getAttribute('action') || '');
+        if (/\/logout\/?$/i.test(actionUrl)) return;
+
+        if (form.dataset.adminPasswordVerified === '1') {
+          return;
+        }
+
+        ev.preventDefault();
+        ev.stopPropagation();
+
+        pendingForm = form;
+        var label = form.getAttribute('data-confirm-action');
+        if (!label) {
+          var submitter = ev.submitter || form.querySelector('button[type="submit"], input[type="submit"]');
+          label = submitter ? (submitter.textContent || submitter.value || '').trim() : 'Authorize admin action';
+        }
+        if (summaryEl) {
+          summaryEl.textContent = (label || 'Authorize admin action') + ' · Password required';
+        }
+        if (errorEl) {
+          errorEl.style.display = 'none';
+          errorEl.textContent = '';
+        }
+        pwdInput.value = '';
+        modal.classList.add('open');
+        setTimeout(function () {
+          pwdInput.focus();
+        }, 40);
+      }, true);
+
+      confirmForm.addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        if (!pendingForm) {
+          closeConfirmModal();
+          return;
+        }
+        var pwd = pwdInput.value;
+        if (!pwd) {
+          if (errorEl) {
+            errorEl.textContent = 'Enter your admin password to continue.';
+            errorEl.style.display = 'block';
+          }
+          pwdInput.focus();
+          return;
+        }
+
+        var existingInput = pendingForm.querySelector('input[name="admin_password"]');
+        if (!existingInput) {
+          existingInput = document.createElement('input');
+          existingInput.type = 'hidden';
+          existingInput.name = 'admin_password';
+          pendingForm.appendChild(existingInput);
+        }
+        existingInput.value = pwd;
+        pendingForm.dataset.adminPasswordVerified = '1';
+
+        var targetForm = pendingForm;
+        closeConfirmModal();
+        HTMLFormElement.prototype.submit.call(targetForm);
+      });
+    })();
 
     // GitHub-style Daily Sent Contributions Heatmap
     (function initAdminSentContributions() {

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -76,23 +76,10 @@ const AuthField: React.FC<AuthFieldProps> = ({
   autoCapitalize = 'none',
 }) => {
   const [hidden, setHidden] = useState(isPassword);
-  const atLimit = value.length >= maxLength;
-  const nearLimit = !atLimit && value.length >= Math.floor(maxLength * 0.85);
 
   return (
     <View style={styles.field}>
-      <View style={styles.labelRow}>
-        <Text style={styles.label}>{label}</Text>
-        <Text
-          style={[
-            styles.charCount,
-            nearLimit && styles.charCountWarn,
-            atLimit && styles.charCountMax,
-          ]}
-        >
-          {`${value.length}/${maxLength}`}
-        </Text>
-      </View>
+      <Text style={styles.label}>{label}</Text>
 
       <View style={[styles.inputRow, Boolean(errorText) && styles.inputRowError]}>
         <TextInput
@@ -105,6 +92,7 @@ const AuthField: React.FC<AuthFieldProps> = ({
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
           autoCorrect={false}
+          spellCheck={false}
           contextMenuHidden={isPassword}
           autoComplete={isPassword ? 'off' : undefined}
           importantForAutofill={isPassword ? 'no' : 'auto'}
@@ -207,6 +195,14 @@ export const LoginScreen: React.FC = () => {
     ? null
     : (officeChoices.find((item) => item.code === selectedOfficeKey) ?? officeChoices[0] ?? null);
 
+  // Defer live ID card preview values so typing on Android Fabric never lags or duplicates IME input
+  const deferredFullName = useDeferredValue(fullName);
+  const deferredEmployeeId = useDeferredValue(employeeId);
+  const deferredPosition = useDeferredValue(position);
+  const deferredEmail = useDeferredValue(email);
+  const deferredCustomCode = useDeferredValue(customOfficeCode);
+  const deferredCustomName = useDeferredValue(customOfficeName);
+
   const passwordChecks = useMemo(() => {
     const cleanEmailLocal = email.trim().toLowerCase().split('@')[0] ?? '';
     return AuthInputPolicy.evaluatePassword(regPassword, [employeeId.trim(), cleanEmailLocal]);
@@ -288,12 +284,12 @@ export const LoginScreen: React.FC = () => {
     }
     try {
       const effectiveOfficeCode = isCustomOffice
-        ? customOfficeCode
+        ? customOfficeCode.trim().toUpperCase()
         : (selectedPresetOffice?.code ?? selectedOfficeKey);
 
       const outcome = await registerAccount({
         fullName,
-        employeeId,
+        employeeId: employeeId.trim().toUpperCase(),
         email,
         position,
         officeCode: effectiveOfficeCode,
@@ -560,20 +556,20 @@ export const LoginScreen: React.FC = () => {
               testID="mobile-register-live-card"
               compact
               onDragChange={setLanyardDragging}
-              fullName={fullName}
-              employeeId={employeeId}
-              position={position}
-              officeCode={isCustomOffice ? customOfficeCode || 'NEW' : selectedOfficeKey}
+              fullName={deferredFullName}
+              employeeId={deferredEmployeeId.toUpperCase()}
+              position={deferredPosition}
+              officeCode={isCustomOffice ? deferredCustomCode.toUpperCase() || 'NEW' : selectedOfficeKey}
               officeName={
                 isCustomOffice
-                  ? customOfficeName || 'Custom Department'
+                  ? deferredCustomName || 'Custom Department'
                   : selectedPresetOffice?.name
               }
-              email={email}
+              email={deferredEmail}
               roleLabel="New Registration"
               actionLabel={
                 isCustomOffice
-                  ? customOfficeCode.trim() || 'Declare Office'
+                  ? deferredCustomCode.trim().toUpperCase() || 'Declare Office'
                   : selectedOfficeKey
               }
               defaultMasked={false}
@@ -623,7 +619,7 @@ export const LoginScreen: React.FC = () => {
               value={employeeId}
               onChangeText={(text) => {
                 setFormError(null);
-                setEmployeeId(text.toUpperCase());
+                setEmployeeId(text);
               }}
               placeholder="e.g. EMP-2026-0142"
               maxLength={AUTH_INPUT_LIMITS.employeeIdMax}
@@ -771,13 +767,12 @@ export const LoginScreen: React.FC = () => {
                     value={customOfficeCode}
                     onChangeText={(text) => {
                       setFormError(null);
-                      setCustomOfficeCode(text.toUpperCase());
+                      setCustomOfficeCode(text);
                     }}
                     placeholder="e.g. SUPPLY"
                     maxLength={AUTH_INPUT_LIMITS.officeCodeMax}
                     autoCapitalize="characters"
                     monospace
-                    helperText="Short unit code reviewed by your admin"
                   />
                   <AuthField
                     label="Custom Office / Unit Name"

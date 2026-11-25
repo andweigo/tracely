@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  FlatList,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,6 +13,8 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { errorCodes, isErrorWithCode, pick, types } from '@react-native-documents/picker';
 import {
+  Check,
+  ChevronDown,
   Clock,
   FileText,
   FileUp,
@@ -18,9 +22,11 @@ import {
   Plus,
   Printer,
   QrCode,
+  Search,
   Send as SendIcon,
   SlidersHorizontal,
   Trash2,
+  X,
 } from 'lucide-react-native';
 import { Document } from '../../domain/entities/Document';
 import {
@@ -32,7 +38,7 @@ import { DocumentViewerBridge } from '../../domain/security/DocumentViewerBridge
 import { DISPOSITION_REMARK_PRESETS } from '../../repositories/contracts/IDocumentRepository';
 import { useAppServices } from '../../state/AppServiceContext';
 import { AvailabilityBadge } from '../components/Badges';
-import { MobileHeaderActions } from '../components/MobileHeaderActions';
+import { MobileScreenHeader } from '../components/MobileTopBars';
 import { OpaqueQrModal } from '../sheets/OpaqueQrModal';
 import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 import {
@@ -159,10 +165,25 @@ export const SendScreen: React.FC = () => {
     }
   }, [categories, categoryId]);
 
+  const [recipientModalOpen, setRecipientModalOpen] = useState(false);
+  const [recipientSearch, setRecipientSearch] = useState('');
+
   const peers = useMemo(
     () => personnelDirectory.filter((p) => p.isActive && p.id !== actor?.id),
     [personnelDirectory, actor],
   );
+
+  const filteredPeers = useMemo(() => {
+    const q = recipientSearch.trim().toLowerCase();
+    if (!q) return peers;
+    return peers.filter(
+      (p) =>
+        p.fullName.toLowerCase().includes(q) ||
+        p.office.code.toLowerCase().includes(q) ||
+        p.office.name.toLowerCase().includes(q) ||
+        p.position.toLowerCase().includes(q),
+    );
+  }, [peers, recipientSearch]);
 
   const recentPeers = useMemo(
     () =>
@@ -501,20 +522,15 @@ export const SendScreen: React.FC = () => {
     (medium === 'soft_copy' && Boolean(actor) && pickedFiles.length === 0);
 
   return (
-    <ScrollView
-      contentContainerStyle={styles.container}
-      keyboardShouldPersistTaps="handled"
-      keyboardDismissMode="on-drag"
-      automaticallyAdjustKeyboardInsets
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Clean Header */}
-      <View style={styles.topHeader}>
-        <View style={styles.headerCopy}>
-          <Text style={styles.screenTitle}>Send Document</Text>
-        </View>
-        <MobileHeaderActions variant="outlined" />
-      </View>
+    <View style={{ flex: 1, backgroundColor: SDO_COLORS.bg }}>
+      <MobileScreenHeader hideBack title="Send" />
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        automaticallyAdjustKeyboardInsets
+        showsVerticalScrollIndicator={false}
+      >
 
       {/* Recent Sent / Generated Banner */}
       {issuedDocs.length === 1 ? (
@@ -750,7 +766,7 @@ export const SendScreen: React.FC = () => {
                         placeholderTextColor={SDO_COLORS.textMuted}
                         style={styles.fileTitleInput}
                       />
-                    ) : null}
+                    ) : undefined}
                   </View>
                 );
               })}
@@ -840,63 +856,33 @@ export const SendScreen: React.FC = () => {
         </View>
       )}
 
-      {/* Send To */}
+      {/* Send To (Searchable Dropdown) */}
       <View style={styles.field}>
         <Text style={styles.label}>Send To</Text>
-        {recentPeers.length > 0 ? (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.recentRow}
-          >
-            <View style={styles.recentLabelWrap}>
-              <Clock size={11} color={SDO_COLORS.textMuted} />
-              <Text style={styles.recentLabel}>Recent:</Text>
-            </View>
-            {recentPeers.map((peer) => {
-              const selected = peer.id === recipientUserId;
-              return (
-                <Pressable
-                  key={`recent-${peer.id}`}
-                  onPress={() => setRecipientUserId(peer.id)}
-                  style={[styles.recentChip, selected && styles.recentChipActive]}
-                >
-                  <Text style={[styles.recentChipText, selected && styles.recentChipTextActive]}>
-                    {`${peer.office.code} · ${peer.fullName.split(' ')[0]}`}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-        ) : null}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.chipRow}
+
+        <Pressable
+          testID="mobile-send-recipient-dropdown"
+          onPress={() => {
+            setRecipientSearch('');
+            setRecipientModalOpen(true);
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Select recipient"
+          style={styles.recipientDropdownBtn}
         >
-          <Pressable
-            onPress={() => setRecipientUserId(null)}
-            style={[styles.chip, recipientUserId === null && styles.chipActive]}
+          <Text
+            numberOfLines={1}
+            style={[
+              styles.recipientDropdownText,
+              !chosenRecipient && styles.recipientDropdownPlaceholder,
+            ]}
           >
-            <Text style={[styles.chipText, recipientUserId === null && styles.chipTextActive]}>
-              Hold at My Desk
-            </Text>
-          </Pressable>
-          {peers.map((peer) => {
-            const selected = peer.id === recipientUserId;
-            return (
-              <Pressable
-                key={peer.id}
-                onPress={() => setRecipientUserId(peer.id)}
-                style={[styles.chip, selected && styles.chipActive]}
-              >
-                <Text style={[styles.chipText, selected && styles.chipTextActive]}>
-                  {`${peer.office.code} · ${peer.fullName.split(' ')[0]}`}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
+            {chosenRecipient
+              ? `${chosenRecipient.office.code} · ${chosenRecipient.fullName}`
+              : 'Hold at My Desk (Optional)'}
+          </Text>
+          <ChevronDown size={17} color={SDO_COLORS.textSecondary} />
+        </Pressable>
 
         {chosenRecipient ? (
           <View style={styles.recipientRow}>
@@ -920,6 +906,150 @@ export const SendScreen: React.FC = () => {
             </Text>
           </Pressable>
         ) : null}
+
+        <Modal
+          visible={recipientModalOpen}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setRecipientModalOpen(false)}
+        >
+          <Pressable
+            style={styles.modalBackdrop}
+            onPress={() => setRecipientModalOpen(false)}
+          >
+            <Pressable style={styles.modalSheet} onPress={() => {}}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Send To</Text>
+                <Pressable
+                  onPress={() => setRecipientModalOpen(false)}
+                  accessibilityLabel="Close recipient picker"
+                  style={styles.modalCloseBtn}
+                >
+                  <X size={16} color={SDO_COLORS.textSecondary} />
+                </Pressable>
+              </View>
+
+              <View style={styles.modalSearchBox}>
+                <Search size={15} color={SDO_COLORS.textMuted} />
+                <TextInput
+                  testID="mobile-send-recipient-search"
+                  value={recipientSearch}
+                  onChangeText={setRecipientSearch}
+                  placeholder="Search name, office, or position..."
+                  placeholderTextColor={SDO_COLORS.textMuted}
+                  style={styles.modalSearchInput}
+                  autoCorrect={false}
+                />
+                {recipientSearch ? (
+                  <Pressable onPress={() => setRecipientSearch('')} hitSlop={8}>
+                    <X size={14} color={SDO_COLORS.textMuted} />
+                  </Pressable>
+                ) : null}
+              </View>
+
+              {!recipientSearch.trim() && recentPeers.length > 0 ? (
+                <View style={styles.modalRecentBlock}>
+                  <View style={styles.recentLabelWrap}>
+                    <Clock size={11} color={SDO_COLORS.textMuted} />
+                    <Text style={styles.recentLabel}>Recent</Text>
+                  </View>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.recentRow}
+                  >
+                    {recentPeers.map((peer) => {
+                      const selected = peer.id === recipientUserId;
+                      return (
+                        <Pressable
+                          key={`recent-${peer.id}`}
+                          onPress={() => {
+                            setRecipientUserId(peer.id);
+                            setRecipientModalOpen(false);
+                          }}
+                          style={[styles.recentChip, selected && styles.recentChipActive]}
+                        >
+                          <Text style={[styles.recentChipText, selected && styles.recentChipTextActive]}>
+                            {`${peer.office.code} · ${peer.fullName.split(' ')[0]}`}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+              ) : null}
+
+              <FlatList
+                data={filteredPeers}
+                keyExtractor={(item) => item.id}
+                keyboardShouldPersistTaps="handled"
+                initialNumToRender={16}
+                maxToRenderPerBatch={20}
+                windowSize={7}
+                style={styles.modalList}
+                ListHeaderComponent={
+                  !recipientSearch.trim() ? (
+                    <Pressable
+                      onPress={() => {
+                        setRecipientUserId(null);
+                        setRecipientModalOpen(false);
+                      }}
+                      style={[
+                        styles.modalOption,
+                        recipientUserId === null && styles.modalOptionActive,
+                      ]}
+                    >
+                      <View style={styles.modalOptionCopy}>
+                        <Text
+                          style={[
+                            styles.modalOptionName,
+                            recipientUserId === null && styles.modalOptionNameActive,
+                          ]}
+                        >
+                          Hold at My Desk
+                        </Text>
+                        <Text style={styles.modalOptionSub}>Register locally without sending</Text>
+                      </View>
+                      {recipientUserId === null ? <Check size={16} color={SDO_COLORS.navy} /> : null}
+                    </Pressable>
+                  ) : undefined
+                }
+                ListEmptyComponent={
+                  <View style={styles.modalEmpty}>
+                    <Text style={styles.modalOptionSub}>No matching personnel found.</Text>
+                  </View>
+                }
+                renderItem={({ item: peer }) => {
+                  const selected = peer.id === recipientUserId;
+                  return (
+                    <Pressable
+                      onPress={() => {
+                        setRecipientUserId(peer.id);
+                        setRecipientModalOpen(false);
+                      }}
+                      style={[styles.modalOption, selected && styles.modalOptionActive]}
+                    >
+                      <View style={styles.modalOptionCopy}>
+                        <Text
+                          style={[
+                            styles.modalOptionName,
+                            selected && styles.modalOptionNameActive,
+                          ]}
+                        >
+                          {peer.fullName}
+                        </Text>
+                        <Text numberOfLines={1} style={styles.modalOptionSub}>
+                          {`${peer.office.code} · ${peer.office.name} · ${peer.position}`}
+                        </Text>
+                      </View>
+                      {selected ? <Check size={16} color={SDO_COLORS.navy} /> : null}
+                    </Pressable>
+                  );
+                }}
+              />
+            </Pressable>
+          </Pressable>
+        </Modal>
       </View>
 
       {/* Progressive Disclosure: Routing Note (only when sending to a recipient) */}
@@ -1088,7 +1218,7 @@ export const SendScreen: React.FC = () => {
                         ))}
                       </ScrollView>
                     </View>
-                  ) : null}
+                  ) : undefined}
                   <View style={styles.customCatActions}>
                     <Pressable
                       onPress={() => {
@@ -1188,11 +1318,135 @@ export const SendScreen: React.FC = () => {
           onClose={() => setQrModalDoc(null)}
         />
       ) : null}
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  recipientDropdownBtn: {
+    minHeight: 46,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: SDO_COLORS.border,
+    backgroundColor: SDO_COLORS.surface,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  recipientDropdownText: {
+    flex: 1,
+    fontFamily: SDO_FONTS.sans,
+    fontSize: 13.5,
+    fontWeight: '600',
+    color: SDO_COLORS.textPrimary,
+  },
+  recipientDropdownPlaceholder: {
+    color: SDO_COLORS.textMuted,
+    fontWeight: '500',
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.45)',
+    justifyContent: 'center',
+    paddingHorizontal: 18,
+  },
+  modalSheet: {
+    backgroundColor: SDO_COLORS.surface,
+    borderRadius: 16,
+    maxHeight: '78%',
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: SDO_COLORS.border,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+    borderBottomWidth: 1,
+    borderBottomColor: SDO_COLORS.border,
+  },
+  modalTitle: {
+    fontFamily: SDO_FONTS.sans,
+    fontSize: 15,
+    fontWeight: '700',
+    color: SDO_COLORS.navyInk,
+  },
+  modalCloseBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: SDO_COLORS.surfaceSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalSearchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: SDO_COLORS.border,
+    backgroundColor: SDO_COLORS.surfaceSoft,
+  },
+  modalSearchInput: {
+    flex: 1,
+    padding: 0,
+    fontFamily: SDO_FONTS.sans,
+    fontSize: 13.5,
+    color: SDO_COLORS.textPrimary,
+  },
+  modalRecentBlock: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    gap: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: SDO_COLORS.border,
+  },
+  modalList: {
+    maxHeight: 360,
+  },
+  modalOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: SDO_COLORS.border,
+  },
+  modalOptionActive: {
+    backgroundColor: '#EFF6FF',
+  },
+  modalOptionCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  modalOptionName: {
+    fontFamily: SDO_FONTS.sans,
+    fontSize: 13.5,
+    fontWeight: '600',
+    color: SDO_COLORS.textPrimary,
+  },
+  modalOptionNameActive: {
+    color: SDO_COLORS.navy,
+    fontWeight: '700',
+  },
+  modalOptionSub: {
+    fontFamily: SDO_FONTS.sans,
+    fontSize: 11.5,
+    color: SDO_COLORS.textMuted,
+  },
+  modalEmpty: {
+    paddingVertical: 24,
+    alignItems: 'center',
+  },
   container: {
     paddingHorizontal: 20,
     paddingTop: 14,

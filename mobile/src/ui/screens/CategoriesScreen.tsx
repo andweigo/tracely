@@ -24,7 +24,7 @@ import { DocumentCopyFormat } from '../../domain/enums/DomainEnums';
 import { useAppServices } from '../../state/AppServiceContext';
 import { EmptyState } from '../components/EmptyState';
 import { MobileFolder, MobileFolderSheetItem } from '../components/MobileFolder';
-import { MobileHeaderActions } from '../components/MobileHeaderActions';
+import { MobileScreenHeader } from '../components/MobileTopBars';
 import { CategoryDeclareSheet } from '../sheets/CategoryDeclareSheet';
 import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 import { sortDocuments } from '../utils/inboxFilter';
@@ -142,17 +142,7 @@ export const CategoriesScreen: React.FC = () => {
 
   return (
     <View testID="mobile-categories-screen" style={styles.screen}>
-      <View style={styles.topHeader}>
-        <Pressable
-          onPress={() => goBack()}
-          accessibilityLabel="Back"
-          style={styles.circleBtn}
-        >
-          <ArrowLeft size={18} color={SDO_COLORS.navyInk} />
-        </Pressable>
-        <Text style={styles.headerTitle}>Categories</Text>
-        <MobileHeaderActions variant="soft" />
-      </View>
+      <MobileScreenHeader title="Categories" />
 
       <ScrollView
         contentContainerStyle={styles.container}
