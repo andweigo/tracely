@@ -98,7 +98,7 @@ export const CompletedScreen: React.FC = () => {
           <EmptyState
             icon={<CheckCircle2 size={22} color={SDO_COLORS.navy} />}
             title="No completed documents yet"
-            description="Documents marked Approved & Released or Archived move here and leave your Inbox."
+            description="Approved and archived documents appear here."
           />
         ) : (
           pageItems.map((doc) => {
@@ -119,13 +119,13 @@ export const CompletedScreen: React.FC = () => {
                       <Archive size={11} color={SDO_COLORS.textSecondary} />
                     )}
                     <Text style={[styles.pillText, { color: approved ? SDO_COLORS.emeraldText : SDO_COLORS.textSecondary }]}>
-                      {approved ? 'Approved & Released' : 'Archived · Closed'}
+                      {approved ? 'Approved' : 'Archived'}
                     </Text>
                   </View>
                 </View>
                 <Text style={styles.title}>{doc.title}</Text>
                 <Text style={styles.meta}>
-                  {doc.categoryName} · Finalized at {doc.currentOffice.code}
+                  {doc.categoryName} · {doc.currentOffice.code}
                 </Text>
               </Pressable>
             );

@@ -356,9 +356,9 @@
           height="48"
         />
         <div>
-          <div class="exec-republic">Tracely · Document Custody &amp; QR Tracking</div>
-          <h1 class="exec-agency">Tracely Governance Console</h1>
-          <div class="exec-doc-title">Executive Document SLA &amp; Bottleneck Report</div>
+          <div class="exec-republic">Tracely</div>
+          <h1 class="exec-agency">Admin Report</h1>
+          <div class="exec-doc-title">Document Turnaround &amp; SLA Report</div>
         </div>
       </div>
 
@@ -392,7 +392,7 @@
       </div>
 
       <div class="exec-kpi-card">
-        <div class="exec-kpi-label">Stalled ("Tengga")</div>
+        <div class="exec-kpi-label">Stalled</div>
         <div class="exec-kpi-val" style="color: {{ $summary['stalledDocs'] > 0 ? 'var(--rose)' : 'var(--emerald)' }};">
           {{ $summary['stalledDocs'] }}
         </div>
@@ -442,7 +442,7 @@
                   @if ($row['delayedCount'] > 0)
                     <span class="pill pill-rose">{{ $row['delayedCount'] }} delayed</span>
                   @else
-                    <span class="pill pill-emerald">On track</span>
+                    <span style="color: var(--text-muted); font-size: 12px;">On track</span>
                   @endif
                 </td>
               </tr>

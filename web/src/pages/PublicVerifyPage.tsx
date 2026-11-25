@@ -149,16 +149,13 @@ export const PublicVerifyPage: React.FC = () => {
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: 'var(--text-secondary)' }}>
               <Lock size={12} />
-              <span>Privacy-safe public view: titles, remarks, and attached files stay protected.</span>
+              <span>Document titles and files remain private.</span>
             </div>
           </div>
         ) : (
           <div className="card-soft" style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 12, color: 'var(--text-secondary)' }}>
             <ShieldCheck size={16} color="var(--navy)" style={{ flexShrink: 0, marginTop: 1 }} />
-            <span>
-              Scan the verification QR printed on any Tracely A4 transmittal sheet or enter a
-              Tracking Code above to confirm its authenticity and current office without signing in.
-            </span>
+            <span>Enter a tracking code or scan a printed QR to verify a document.</span>
           </div>
         )}
       </div>

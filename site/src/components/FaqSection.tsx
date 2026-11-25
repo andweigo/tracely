@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, HelpCircle } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 
 interface FaqItem {
   readonly question: string;
@@ -10,32 +10,32 @@ const FAQ_ITEMS: ReadonlyArray<FaqItem> = [
   {
     question: 'Does Tracely support both physical folders and digital files?',
     answer:
-      'Yes. For physical folders, Tracely generates a printable QR routing slip you attach to the packet and scan at each handoff. For digital documents, you can upload single files, multi-file bundles under one QR code, or batch separate documents—each verified with SHA-256 checksums.',
+      'Yes. Print a QR routing slip for physical folders, or upload single files, bundled packets, or batch dispatches under a tracking code.',
   },
   {
     question: 'How do new staff accounts get access?',
     answer:
-      'Team members can self-register on Web or Android with their Employee ID, email, and office assignment. New accounts are held cleanly on a live Pending Approval screen until an ICT Administrator or authorized approver verifies and activates them.',
+      'Staff can register on Web or Android using their Employee ID, email, and office. An administrator reviews and approves the account before access is granted.',
   },
   {
-    question: 'How do I install the Tracely Android app without Google Play?',
+    question: 'How do I install the Tracely Android app?',
     answer:
-      'Scan the QR code on this page or open the Android download link on your phone, tap Download Tracely APK, and open the file. If Android prompts you, allow "Install unknown apps" for your browser—the app connects automatically once launched.',
+      'Scan the QR code on this page or open the Android download link, tap Download Tracely APK, and open the file. If prompted, allow installing apps from your browser.',
   },
   {
-    question: 'How does Tracely prevent unauthorized viewing or fake receipts?',
+    question: 'How does Tracely prevent fake receipts or unauthorized viewing?',
     answer:
-      'Every in-transit document stays sealed until the designated recipient unit scans the opaque QR token or enters the verification code. Senders are strictly blocked from self-receiving their own dispatches, and Confidential documents automatically engage a 60-second session lock.',
+      'Sent files stay sealed until the receiving office scans the QR code or enters the unlock code. Senders cannot receive their own files, and Confidential files auto-lock after 60 seconds.',
   },
   {
-    question: 'What happens when mobile internet drops during field or hallway handoffs?',
+    question: 'What happens if the internet drops?',
     answer:
-      'Tracely caches your office tracking snapshots and stores captured proof-of-receipt photos in a local offline queue (automatically stripped of GPS/EXIF metadata) that retries and syncs automatically as soon as connectivity returns.',
+      'Captured receipt photos and recent tracking info stay saved on your device and sync automatically once you are back online.',
   },
   {
-    question: 'Can external partners or auditors verify a document without an account?',
+    question: 'Can people outside the office check a document status?',
     answer:
-      'Yes. Each registered document carries a privacy-safe public verification link and QR code that displays the tracking code, current office, lifecycle status, milestone count, and truncated integrity hash without exposing confidential attachments.',
+      'Yes. Each document has a public verification link showing its tracking code, current office, and status without revealing private attachments.',
   },
 ];
 
@@ -46,10 +46,7 @@ export const FaqSection: React.FC = () => {
     <section id="faq" className="section section-soft">
       <div className="container container-narrow">
         <div className="section-header center">
-          <span className="eyebrow">
-            <HelpCircle size={13} /> Common Questions
-          </span>
-          <h2>Everything teams ask before rolling out Tracely</h2>
+          <h2>Common questions</h2>
         </div>
 
         <div className="faq-list">

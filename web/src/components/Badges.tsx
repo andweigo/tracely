@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, FileCheck2, FolderKanban, Layers, Lock, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { Clock, Lock, ShieldAlert, ShieldCheck } from 'lucide-react';
 import {
   ConfidentialityTier,
   DocumentCopyFormat,
@@ -7,19 +7,30 @@ import {
 } from '../domain/types';
 
 export const SlaBadge: React.FC<{ state: SlaState; suffix?: string }> = ({ state, suffix }) => {
+  if (state === 'on_track') {
+    if (!suffix) return null;
+    return (
+      <span
+        style={{
+          fontSize: 11.5,
+          fontWeight: 600,
+          color: 'var(--text-muted)',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 4,
+        }}
+      >
+        {suffix}
+      </span>
+    );
+  }
+
   const label =
     state === 'overdue'
       ? `Overdue${suffix ? ` · ${suffix}` : ''}`
-      : state === 'at_risk'
-        ? `Due soon${suffix ? ` · ${suffix}` : ''}`
-        : `On track${suffix ? ` · ${suffix}` : ''}`;
+      : `Due soon${suffix ? ` · ${suffix}` : ''}`;
 
-  const cls =
-    state === 'overdue'
-      ? 'pill pill-rose'
-      : state === 'at_risk'
-        ? 'pill pill-amber'
-        : 'pill pill-emerald';
+  const cls = state === 'overdue' ? 'pill pill-rose' : 'pill pill-amber';
 
   return (
     <span className={cls}>
@@ -30,26 +41,17 @@ export const SlaBadge: React.FC<{ state: SlaState; suffix?: string }> = ({ state
 };
 
 export const CopyFormatBadge: React.FC<{ format: DocumentCopyFormat }> = ({ format }) => {
-  if (format === 'hard_copy') {
-    return (
-      <span className="pill pill-amber">
-        <FolderKanban size={11} />
-        <span>Hard Copy</span>
-      </span>
-    );
-  }
-  if (format === 'hybrid') {
-    return (
-      <span className="pill pill-indigo">
-        <Layers size={11} />
-        <span>Hard + Soft Copy</span>
-      </span>
-    );
-  }
+  const label =
+    format === 'hard_copy' ? 'Hard Copy' : format === 'hybrid' ? 'Hard + Soft' : 'Soft Copy';
   return (
-    <span className="pill pill-navy">
-      <FileCheck2 size={11} />
-      <span>Soft Copy</span>
+    <span
+      style={{
+        fontSize: 11.5,
+        fontWeight: 600,
+        color: 'var(--text-secondary)',
+      }}
+    >
+      {label}
     </span>
   );
 };
@@ -71,5 +73,5 @@ export const TierBadge: React.FC<{ tier: ConfidentialityTier }> = ({ tier }) => 
       </span>
     );
   }
-  return <span className="pill pill-slate">Standard</span>;
+  return null;
 };

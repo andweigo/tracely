@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Bell, BellRing, CheckCheck, Lock } from 'lucide-react';
+import { Bell, BellRing, CheckCheck } from 'lucide-react';
 import { useWebApp } from '../state/WebAppContext';
 import { paginateList, PaginationBar } from '../components/PaginationBar';
 import { formatClockTime, formatCompactDate } from '../utils/formatters';
@@ -54,21 +54,13 @@ export const NotificationsPage: React.FC = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div className="section-header-row">
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <h3 className="section-title">Routing Notifications</h3>
-            <span className="pill pill-slate">{notifications.length} Total</span>
-            {unreadNotificationCount > 0 ? (
-              <span data-testid="web-alerts-unread-badge" className="pill pill-rose">
-                {unreadNotificationCount} Unread
-              </span>
-            ) : (
-              <span className="pill pill-emerald">All Caught Up</span>
-            )}
-          </div>
-          <p className="doc-meta">
-            Privacy-safe mode masks confidential record titles outside authenticated views.
-          </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <h3 className="section-title">Notifications</h3>
+          {unreadNotificationCount > 0 ? (
+            <span data-testid="web-alerts-unread-badge" className="pill pill-rose">
+              {unreadNotificationCount} unread
+            </span>
+          ) : null}
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
@@ -78,7 +70,7 @@ export const NotificationsPage: React.FC = () => {
               className="btn btn-soft"
               onClick={() => void handleRequestDeviceAlerts()}
             >
-              <BellRing size={15} /> Enable Device Alerts
+              <BellRing size={15} /> Enable Alerts
             </button>
           ) : null}
 
@@ -89,7 +81,7 @@ export const NotificationsPage: React.FC = () => {
               disabled={isBusy}
               onClick={() => void markAllNotificationsRead()}
             >
-              <CheckCheck size={15} /> Mark All Read ({unreadNotificationCount})
+              <CheckCheck size={15} /> Mark All Read
             </button>
           ) : null}
         </div>
@@ -101,15 +93,12 @@ export const NotificationsPage: React.FC = () => {
             <Bell size={22} />
           </div>
           <h4 className="empty-title">No Alerts Yet</h4>
-          <p className="empty-desc">
-            Custody dispatches, SLA reminders, and return notices appear here once linked to your
-            account.
-          </p>
+          <p className="empty-desc">Document updates and reminders will appear here.</p>
         </div>
       ) : (
         <div className="notifications-grid">
           {pagedNotifications.pageItems.map((item) => {
-            const displayTitle = actor ? item.title : 'Tracely Custody Alert';
+            const displayTitle = actor ? item.title : 'Tracely Alert';
             const displayContent = actor ? item.content : item.lockScreenPreview;
 
             return (
@@ -125,36 +114,24 @@ export const NotificationsPage: React.FC = () => {
                   }
                 }}
                 style={{
-                  borderColor: item.read ? 'transparent' : 'var(--sky-border)',
-                  background: item.read ? 'var(--surface-soft)' : 'var(--sky-soft)',
+                  borderColor: item.read ? 'var(--border)' : 'var(--sky-border)',
+                  background: item.read ? 'var(--surface)' : 'var(--sky-soft)',
                 }}
               >
                 <div className="doc-card-top">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                    {!item.read ? (
-                      <span className="pill pill-amber">Unread</span>
-                    ) : (
-                      <span className="pill pill-slate">Read</span>
-                    )}
-                    <span className="pill pill-slate">
-                      <Lock size={10} /> {actor ? 'Authenticated Detail' : 'Privacy Masked'}
-                    </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    {!item.read ? <span className="pill pill-amber">Unread</span> : null}
                   </div>
                   <span className="tabular" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                     {formatCompactDate(item.receivedAt)} {formatClockTime(item.receivedAt)}
                   </span>
                 </div>
-                <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--navy-ink)' }}>
+                <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--navy-ink)' }}>
                   {displayTitle}
                 </div>
-                <div style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--text-primary)' }}>
+                <div style={{ fontSize: 13, lineHeight: 1.45, color: 'var(--text-secondary)' }}>
                   {displayContent}
                 </div>
-                {actor ? (
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                    Lock-screen preview: {item.lockScreenPreview}
-                  </div>
-                ) : null}
               </div>
             );
           })}

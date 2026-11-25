@@ -342,8 +342,8 @@ export const SentScreen: React.FC = () => {
           }
           description={
             query.trim() || statusFilter !== 'all' || dateFilter !== 'all'
-              ? 'Try clearing your search or switching the date or status filter.'
-              : 'Documents and hard-copy QR slips you upload or dispatch appear here with live receipt status.'
+              ? 'Try a different search or filter.'
+              : 'Documents you send appear here.'
           }
           action={
             <Pressable onPress={() => setActiveTab('send')} style={styles.ctaBtn}>

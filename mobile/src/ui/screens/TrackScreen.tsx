@@ -190,8 +190,8 @@ export const TrackScreen: React.FC = () => {
                 </Text>
                 <Text style={styles.emptyBody}>
                   {searchQuery.trim()
-                    ? 'Tap below to query the Tracely server directly for this tracking code.'
-                    : 'Once connected to your Tracely server, documents originated or sent by your office appear here with live received timestamps.'}
+                    ? 'Tap below to check the server for this tracking code.'
+                    : 'Documents sent by your office appear here.'}
                 </Text>
               </View>
             )}

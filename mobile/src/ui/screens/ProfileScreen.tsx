@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import {
   ArrowLeft,
-  BadgeCheck,
   BellOff,
   Building2,
   CalendarClock,
@@ -173,15 +172,7 @@ export const ProfileScreen: React.FC = () => {
 
         <View style={styles.identityMetaBar}>
           <View style={styles.identityStatusRow}>
-            <View style={styles.hrVerifiedPill}>
-              <BadgeCheck size={12} color={SDO_COLORS.emeraldText} />
-              <Text style={styles.hrVerifiedText}>HR-LOCKED IDENTITY</Text>
-            </View>
-            {actor ? (
-              <AvailabilityBadge status={actor.availability} />
-            ) : (
-              <Text style={styles.heroStatusPill}>Pre-Auth Mode</Text>
-            )}
+            {actor ? <AvailabilityBadge status={actor.availability} /> : null}
           </View>
           <Pressable
             testID="mobile-open-user-profile-btn"
@@ -189,9 +180,7 @@ export const ProfileScreen: React.FC = () => {
             style={styles.editUserProfileBtn}
           >
             <UserCog size={15} color={SDO_COLORS.navy} />
-            <Text style={styles.editUserProfileBtnText}>
-              Edit Info, Preferences & Settings
-            </Text>
+            <Text style={styles.editUserProfileBtnText}>Edit Profile</Text>
           </Pressable>
         </View>
 
@@ -289,8 +278,7 @@ export const ProfileScreen: React.FC = () => {
 
           {!actor ? (
             <Text style={styles.helperHint}>
-              Identity fields are managed by your administrator. Availability and delegation activate once
-              Sanctum sign-in is enabled.
+              Sign in to manage your availability and delegate.
             </Text>
           ) : null}
 

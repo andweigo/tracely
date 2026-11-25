@@ -60,7 +60,6 @@ export const WebShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
     pendingSentCount,
     unreadNotificationCount,
     userPreferences,
-    realtimeStatus,
     signOut,
     refreshWorkspace,
     isRefreshing,
@@ -266,15 +265,6 @@ export const WebShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
                 </span>
               ) : null}
             </button>
-
-            {actor ? (
-              <div className="server-pill" style={{ cursor: 'default' }}>
-                <span className="server-dot" />
-                <span className="server-pill-label">
-                  {`${actor.office.code} · ${realtimeStatus === 'live' ? 'Live Push' : 'Live'}`}
-                </span>
-              </div>
-            ) : null}
 
             <button
               type="button"

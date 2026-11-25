@@ -11,14 +11,12 @@ import {
   Fingerprint,
   FolderKanban,
   KeyRound,
-  Layers,
   Lock,
   Menu,
   Play,
   QrCode,
   ScanLine,
   ShieldAlert,
-  ShieldCheck,
   Smartphone,
   UserCheck,
   X,
@@ -40,20 +38,20 @@ const NAV_LINKS = [
 
 const PAIN_COMPARISONS = [
   {
-    before: 'Handwritten logbooks with illegible initials and missing timestamps',
-    after: 'Instant QR scan receipts with immutable user, office, and timestamp records',
+    before: 'Paper logbooks with messy initials and missing times',
+    after: 'QR scan receipts that log who received each file and when',
   },
   {
-    before: 'Hours wasted calling offices to ask "Who has this folder right now?"',
-    after: 'Live custody timeline showing exact office holder and SLA countdown in seconds',
+    before: 'Calling offices one by one to ask who has a folder',
+    after: 'Live tracking showing the exact office and deadline at a glance',
   },
   {
-    before: 'Unverified file copies floating across email threads and chat apps',
-    after: 'SHA-256 checksummed digital bundles sealed until recipient scan unlocks access',
+    before: 'Unverified file copies scattered across email and chat',
+    after: 'Verified digital files sealed until the receiving office scans',
   },
   {
-    before: 'Documents stalling on desks whenever an approver goes on leave',
-    after: 'Out-of-office delegate routing and automated Due Soon / Overdue escalation alerts',
+    before: 'Documents sitting idle whenever an approver is away',
+    after: 'Out-of-office delegates and reminders before deadlines slip',
   },
 ] as const;
 
@@ -61,56 +59,53 @@ const WORKFLOW_STEPS = [
   {
     num: '01',
     title: 'Register & Seal',
-    badge: 'Hard Copy or Digital',
     icon: <QrCode size={19} />,
-    body: 'Register a physical folder to print a crisp QR transmittal slip, or upload a SHA-256 verified digital bundle under one unique tracking code.',
+    body: 'Print a QR slip for a physical folder or upload digital files under one tracking code.',
   },
   {
     num: '02',
-    title: 'Route & Scan to Unlock',
-    badge: 'Zero Self-Receipt',
+    title: 'Send & Scan to Receive',
     icon: <ScanLine size={19} />,
-    body: 'Dispatch to the destination unit. Custody stays sealed in transit until the receiving officer scans the QR via the Android camera or enters the unlock code.',
+    body: 'Route the file to the next office. It stays sealed until the receiving staff scans the QR code.',
   },
   {
     num: '03',
-    title: 'Track, Approve & Verify',
-    badge: 'Audit Ready',
+    title: 'Track & Complete',
     icon: <FileCheck2 size={19} />,
-    body: 'Monitor live SLA health, collaborate with scoped remarks, approve or archive the record, and share privacy-safe public QR verification links.',
+    body: 'Follow deadlines, add remarks, approve or archive, and share a public verification link.',
   },
 ] as const;
 
 const SECURITY_PILLARS = [
   {
     icon: <Fingerprint size={18} />,
-    title: 'SHA-256 File Integrity',
-    body: 'Every uploaded attachment and revision is cryptographically hashed and verifiable through automated Admin integrity sweeps.',
+    title: 'File Verification',
+    body: 'Every uploaded file and revision is checked automatically so tampering is caught early.',
   },
   {
     icon: <QrCode size={18} />,
-    title: 'Opaque QR Tokens',
-    body: 'Printed slips carry unguessable tokens—never raw document titles, staff names, or sensitive details in plain QR text.',
+    title: 'Private QR Codes',
+    body: 'Printed QR slips contain only a random code — never document titles or staff details.',
   },
   {
     icon: <ShieldAlert size={18} />,
-    title: 'Sender Self-Receipt Block',
-    body: 'Enforced at the API layer so the dispatching user can never forge or self-acknowledge receipt on a recipient’s behalf.',
+    title: 'No Self-Receipt',
+    body: 'Senders cannot confirm receipt of their own dispatches. Only the receiving office can.',
   },
   {
     icon: <Lock size={18} />,
-    title: 'Confidential 60s Session Lock',
-    body: 'Confidential tier documents enforce timed access locks and short-lived presigned view grants with zero unauthorized caching.',
+    title: 'Confidential View Lock',
+    body: 'Confidential files lock automatically after 60 seconds and block unauthorized sharing.',
   },
   {
     icon: <BellOff size={18} />,
-    title: 'Lock-Screen-Safe Alerts',
-    body: 'Device and desktop notifications hide sensitive document titles on locked screens, revealing full details only after sign-in.',
+    title: 'Private Lock-Screen Alerts',
+    body: 'Phone and desktop alerts hide document titles until you unlock and open the app.',
   },
   {
     icon: <KeyRound size={18} />,
-    title: 'Instant Session Revocation',
-    body: 'Staff and ICT Administrators can audit every signed-in browser or phone session and revoke access with one click.',
+    title: 'Remote Device Sign-Out',
+    body: 'Staff and admins can review signed-in browsers or phones and sign them out anytime.',
   },
 ] as const;
 
@@ -258,8 +253,8 @@ export const App: React.FC = () => {
                 <em className="hero-serif-italic">for every document.</em>
               </h1>
               <p className="hero-serif-sub">
-                Tracely helps agencies and teams seal transfers, scan QR custody, and meet every
-                deadline — all in one unified space.
+                Track physical folders and digital files across every office with QR handoffs and
+                clear deadlines.
               </p>
 
               <div className="hero-pill-ctas">
@@ -304,9 +299,8 @@ export const App: React.FC = () => {
           <div className="container">
             <div className="comparison-shell">
               <div className="comparison-head">
-                <span className="eyebrow">Why Organizations Switch</span>
                 <h2 className="editorial-heading">
-                  End the logbook blind spot <em>across every unit.</em>
+                  End the logbook blind spot <em>across every office.</em>
                 </h2>
               </div>
               <div className="comparison-grid">
@@ -348,15 +342,12 @@ export const App: React.FC = () => {
         <section id="features" className="section">
           <div className="container">
             <div className="section-header center">
-              <span className="eyebrow">
-                <Layers size={13} /> Core Capabilities
-              </span>
               <h2 className="editorial-heading">
-                Engineered for <em>real-world custody</em>
+                Built for <em>everyday office work</em>
               </h2>
               <p>
-                Every workflow in Tracely mirrors how agencies and offices move folders, digital
-                bundles, revisions, and executive sign-offs day to day.
+                Move physical folders, digital packets, revisions, and approvals without losing
+                track of a single file.
               </p>
             </div>
 
@@ -365,46 +356,32 @@ export const App: React.FC = () => {
                 <div className="bento-icon navy">
                   <FileStack size={20} />
                 </div>
-                <h3>Hybrid Hard-Copy &amp; Digital Routing</h3>
+                <h3>Physical &amp; Digital Routing</h3>
                 <p>
-                  Track physical folders with printable QR transmittal slips alongside single PDFs,
-                  multi-file bundles (one QR for an entire packet), or batch-dispatched files—all in
-                  one unified ledger.
+                  Print QR routing slips for physical folders or upload single PDFs, bundled files,
+                  and batch dispatches in one place.
                 </p>
-                <div className="bento-chip-row">
-                  <span className="bento-chip">Printable QR Slips</span>
-                  <span className="bento-chip">Multi-File Bundles</span>
-                  <span className="bento-chip">Revision History</span>
-                  <span className="bento-chip">A4 Transmittal Manifests</span>
-                </div>
               </article>
 
               <article className="bento-card bento-wide">
                 <div className="bento-icon teal">
                   <ScanLine size={20} />
                 </div>
-                <h3>QR-Gated Custody &amp; Zero Self-Receipt</h3>
+                <h3>QR-Confirmed Handoffs</h3>
                 <p>
-                  Transfers stay sealed in transit until the destination office scans the QR code on
-                  Android or enters the 6-character code or password fallback. Senders can never
-                  self-receive their own handoffs.
+                  Transfers stay sealed in transit until the receiving office scans the QR code on
+                  Android or enters the unlock code. Senders can never mark their own files received.
                 </p>
-                <div className="bento-chip-row">
-                  <span className="bento-chip">Android Camera Scan</span>
-                  <span className="bento-chip">Mobile QR Unlock</span>
-                  <span className="bento-chip">Recall / Undo Safety</span>
-                  <span className="bento-chip">Decline Misrouted</span>
-                </div>
               </article>
 
               <article className="bento-card">
                 <div className="bento-icon amber">
                   <Smartphone size={20} />
                 </div>
-                <h3>Desktop–Mobile Camera Pairing</h3>
+                <h3>Phone-to-Desktop Capture</h3>
                 <p>
-                  Drafting a dispatch on desktop? Pair your phone in one scan to photograph physical
-                  pages—automatically compressed, EXIF-stripped, and queued cleanly even offline.
+                  Pair your phone to a desktop draft with one scan to photograph paper pages, even
+                  when offline.
                 </p>
               </article>
 
@@ -412,10 +389,10 @@ export const App: React.FC = () => {
                 <div className="bento-icon navy">
                   <Clock size={20} />
                 </div>
-                <h3>SLA Tracking &amp; Smart Delegation</h3>
+                <h3>Deadlines &amp; Delegates</h3>
                 <p>
-                  Real-time On Track, Due Soon, and Overdue monitoring with custom category SLA
-                  policies, out-of-office delegate routing, and turnaround analytics.
+                  Spot due-soon and overdue files early, assign out-of-office delegates, and track
+                  office turnaround times.
                 </p>
               </article>
 
@@ -423,10 +400,10 @@ export const App: React.FC = () => {
                 <div className="bento-icon teal">
                   <Lock size={20} />
                 </div>
-                <h3>Confidentiality Tiers &amp; Privacy</h3>
+                <h3>Privacy Controls</h3>
                 <p>
-                  Enforce Standard, Restricted, and Confidential tiers (with 60-second session
-                  locks), scoped document comments, and lock-screen-safe notifications.
+                  Set Standard, Restricted, or Confidential access per file, with auto-locking views
+                  and private notifications.
                 </p>
               </article>
 
@@ -434,10 +411,10 @@ export const App: React.FC = () => {
                 <div className="bento-icon amber">
                   <FolderKanban size={20} />
                 </div>
-                <h3>Dedicated Admin Governance</h3>
+                <h3>Dedicated Admin Portal</h3>
                 <p>
-                  Separate Admin Portal for account approval gates, office &amp; category taxonomy,
-                  session revocation, custody overrides, and executive CSV &amp; A4 reporting.
+                  Approve staff accounts, organize offices and categories, manage devices, and
+                  export reports.
                 </p>
               </article>
             </div>
@@ -448,15 +425,11 @@ export const App: React.FC = () => {
         <section id="how-it-works" className="section section-soft">
           <div className="container">
             <div className="section-header center">
-              <span className="eyebrow">
-                <ArrowRight size={13} /> How It Works
-              </span>
               <h2 className="editorial-heading">
-                Three quiet steps from <em>intake to archive</em>
+                Three steps from <em>intake to archive</em>
               </h2>
               <p>
-                Zero friction for receiving clerks or executives. Every handoff takes seconds and
-                creates an indisputable custody record.
+                Every handoff takes seconds and leaves a clear record of where the file is.
               </p>
             </div>
 
@@ -465,7 +438,6 @@ export const App: React.FC = () => {
                 <article key={step.num} className="workflow-card">
                   <div className="workflow-top">
                     <span className="workflow-num">{step.num}</span>
-                    <span className="workflow-badge">{step.badge}</span>
                   </div>
                   <div className="workflow-icon-wrap">{step.icon}</div>
                   <h3>{step.title}</h3>
@@ -483,15 +455,11 @@ export const App: React.FC = () => {
         <section id="security" className="section section-navy">
           <div className="container">
             <div className="section-header center light">
-              <span className="eyebrow eyebrow-dark">
-                <ShieldCheck size={13} /> Security &amp; Governance Architecture
-              </span>
               <h2 className="editorial-heading light">
-                Built for compliance, <em>auditability, and trust</em>
+                Built for <em>privacy and accountability</em>
               </h2>
               <p>
-                Designed from the ground up for public-sector and enterprise sensitivity, with
-                cryptographic verification at every layer.
+                Every file transfer is verified and logged so offices can rely on the record.
               </p>
             </div>
 
@@ -508,7 +476,7 @@ export const App: React.FC = () => {
             <div className="security-footer-bar">
               <div className="security-footer-item">
                 <UserCheck size={16} />
-                <span>Admin-gated staff onboarding with live Pending Approval status tracking</span>
+                <span>Every new staff account is reviewed and approved by an admin</span>
               </div>
               <a
                 href={SITE_CONFIG.webAppUrl}
@@ -516,7 +484,7 @@ export const App: React.FC = () => {
                 rel="noopener noreferrer"
                 className="security-link"
               >
-                <span>Launch Web Workspace</span>
+                <span>Open Web App</span>
                 <ArrowUpRight size={15} />
               </a>
             </div>
@@ -534,13 +502,11 @@ export const App: React.FC = () => {
           <div className="container">
             <div className="cta-banner">
               <div className="cta-banner-copy">
-                <span className="eyebrow eyebrow-dark">Ready to Modernize Custody?</span>
                 <h2 className="editorial-heading light">
-                  Bring complete clarity to <em>every document.</em>
+                  Bring clarity to <em>every document.</em>
                 </h2>
                 <p>
-                  Launch the Tracely Web Workspace now or install the native Android app on your
-                  team’s phones in under a minute.
+                  Open Tracely in your browser or install the Android app on your phone.
                 </p>
               </div>
               <div className="cta-banner-actions">
@@ -579,8 +545,7 @@ export const App: React.FC = () => {
               </span>
             </div>
             <p className="footer-desc">
-              Hybrid physical &amp; digital document tracking with QR-gated custody transfers,
-              SHA-256 integrity, and real-time SLA oversight.
+              Physical and digital document tracking with QR handoffs and clear deadlines.
             </p>
           </div>
 

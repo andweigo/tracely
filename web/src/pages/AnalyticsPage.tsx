@@ -64,12 +64,7 @@ export const AnalyticsPage: React.FC = () => {
   return (
     <div data-testid="web-analytics-page" style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
       <div className="section-header-row no-print">
-        <div>
-          <h3 className="section-title">Office Turnaround &amp; SLA Performance</h3>
-          <p className="doc-meta" style={{ margin: '2px 0 0' }}>
-            Live processing speed, bottleneck offices, and 6-month throughput across accessible records.
-          </p>
-        </div>
+        <h3 className="section-title">Office Performance</h3>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button type="button" className="btn btn-outline" onClick={() => void load()} disabled={loading}>
             <RefreshCw size={14} /> Refresh
@@ -227,7 +222,7 @@ export const AnalyticsPage: React.FC = () => {
                           {row.overdueCount > 0 ? (
                             <span className="pill pill-rose">{row.overdueCount}</span>
                           ) : (
-                            <span className="pill pill-emerald">0</span>
+                            <span style={{ color: 'var(--text-muted)' }}>0</span>
                           )}
                         </td>
                         <td className="mono">{row.avgHours > 0 ? `${row.avgHours}h` : '—'}</td>

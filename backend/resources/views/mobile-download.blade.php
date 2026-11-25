@@ -168,13 +168,11 @@
       <img src="{{ asset('images/tracely-logo.png') }}" alt="Tracely Logo" />
       <div>
         <h1>Tracely for Android</h1>
-        <p>Native Document Custody &amp; QR Tracking App</p>
+        <p>Document Tracking &amp; QR Scanner</p>
       </div>
     </div>
 
     @if ($available && $meta)
-      <div class="pill">● Ready for direct Android install</div>
-
       <a class="cta" href="{{ $downloadUrl }}">
         <span>Download Tracely APK (v{{ $meta['version'] ?? '1.0.0' }})</span>
       </a>

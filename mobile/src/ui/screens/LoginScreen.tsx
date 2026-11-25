@@ -858,14 +858,9 @@ export const LoginScreen: React.FC = () => {
               errorText={confirmMismatch}
             />
 
-            <View style={styles.permissionsNoteBox}>
-              <Text style={styles.permissionsNoteTitle}>Device &amp; Service Permissions</Text>
-              <Text style={styles.permissionsNoteBody}>
-                Tracely may request Camera (QR scanning &amp; proof capture), Notifications
-                (custody alerts), and Local Storage &amp; Live Sync (offline queue). You can manage
-                all permissions anytime in Settings.
-              </Text>
-            </View>
+            <Text style={styles.permissionsNoteBody}>
+              Permissions for camera, notifications, and sync can be managed anytime in Settings.
+            </Text>
 
             <View style={styles.consentRow}>
               <Pressable
@@ -916,7 +911,7 @@ export const LoginScreen: React.FC = () => {
             </Pressable>
 
             <Text style={styles.approvalNote}>
-              New registrations and unlisted offices are verified by your administrator before accessing protected records.
+              New accounts require administrator approval before sign-in.
             </Text>
           </View>
         )}

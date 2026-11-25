@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { ArrowLeft, Bell, CheckCheck, Lock, UploadCloud } from 'lucide-react-native';
+import { ArrowLeft, Bell, CheckCheck, UploadCloud } from 'lucide-react-native';
 import { useAppServices } from '../../state/AppServiceContext';
 import { OfflineStatusBadge } from '../components/Badges';
 import { EmptyState } from '../components/EmptyState';
@@ -52,7 +52,7 @@ export const NotificationsScreen: React.FC = () => {
           <ArrowLeft size={18} color={SDO_COLORS.navyInk} />
         </Pressable>
         <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>Alerts & Sync</Text>
+          <Text style={styles.headerTitle}>Alerts</Text>
           {unreadNotificationCount > 0 ? (
             <View testID="alerts-header-badge" style={styles.headerBadge}>
               <Text style={styles.headerBadgeText}>
@@ -84,18 +84,9 @@ export const NotificationsScreen: React.FC = () => {
             onPress={() => setSubTab('alerts')}
             style={[styles.pillTab, subTab === 'alerts' && styles.pillTabActive]}
           >
-            <View style={styles.tabLabelRow}>
-              <Text style={[styles.pillText, subTab === 'alerts' && styles.pillTextActive]}>
-                Alerts ({notifications.length})
-              </Text>
-              {unreadNotificationCount > 0 ? (
-                <View style={styles.tabUnreadBadge}>
-                  <Text style={styles.tabUnreadBadgeText}>
-                    {unreadNotificationCount > 99 ? '99+' : `${unreadNotificationCount} new`}
-                  </Text>
-                </View>
-              ) : null}
-            </View>
+            <Text style={[styles.pillText, subTab === 'alerts' && styles.pillTextActive]}>
+              Alerts ({notifications.length})
+            </Text>
           </Pressable>
           <Pressable
             onPress={() => setSubTab('offline_queue')}
@@ -111,18 +102,11 @@ export const NotificationsScreen: React.FC = () => {
 
         {subTab === 'alerts' ? (
           <View style={styles.listGap}>
-            <View style={styles.mintBanner}>
-              <Lock size={14} color={SDO_COLORS.emeraldText} />
-              <Text style={styles.mintBannerText}>
-                Push alerts hide document titles on lock screens; details appear only after auth.
-              </Text>
-            </View>
-
             {notifications.length === 0 ? (
               <EmptyState
                 icon={<Bell size={24} color={SDO_COLORS.textMuted} />}
-                title="No new alerts"
-                description="Routing updates and revision requests for your unit appear here."
+                title="No alerts yet"
+                description="Document updates and reminders appear here."
               />
             ) : (
               notifications.map((item) => (
@@ -133,27 +117,17 @@ export const NotificationsScreen: React.FC = () => {
                 >
                   <View style={styles.rowBetween}>
                     <View style={styles.dotRow}>
-                      {!item.read ? <View style={styles.unreadDot} /> : null}
-                      <View style={[styles.statusBadge, !item.read && styles.statusBadgeUnread]}>
-                        <Text
-                          style={[
-                            styles.statusBadgeText,
-                            !item.read && styles.statusBadgeTextUnread,
-                          ]}
-                        >
-                          {item.read ? 'Read' : 'Unread'}
-                        </Text>
-                      </View>
+                      {!item.read ? (
+                        <>
+                          <View style={styles.unreadDot} />
+                          <Text style={styles.statusBadgeTextUnread}>Unread</Text>
+                        </>
+                      ) : null}
                     </View>
                     <Text style={styles.alertTime}>{formatRelativeTime(item.receivedAt)}</Text>
                   </View>
                   <Text style={styles.alertTitle}>{item.title}</Text>
                   <Text style={styles.alertContent}>{item.content}</Text>
-                  <View style={styles.lockBox}>
-                    <Text style={styles.lockBoxText}>
-                      Lock-screen preview: {item.lockScreenPreview}
-                    </Text>
-                  </View>
                 </Pressable>
               ))
             )}

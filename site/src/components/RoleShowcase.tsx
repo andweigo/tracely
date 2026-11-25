@@ -7,7 +7,6 @@ import {
   QrCode,
   Shield,
   Smartphone,
-  Users,
 } from 'lucide-react';
 
 interface RoleConfig {
@@ -18,7 +17,6 @@ interface RoleConfig {
   readonly icon: React.ReactNode;
   readonly bullets: ReadonlyArray<string>;
   readonly previewTitle: string;
-  readonly previewBadge: string;
   readonly previewRows: ReadonlyArray<{
     readonly label: string;
     readonly value: string;
@@ -30,85 +28,81 @@ const ROLES: ReadonlyArray<RoleConfig> = [
   {
     id: 'records',
     label: 'Records & Receiving',
-    title: 'Process incoming batches in seconds, not spreadsheets',
+    title: 'Receive incoming batches in seconds',
     summary:
-      'Replace handwritten logbooks with printable QR routing slips, rapid mobile QR camera receiving, and instant transmittal manifests.',
+      'Replace handwritten logbooks with printable QR routing slips and quick phone camera scanning.',
     icon: <QrCode size={16} />,
     bullets: [
-      'Generate crisp printable QR slips for physical folders and packets',
-      'Receive physical folders consecutively using the native Android QR camera scanner',
-      'Recall misrouted dispatches safely with built-in FuseButton Undo protection',
-      'Issue public QR verification links for external stakeholders and citizens',
+      'Print QR routing slips for physical folders',
+      'Scan incoming folders back-to-back on Android',
+      'Undo misrouted dispatches before receipt',
+      'Share public verification links when needed',
     ],
-    previewTitle: 'Incoming QR Receiving Queue',
-    previewBadge: '12 Scanned',
+    previewTitle: 'Incoming Receiving Queue',
     previewRows: [
-      { label: 'TRC-2026-00418 · Budget Proposal', value: 'Verified · 09:28', status: 'emerald' },
-      { label: 'TRC-2026-00421 · Personnel Order', value: 'Verified · 09:29', status: 'emerald' },
-      { label: 'TRC-2026-00424 · Procurement Slip', value: 'Awaiting Scan', status: 'amber' },
+      { label: 'Budget Proposal', value: 'Received · 09:28', status: 'emerald' },
+      { label: 'Personnel Order', value: 'Received · 09:29', status: 'emerald' },
+      { label: 'Procurement Slip', value: 'Waiting scan', status: 'amber' },
     ],
   },
   {
     id: 'staff',
-    label: 'Department Staff',
-    title: 'One unified inbox across desktop and Android',
+    label: 'Office Staff',
+    title: 'One inbox across desktop and Android',
     summary:
-      'Receive, review, comment, attach revisions, and forward documents from your desk or hallway—with live alerts that never leak document titles on lock screens.',
+      'Receive, review, comment, attach updates, and forward files from your desk or phone.',
     icon: <Smartphone size={16} />,
     bullets: [
-      'Scan QR slips with your Android camera or unlock digital bundles seamlessly',
-      'Pair phone camera with desktop drafts to upload physical pages instantly',
-      'Snap proof-of-receipt photos offline—EXIF stripped and auto-synced when online',
-      'Set Out-of-Office status with automatic delegate routing so files never stall',
+      'Scan QR slips on Android or enter the 6-character code on desktop',
+      'Pair your phone camera to attach paper pages to web drafts',
+      'Capture proof photos offline and sync automatically later',
+      'Assign a delegate while on leave so files keep moving',
     ],
-    previewTitle: 'Desktop ↔ Mobile Camera Pairing',
-    previewBadge: 'Paired Live',
+    previewTitle: 'Phone-to-Desktop Capture',
     previewRows: [
-      { label: 'Signed_Memo_Page1.jpg', value: 'EXIF Stripped · 412 KB', status: 'teal' },
-      { label: 'Signed_Memo_Page2.jpg', value: 'Synced to Web Draft', status: 'emerald' },
-      { label: 'SHA-256 Checksum', value: 'Matched & Verified', status: 'navy' },
+      { label: 'Signed_Memo_Page1.jpg', value: 'Synced · 412 KB', status: 'teal' },
+      { label: 'Signed_Memo_Page2.jpg', value: 'Added to draft', status: 'emerald' },
+      { label: 'File Check', value: 'Verified', status: 'navy' },
     ],
   },
   {
     id: 'executives',
-    label: 'Unit Heads & Executives',
-    title: 'See every bottleneck before deadlines slip',
+    label: 'Office Heads',
+    title: 'Spot delays before deadlines slip',
     summary:
-      'Monitor cross-department turnaround times, spot overdue files immediately, and export clean A4 executive reports for leadership reviews.',
+      'See where documents are sitting, follow up quickly, and print clean monthly reports.',
     icon: <BarChart3 size={16} />,
     bullets: [
-      'Real-time On Track, Due Soon, and Overdue SLA indicators per office',
-      'Department turnaround analytics highlighting average handling duration',
-      'Complete chronological custody timeline with comments and proof photos',
-      'One-click printable A4 Executive SLA Reports and CSV ledger exports',
+      'Track due-soon and overdue documents by office',
+      'Review average turnaround times across units',
+      'View full handoff timelines with remarks and proof photos',
+      'Export printable reports and CSV logs in one click',
     ],
-    previewTitle: 'Agency SLA Turnaround Snapshot',
-    previewBadge: '96.4% On Time',
+    previewTitle: 'Office Turnaround Snapshot',
     previewRows: [
       { label: 'Records & Receiving', value: 'Avg 1.4 hrs', status: 'emerald' },
       { label: 'Finance & Budget', value: 'Avg 3.8 hrs', status: 'teal' },
-      { label: 'Legal Review Queue', value: '2 Due Soon', status: 'amber' },
+      { label: 'Legal Review', value: '2 due soon', status: 'amber' },
     ],
   },
   {
     id: 'admins',
-    label: 'ICT & System Admins',
-    title: 'Dedicated governance without touching production databases',
+    label: 'Administrators',
+    title: 'Manage accounts, offices, and security in one place',
     summary:
-      'Operate a separate Admin Governance Studio with account approval gates, RBAC management, active session revocation, and cryptographic integrity sweeps.',
+      'Approve staff registrations, manage offices and categories, and monitor active devices from a separate Admin Portal.',
     icon: <Shield size={16} />,
     bullets: [
-      'Approve or reject self-registered staff with live Pending Approval feedback',
-      'Manage offices, custom categories, SLA policy thresholds, and custody overrides',
-      'Inspect and revoke active web or mobile Sanctum sessions immediately',
-      'Run automated SHA-256 integrity verification across stored document versions',
+      'Approve or reject new staff registrations',
+      'Manage offices, categories, and deadline rules',
+      'Review active web or phone logins and sign out lost devices',
+      'Verify uploaded files and export activity logs',
     ],
-    previewTitle: 'Admin Governance Studio',
-    previewBadge: 'Protected Portal',
+    previewTitle: 'Admin Portal',
     previewRows: [
-      { label: 'Account Approval Gate', value: '3 Pending Review', status: 'amber' },
-      { label: 'SHA-256 Integrity Audit', value: '100% Intact', status: 'emerald' },
-      { label: 'Active Sanctum Sessions', value: '42 Verified Devices', status: 'navy' },
+      { label: 'Account Approvals', value: '3 pending', status: 'amber' },
+      { label: 'File Verification', value: '100% verified', status: 'emerald' },
+      { label: 'Signed-In Devices', value: '42 active', status: 'navy' },
     ],
   },
 ];
@@ -121,13 +115,10 @@ export const RoleShowcase: React.FC = () => {
     <section id="roles" className="section section-soft">
       <div className="container">
         <div className="section-header center">
-          <span className="eyebrow">
-            <Users size={13} /> Built for Every Role
-          </span>
-          <h2>One custody platform, tailored to every desk in the organization</h2>
+          <h2>Built for every desk in your organization</h2>
           <p>
-            From high-volume receiving counters to executive approval desks and ICT governance teams,
-            everyone works from the same real-time record.
+            From receiving counters to office heads and admins, everyone works from the same live
+            record.
           </p>
         </div>
 
@@ -167,7 +158,6 @@ export const RoleShowcase: React.FC = () => {
                 <Building2 size={15} />
                 <span>{current.previewTitle}</span>
               </div>
-              <span className="preview-pill">{current.previewBadge}</span>
             </div>
             <div className="role-preview-rows">
               {current.previewRows.map((row) => (
@@ -179,7 +169,7 @@ export const RoleShowcase: React.FC = () => {
             </div>
             <div className="role-preview-foot">
               <ClipboardCheck size={14} />
-              <span>Synchronized in real time across Tracely Web &amp; Android</span>
+              <span>Synced across Tracely Web and Android</span>
             </div>
           </div>
         </div>

@@ -681,23 +681,9 @@ export const LoginPage: React.FC = () => {
               />
             </div>
 
-            <div
-              className="card-soft"
-              style={{
-                padding: '10px 12px',
-                borderRadius: 12,
-                fontSize: 12,
-                lineHeight: 1.5,
-                color: 'var(--text-secondary)',
-              }}
-            >
-              <strong style={{ display: 'block', color: 'var(--navy-ink)', marginBottom: 2 }}>
-                Device &amp; Service Permissions
-              </strong>
-              Tracely may request Browser Notifications (custody alerts), Camera access (QR
-              scanning when used), and Local Storage &amp; Live Sync. You can review or adjust all
-              permissions anytime in Settings.
-            </div>
+            <p style={{ margin: 0, fontSize: 12, lineHeight: 1.5, color: 'var(--text-muted)' }}>
+              Permissions for notifications, camera, and sync can be managed anytime in Settings.
+            </p>
 
             <label
               style={{

@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  BadgeCheck,
   Building2,
   Check,
   KeyRound,
@@ -166,38 +165,29 @@ export const ProfilePage: React.FC = () => {
         <div
           style={{
             display: 'flex',
-            justifyContent: 'space-between',
+            justifyContent: 'flex-end',
             alignItems: 'center',
-            gap: 10,
+            gap: 8,
             flexWrap: 'wrap',
             padding: '4px 2px',
           }}
         >
-          <span
-            className="pill pill-emerald"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}
+          <button
+            type="button"
+            className="btn btn-outline"
+            onClick={() => navigate('user_profile')}
           >
-            <BadgeCheck size={12} /> HR-LOCKED IDENTITY
-          </span>
-
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button
-              type="button"
-              className="btn btn-outline"
-              onClick={() => navigate('user_profile')}
-            >
-              <UserCog size={15} /> Edit User Profile & Settings
+            <UserCog size={15} /> Edit Profile
+          </button>
+          {actor ? (
+            <button type="button" className="btn btn-amber" onClick={() => void signOut()}>
+              <LogOut size={15} /> Sign Out
             </button>
-            {actor ? (
-              <button type="button" className="btn btn-amber" onClick={() => void signOut()}>
-                <LogOut size={15} /> Sign Out
-              </button>
-            ) : (
-              <button type="button" className="btn btn-amber" onClick={() => navigate('login')}>
-                Sign In / Create Account
-              </button>
-            )}
-          </div>
+          ) : (
+            <button type="button" className="btn btn-amber" onClick={() => navigate('login')}>
+              Sign In
+            </button>
+          )}
         </div>
 
         {actor ? (

@@ -123,12 +123,12 @@ export const PendingApprovalPage: React.FC = () => {
           </div>
         </div>
 
-        <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.55, color: 'var(--text-secondary)' }}>
+        <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.5, color: 'var(--text-secondary)' }}>
           {isApproved
-            ? 'An administrator has verified and activated your account. Proceed to sign in with your Employee ID or work email and password.'
+            ? 'Your account is active. You can sign in now.'
             : isRejected
               ? pendingRegistration.message
-              : 'Your registration has been received and queued for review by an ICT Admin, Records Officer, or HR/Executive Unit Head. Workspace access remains locked until verified.'}
+              : 'Your account is waiting for administrator approval.'}
         </p>
 
         <div

@@ -4,12 +4,10 @@ import {
   Check,
   Copy,
   Download,
-  Globe,
   Monitor,
   QrCode,
   ShieldCheck,
   Smartphone,
-  WifiOff,
 } from 'lucide-react';
 import { SITE_CONFIG } from '../config';
 import { QrMatrixSvg } from './QrMatrixSvg';
@@ -31,13 +29,9 @@ export const PlatformShowcase: React.FC = () => {
     <section id="platforms" className="section">
       <div className="container">
         <div className="section-header center">
-          <span className="eyebrow">
-            <Globe size={13} /> Multi-Platform Workspace
-          </span>
-          <h2>Seamless on every desk. Native in every pocket.</h2>
+          <h2>Works on desktop and Android.</h2>
           <p>
-            Launch Tracely immediately in any modern browser or install the native Android app
-            directly—no Play Store friction required.
+            Open Tracely in your browser or install the Android app directly on your phone.
           </p>
         </div>
 
@@ -48,18 +42,17 @@ export const PlatformShowcase: React.FC = () => {
               <div className="platform-icon navy">
                 <Monitor size={22} />
               </div>
-              <span className="platform-tag">Browser Workspace</span>
+              <span className="platform-tag">Web</span>
             </div>
             <h3>Tracely Web App</h3>
             <p>
-              Built for high-throughput offices, administrative clerks, and leadership dashboards on
-              desktop, laptop, or tablet browsers.
+              For office desks, records counters, and leadership dashboards on any browser.
             </p>
             <ul className="platform-list">
-              <li>Instant 6-character code &amp; mobile-synced QR receiving</li>
-              <li>Printable QR routing slips &amp; A4 transmittal manifests</li>
-              <li>Multi-file soft-copy bundles &amp; separate batch dispatch</li>
-              <li>Live turnaround analytics, CSV exports &amp; desktop alerts</li>
+              <li>6-character code and mobile-synced QR receiving</li>
+              <li>Printable QR routing slips and transmittal manifests</li>
+              <li>Single files, bundles, and batch sending</li>
+              <li>Office turnaround reports and CSV exports</li>
             </ul>
             <div className="platform-actions">
               <a
@@ -73,7 +66,7 @@ export const PlatformShowcase: React.FC = () => {
               </a>
               <a href="#security" className="btn btn-outline">
                 <ShieldCheck size={15} />
-                <span>Security Specs</span>
+                <span>Security</span>
               </a>
             </div>
           </article>
@@ -85,13 +78,13 @@ export const PlatformShowcase: React.FC = () => {
                 <Smartphone size={22} />
               </div>
               <span className="platform-tag teal-tag">
-                Android Native · v{SITE_CONFIG.androidVersion}
+                Android · v{SITE_CONFIG.androidVersion}
               </span>
             </div>
             <h3>Tracely for Android</h3>
             <p>
-              Native React Native app with instant camera QR scanning, desktop camera pairing,
-              lock-screen-safe alerts, and offline capture queuing.
+              Fast QR camera scanning, desktop camera pairing, private alerts, and offline photo
+              capture.
             </p>
 
             <div className="android-qr-panel">
@@ -108,17 +101,9 @@ export const PlatformShowcase: React.FC = () => {
                   <span>Scan on Your Phone</span>
                 </div>
                 <p>
-                  Point your Android camera at this QR code to open the direct install page for
+                  Point your Android camera here to download
                   <strong> Tracely v{SITE_CONFIG.androidVersion}</strong>.
                 </p>
-                <div className="qr-chips">
-                  <span>
-                    <WifiOff size={12} /> Offline Capture
-                  </span>
-                  <span>
-                    <ShieldCheck size={12} /> Direct Install
-                  </span>
-                </div>
               </div>
             </div>
 

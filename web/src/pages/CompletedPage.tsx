@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Archive, CheckCircle2, Search } from 'lucide-react';
 import { DocumentRecord } from '../domain/types';
 import { useWebApp } from '../state/WebAppContext';
-import { CopyFormatBadge, TierBadge } from '../components/Badges';
+import { TierBadge } from '../components/Badges';
 import { paginateList, PaginationBar } from '../components/PaginationBar';
 import { formatClockTime, formatCompactDate } from '../utils/formatters';
 
@@ -92,7 +92,7 @@ export const CompletedPage: React.FC = () => {
           </div>
           <h4 className="empty-title">No completed documents yet</h4>
           <p className="empty-desc">
-            Documents marked Approved &amp; Released or Archived move here automatically and leave your Inbox.
+            Approved and archived documents appear here.
           </p>
         </div>
       ) : (
@@ -115,19 +115,18 @@ export const CompletedPage: React.FC = () => {
               >
                 <div className="doc-card-top">
                   <span className="mono doc-tracking-code">{doc.trackingCode}</span>
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
                     <span className={approved ? 'pill pill-emerald' : 'pill pill-slate'}>
                       {approved ? <CheckCircle2 size={11} /> : <Archive size={11} />}
-                      <span>{approved ? 'Approved & Released' : 'Archived · Closed'}</span>
+                      <span>{approved ? 'Approved' : 'Archived'}</span>
                     </span>
-                    <CopyFormatBadge format={doc.copyFormat} />
                     <TierBadge tier={doc.confidentialityTier} />
                   </div>
                 </div>
                 <h4 className="doc-title">{doc.title}</h4>
                 <p className="doc-meta">
-                  {doc.categoryName} · Finalized at {doc.currentOffice.code} · {formatCompactDate(when)}{' '}
-                  {formatClockTime(when)}
+                  {doc.categoryName} · {doc.copyFormat === 'hard_copy' ? 'Hard Copy' : 'Soft Copy'} ·{' '}
+                  {doc.currentOffice.code} · {formatCompactDate(when)} {formatClockTime(when)}
                 </p>
               </div>
             );

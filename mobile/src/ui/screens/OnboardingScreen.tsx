@@ -26,24 +26,24 @@ interface OnboardingHighlight {
 const ONBOARDING_HIGHLIGHTS: ReadonlyArray<OnboardingHighlight> = [
   {
     id: 'routing',
-    kicker: 'TRACELY · LIVE CUSTODY',
+    kicker: 'DOCUMENT TRACKING',
     accentColor: '#5EEAD4',
     title: 'Every Document.\nEvery Desk.',
-    body: 'Follow official transmittals across offices with timestamped receipts and seamless internal handoffs.',
+    body: 'Track official files across offices with clear handoff records.',
   },
   {
     id: 'scanner',
-    kicker: 'QR & OFFLINE PROOF',
+    kicker: 'QR SCANNING',
     accentColor: '#FFD24C',
-    title: 'Scan to Receive.\nSync Offline.',
-    body: 'Confirm custody arrival in seconds via QR scan and attach EXIF-stripped photo proofs without connectivity.',
+    title: 'Scan to Receive.\nWorks Offline.',
+    body: 'Scan a document QR code to confirm arrival, even without internet.',
   },
   {
     id: 'security',
-    kicker: 'PRIVACY PROTECTED',
+    kicker: 'PRIVACY',
     accentColor: '#93C5FD',
-    title: 'Security Built Into\nEvery Step.',
-    body: 'Confidentiality tiers guard restricted records while Android Keystore protects your verified division session.',
+    title: 'Private by\nDefault.',
+    body: 'Restricted files stay visible only to authorized offices and staff.',
   },
 ];
 

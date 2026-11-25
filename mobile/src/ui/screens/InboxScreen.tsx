@@ -554,11 +554,11 @@ export const InboxScreen: React.FC = () => {
         filteredTracked.length === 0 ? (
           <EmptyState
             icon={<MapPin size={24} color={SDO_COLORS.textMuted} />}
-            title={actor ? 'No tracked office documents' : 'Track Any Document Location'}
+            title={actor ? 'No tracked documents' : 'Track a Document'}
             description={
               actor
-                ? 'Documents originated or forwarded by your office appear here with live office location.'
-                : 'Enter a document tracking code to check which office currently holds it.'
+                ? 'Documents sent by your office appear here.'
+                : 'Enter a tracking code to see which office holds a document.'
             }
             action={
               <Pressable onPress={() => setActiveTab('track')} style={styles.emptyActionBtn}>
@@ -575,16 +575,16 @@ export const InboxScreen: React.FC = () => {
       ) : filteredDocs.length === 0 ? (
         <EmptyState
           icon={<Inbox size={24} color={SDO_COLORS.textMuted} />}
-          title={actor ? 'No documents in this view' : 'Ready for Tracely Server Connection'}
+          title={actor ? 'No documents yet' : 'Sign in to view inbox'}
           description={
             actor
-              ? 'Only documents permitted by your office custody and confidentiality policy appear here. Pull down to refresh.'
-              : 'Login is deferred for now. Explore the QR Scanner, Shared Categories, Alerts, and Server Settings from Profile.'
+              ? 'Pull down to refresh your queue.'
+              : 'Sign in from Profile to view and receive your office documents.'
           }
           action={
             !actor ? (
               <Pressable onPress={() => setActiveTab('profile')} style={styles.emptyActionBtn}>
-                <Text style={styles.emptyActionText}>Server & Profile</Text>
+                <Text style={styles.emptyActionText}>Open Profile</Text>
               </Pressable>
             ) : undefined
           }
@@ -636,7 +636,9 @@ export const InboxScreen: React.FC = () => {
 
                 <Text style={styles.docTitle}>{doc.title}</Text>
                 <Text style={styles.docSub}>
-                  {`${formatHumanInboxStatus(doc, actor)} · ${TIER_LABEL[doc.confidentialityTier]}`}
+                  {doc.confidentialityTier === ConfidentialityTier.STANDARD_INTERNAL
+                    ? formatHumanInboxStatus(doc, actor)
+                    : `${formatHumanInboxStatus(doc, actor)} · ${TIER_LABEL[doc.confidentialityTier]}`}
                 </Text>
 
                 {!selectMode ? (

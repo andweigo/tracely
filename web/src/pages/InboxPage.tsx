@@ -503,12 +503,12 @@ export const InboxPage: React.FC = () => {
                 <MapPin size={22} />
               </div>
               <h4 className="empty-title">
-                {actor ? 'No tracked office documents' : 'Track Any Document Location'}
+                {actor ? 'No tracked documents' : 'Track a Document'}
               </h4>
               <p className="empty-desc">
                 {actor
-                  ? 'Documents originated or forwarded by your office appear here with live office custody status.'
-                  : 'Enter a document tracking code to check which office currently holds it.'}
+                  ? 'Documents sent by your office will appear here.'
+                  : 'Enter a tracking code to see where a document is.'}
               </p>
               <button type="button" className="btn btn-primary" onClick={() => navigate('track')}>
                 Track by Code
@@ -531,12 +531,12 @@ export const InboxPage: React.FC = () => {
               <Inbox size={22} />
             </div>
             <h4 className="empty-title">
-              {actor ? 'No documents in this view' : 'Ready for Tracely Server Connection'}
+              {actor ? 'No documents here' : 'No documents yet'}
             </h4>
             <p className="empty-desc">
               {actor
-                ? 'Only documents permitted by your office custody and confidentiality policy appear here.'
-                : 'Login is deferred while the Laravel API backend is being connected. Explore Send Document, Inline QR Scanner, Shared Categories, and Profile settings.'}
+                ? 'Documents assigned to your office appear here.'
+                : 'Sign in to view your office inbox.'}
             </p>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
               <button type="button" className="btn btn-amber" onClick={() => navigate('send')}>
@@ -741,10 +741,10 @@ export const InboxPage: React.FC = () => {
             </span>
             <div>
               <h4 className="section-title" style={{ fontSize: 14 }}>
-                Tracely Mobile Sync
+                Mobile Sync
               </h4>
               <p className="doc-meta" style={{ margin: 0, fontSize: 12 }}>
-                Scan Soft Copy unlock QRs and printed slips with Tracely Mobile — Web updates live.
+                Scan QR slips on mobile to update web live.
               </p>
             </div>
           </div>

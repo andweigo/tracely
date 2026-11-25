@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { DocumentRecord } from '../domain/types';
 import { useWebApp } from '../state/WebAppContext';
-import { CopyFormatBadge, SlaBadge, TierBadge } from '../components/Badges';
+import { SlaBadge, TierBadge } from '../components/Badges';
 import FuseButton from '../components/FuseButton';
 import { BatchTransmittalModal, EditDocumentModal, OpaqueQrModal } from '../components/Modals';
 import { PaginationBar } from '../components/PaginationBar';
@@ -270,8 +270,8 @@ export const SentPage: React.FC = () => {
           </h4>
           <p className="empty-desc">
             {query.trim() || statusFilter !== 'all' || dateFilter !== 'all'
-              ? 'Try clearing your search or selecting a different date or status filter.'
-              : 'Files and hard-copy QR slips you upload or dispatch appear here with live receipt status.'}
+              ? 'Try a different search or filter.'
+              : 'Documents you send appear here.'}
           </p>
           <button type="button" className="btn btn-amber" onClick={() => navigate('send')}>
             Send Document
@@ -295,7 +295,6 @@ export const SentPage: React.FC = () => {
                   <span className="mono doc-tracking-code">{doc.trackingCode}</span>
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
                     <span className={statusMeta.pillClass}>{statusMeta.label}</span>
-                    <CopyFormatBadge format={doc.copyFormat} />
                     <TierBadge tier={doc.confidentialityTier} />
                     <SlaBadge state={doc.slaState} suffix={formatRelativeTime(doc.slaDueAt)} />
                   </div>
@@ -305,7 +304,7 @@ export const SentPage: React.FC = () => {
                   {doc.title}
                 </h4>
 
-                <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--navy)' }}>
+                <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--navy)' }}>
                   {statusSummary}
                 </div>
 
@@ -314,10 +313,10 @@ export const SentPage: React.FC = () => {
                     To: <strong>{recipientLabel}</strong>
                   </span>
                   <span>
-                    Category: <strong>{doc.categoryName}</strong>
+                    {doc.categoryName} · {doc.copyFormat === 'hard_copy' ? 'Hard Copy' : 'Soft Copy'}
                   </span>
                   <span className="tabular">
-                    Sent: {formatCompactDate(sentAt)} {formatClockTime(sentAt)}
+                    {formatCompactDate(sentAt)} {formatClockTime(sentAt)}
                   </span>
                 </div>
 

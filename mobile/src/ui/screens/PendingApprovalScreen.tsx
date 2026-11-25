@@ -141,10 +141,10 @@ export const PendingApprovalScreen: React.FC = () => {
           </Text>
           <Text style={styles.brandSubtitle}>
             {isApproved
-              ? 'An administrator has verified your account. Proceed to sign in with your registered credentials.'
+              ? 'Your account is active. You can sign in now.'
               : isRejected
                 ? pendingRegistration.message
-                : 'Your registration is queued for review by an ICT Admin, Records Officer, or HR/Executive Unit Head. Workspace access stays locked until approved.'}
+                : 'Your account is waiting for administrator approval.'}
           </Text>
         </View>
 

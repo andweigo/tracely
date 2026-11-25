@@ -20,7 +20,7 @@ interface BadgeSpec {
 
 const CONFIDENTIALITY_MAP: Record<ConfidentialityTier, BadgeSpec> = {
   standard_internal: {
-    label: 'Standard Internal',
+    label: 'Standard',
     bg: SDO_COLORS.surfaceSoft,
     text: SDO_COLORS.textSecondary,
   },
@@ -82,7 +82,7 @@ const RECEIPT_MAP: Record<ReceiptStatus, BadgeSpec> = {
     text: SDO_COLORS.skyText,
   },
   acknowledged: {
-    label: 'Receipt confirmed',
+    label: 'Received',
     bg: SDO_COLORS.emeraldSoft,
     text: SDO_COLORS.emeraldText,
   },
@@ -92,7 +92,7 @@ const RECEIPT_MAP: Record<ReceiptStatus, BadgeSpec> = {
     text: SDO_COLORS.textSecondary,
   },
   declined_misrouted: {
-    label: 'Flagged misrouted',
+    label: 'Misrouted',
     bg: SDO_COLORS.roseSoft,
     text: SDO_COLORS.roseText,
   },
@@ -138,7 +138,7 @@ const LIFECYCLE_MAP: Record<DocumentLifecycleStatus, BadgeSpec> = {
 
 const OFFLINE_MAP: Record<OfflineQueueStatus, BadgeSpec> = {
   queued: {
-    label: 'Queued offline',
+    label: 'Queued',
     bg: SDO_COLORS.amberSoft,
     text: SDO_COLORS.amberText,
   },
@@ -159,22 +159,10 @@ const OFFLINE_MAP: Record<OfflineQueueStatus, BadgeSpec> = {
   },
 };
 
-const COPY_FORMAT_MAP: Record<DocumentCopyFormat, BadgeSpec> = {
-  digital: {
-    label: 'Digital',
-    bg: SDO_COLORS.surfaceSoft,
-    text: SDO_COLORS.textSecondary,
-  },
-  hard_copy: {
-    label: 'Hard Copy',
-    bg: SDO_COLORS.amberSoft,
-    text: SDO_COLORS.amberText,
-  },
-  hybrid: {
-    label: 'Hard Copy + Scan',
-    bg: SDO_COLORS.indigoSoft,
-    text: SDO_COLORS.indigoText,
-  },
+const COPY_FORMAT_LABELS: Record<DocumentCopyFormat, string> = {
+  digital: 'Soft Copy',
+  hard_copy: 'Hard Copy',
+  hybrid: 'Hard + Soft',
 };
 
 const StatusPill: React.FC<{ spec: BadgeSpec; suffix?: string }> = ({ spec, suffix }) => (
@@ -186,17 +174,24 @@ const StatusPill: React.FC<{ spec: BadgeSpec; suffix?: string }> = ({ spec, suff
   </View>
 );
 
-export const ConfidentialityBadge: React.FC<{ tier: ConfidentialityTier }> = ({ tier }) => (
-  <StatusPill spec={CONFIDENTIALITY_MAP[tier]} />
-);
+export const ConfidentialityBadge: React.FC<{ tier: ConfidentialityTier }> = ({ tier }) => {
+  if (tier === ConfidentialityTier.STANDARD_INTERNAL) {
+    return null;
+  }
+  return <StatusPill spec={CONFIDENTIALITY_MAP[tier]} />;
+};
 
 export const AvailabilityBadge: React.FC<{ status: AvailabilityStatus }> = ({ status }) => (
   <StatusPill spec={AVAILABILITY_MAP[status]} />
 );
 
-export const SlaBadge: React.FC<{ state: SlaState; suffix?: string }> = ({ state, suffix }) => (
-  <StatusPill spec={SLA_MAP[state]} suffix={suffix} />
-);
+export const SlaBadge: React.FC<{ state: SlaState; suffix?: string }> = ({ state, suffix }) => {
+  if (state === SlaState.ON_TRACK) {
+    if (!suffix) return null;
+    return <Text style={styles.subtleMeta}>{suffix}</Text>;
+  }
+  return <StatusPill spec={SLA_MAP[state]} suffix={suffix} />;
+};
 
 export const ReceiptStatusBadge: React.FC<{ status: ReceiptStatus }> = ({ status }) => (
   <StatusPill spec={RECEIPT_MAP[status]} />
@@ -211,7 +206,7 @@ export const OfflineStatusBadge: React.FC<{ status: OfflineQueueStatus }> = ({ s
 );
 
 export const CopyFormatBadge: React.FC<{ format: DocumentCopyFormat }> = ({ format }) => (
-  <StatusPill spec={COPY_FORMAT_MAP[format]} />
+  <Text style={styles.subtleMeta}>{COPY_FORMAT_LABELS[format]}</Text>
 );
 
 const styles = StyleSheet.create({
@@ -220,8 +215,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 5,
     borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: 9,
+    paddingVertical: 3.5,
   },
   dot: {
     width: 6,
@@ -232,5 +227,11 @@ const styles = StyleSheet.create({
     fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     fontWeight: '700',
+  },
+  subtleMeta: {
+    fontFamily: SDO_FONTS.sans,
+    fontSize: 11,
+    fontWeight: '600',
+    color: SDO_COLORS.textSecondary,
   },
 });

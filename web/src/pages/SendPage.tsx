@@ -516,12 +516,7 @@ export const SendPage: React.FC = () => {
     <div className="send-workspace">
       <div className="send-main">
         <div className="section-header-row">
-          <div>
-            <h3 className="section-title" style={{ fontSize: 18 }}>Send Document</h3>
-            <p className="doc-meta" style={{ marginTop: 2 }}>
-              Digital upload or physical QR tracking
-            </p>
-          </div>
+          <h3 className="section-title" style={{ fontSize: 16 }}>New Document</h3>
 
           <button type="button" className="btn btn-outline" onClick={() => void handleOpenPhonePair()}>
             <Smartphone size={15} /> Pair Mobile Camera

@@ -234,10 +234,10 @@ export const TrackPage: React.FC = () => {
               </h4>
               <p className="empty-desc">
                 {query.trim()
-                  ? 'Click Lookup Code above to query the live Tracely server for this exact tracking code.'
+                  ? 'Click Lookup Code to check the server.'
                   : actor
-                    ? 'Documents originated or forwarded by your office appear here with live timestamps.'
-                    : 'Enter a document tracking code above to look up live custody status.'}
+                    ? 'Documents sent by your office appear here.'
+                    : 'Enter a tracking code above.'}
               </p>
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
                 {query.trim() ? (

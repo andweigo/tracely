@@ -31,56 +31,56 @@
 
   $sectionMeta = [
     'overview' => [
-      'title' => 'Operations Overview',
-      'sub' => 'Live office workload, SLA compliance, and automated stalled-document follow-ups',
+      'title' => 'Overview',
+      'sub' => 'Office workload, deadlines, and follow-ups',
     ],
     'approvals' => [
       'title' => 'Account Approvals',
-      'sub' => 'Verify and activate newly registered user accounts',
+      'sub' => 'Approve new staff registrations',
     ],
     'admins' => [
       'title' => 'Administrators',
-      'sub' => 'Manage authorized Admin Portal operators separately from regular User accounts',
+      'sub' => 'Manage admin portal accounts',
     ],
     'personnel' => [
-      'title' => 'Personnel (Users)',
-      'sub' => 'Manage regular team User accounts, office assignments, and credentials',
+      'title' => 'Personnel',
+      'sub' => 'Manage staff accounts and offices',
     ],
     'offices' => [
       'title' => 'Offices & Units',
-      'sub' => 'Maintain organizational offices, departments, and custom branches',
+      'sub' => 'Manage offices and departments',
     ],
     'tracking' => [
       'title' => 'Document Tracking',
-      'sub' => 'Full connected-dot custody timeline ready to present to office heads',
+      'sub' => 'View document handoff timelines',
     ],
     'custody' => [
-      'title' => 'Custody & SLA Monitor',
-      'sub' => 'Monitor tracked documents, follow up with stalled desks, or override status',
+      'title' => 'Custody & SLA',
+      'sub' => 'Follow up on delayed or stalled documents',
     ],
     'categories' => [
       'title' => 'Document Categories',
-      'sub' => 'Govern global document classification codes synced across all offices',
+      'sub' => 'Shared categories across all offices',
     ],
     'sla-policies' => [
-      'title' => 'SLA & Escalation Policies',
-      'sub' => 'Configure per-category SLA deadlines, stalled alerts, and automatic office escalations',
+      'title' => 'SLA & Escalation',
+      'sub' => 'Deadlines and reminder rules by category',
     ],
     'sessions' => [
-      'title' => 'Active Device Sessions',
-      'sub' => 'Inspect live Sanctum Web & Android sessions with remote one-click kill-switch',
+      'title' => 'Active Sessions',
+      'sub' => 'Signed-in web and mobile devices',
     ],
     'integrity' => [
-      'title' => 'File Integrity & Storage',
-      'sub' => 'SHA-256 tamper verification across document versions, proof photos, and office storage',
+      'title' => 'File Integrity',
+      'sub' => 'Verify uploaded files and storage',
     ],
     'diagnostics' => [
-      'title' => 'Realtime & Push Diagnostics',
-      'sub' => 'Inspect SSE/Pulse cursor health, registered device push tokens, and delivery logs',
+      'title' => 'Push & Realtime',
+      'sub' => 'Live sync status and push notifications',
     ],
     'audit' => [
-      'title' => 'Audit Ledger',
-      'sub' => 'Immutable security, directory, alert, and custody audit history',
+      'title' => 'Audit Log',
+      'sub' => 'Account and document activity history',
     ],
   ];
 
@@ -185,7 +185,6 @@
           </svg>
           <span>Executive Report</span>
         </span>
-        <span class="nav-badge">A4</span>
       </a>
 
       <span class="sidebar-section-label">Directory</span>
@@ -201,7 +200,6 @@
           </svg>
           <span>Administrators</span>
         </span>
-        <span class="nav-badge">{{ $adminAccounts->count() }}</span>
       </button>
 
       <button
@@ -213,9 +211,8 @@
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
             <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
           </svg>
-          <span>Personnel (Users)</span>
+          <span>Personnel</span>
         </span>
-        <span class="nav-badge">{{ $rosterUsers->count() }}</span>
       </button>
 
       <button
@@ -229,7 +226,6 @@
           </svg>
           <span>Offices</span>
         </span>
-        <span class="nav-badge">{{ $offices->count() }}</span>
       </button>
 
       <span class="sidebar-section-label">Operations</span>
@@ -245,7 +241,6 @@
           </svg>
           <span>Document Tracking</span>
         </span>
-        <span class="nav-badge">{{ $telemetry['totalDocuments'] }}</span>
       </button>
 
       <button
@@ -261,8 +256,6 @@
         </span>
         @if ($attentionDocs->count() > 0)
           <span class="nav-badge nav-badge-rose">{{ $attentionDocs->count() }}</span>
-        @else
-          <span class="nav-badge">{{ $telemetry['totalDocuments'] }}</span>
         @endif
       </button>
 
@@ -277,7 +270,6 @@
           </svg>
           <span>Categories</span>
         </span>
-        <span class="nav-badge">{{ $categories->count() }}</span>
       </button>
 
       <button
@@ -291,7 +283,6 @@
           </svg>
           <span>SLA &amp; Escalation</span>
         </span>
-        <span class="nav-badge">{{ $telemetry['configuredSlaPolicies'] }}</span>
       </button>
 
       <span class="sidebar-section-label">Security &amp; Health</span>
@@ -307,7 +298,6 @@
           </svg>
           <span>Device Sessions</span>
         </span>
-        <span class="nav-badge">{{ $telemetry['activeSessions'] }}</span>
       </button>
 
       <button
@@ -323,8 +313,6 @@
         </span>
         @if ($telemetry['integrityIssues'] > 0)
           <span class="nav-badge nav-badge-rose">{{ $telemetry['integrityIssues'] }}</span>
-        @else
-          <span class="nav-badge">{{ $integrityAudit['summary']['total_artifacts'] }}</span>
         @endif
       </button>
 
@@ -339,7 +327,6 @@
           </svg>
           <span>Push &amp; Realtime</span>
         </span>
-        <span class="nav-badge">{{ $realtimeDiagnostics['total_tokens'] }}</span>
       </button>
 
       <button
@@ -351,7 +338,7 @@
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
             <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/>
           </svg>
-          <span>Audit Ledger</span>
+          <span>Audit Log</span>
         </span>
       </button>
     </nav>
@@ -399,19 +386,15 @@
       </div>
 
       <div class="topbar-right">
-        <span class="status-indicator" id="admin-live-sync-pill" data-testid="admin-live-sync-pill" title="Real-time sync automatically refreshes changes from Web, Mobile, and Admin">
+        <span class="status-indicator" id="admin-live-sync-pill" data-testid="admin-live-sync-pill" title="Updates automatically">
           <span class="status-dot" id="admin-live-sync-dot"></span>
           <span id="admin-live-sync-label">Live Sync</span>
-        </span>
-        <span class="status-indicator" title="Automatic stalled-document & SLA escalation watchdog">
-          <span class="status-dot"></span>
-          <span>SLA Engine · {{ $telemetry['configuredSlaPolicies'] }} rules</span>
         </span>
         <a href="{{ route('admin.reports.executive-sla') }}" class="btn btn-secondary">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/>
           </svg>
-          <span>A4 Report</span>
+          <span>Report</span>
         </a>
         <button type="button" class="btn btn-secondary" data-open-modal="modal-provision-admin">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -441,12 +424,11 @@
         <div class="kpi-strip">
           <div class="kpi-cell">
             <div class="kpi-cell-top">
-              <span class="kpi-label">Active Staff Users</span>
-              <span class="pill pill-navy">{{ $telemetry['activeAdmins'] }} admins</span>
+              <span class="kpi-label">Active Staff</span>
             </div>
             <div class="kpi-value">{{ $telemetry['activePersonnel'] }}</div>
             <div class="kpi-meta">
-              {{ $offices->count() }} units · {{ $telemetry['onLeavePersonnel'] }} on leave · {{ $telemetry['deactivatedPersonnel'] }} inactive
+              {{ $offices->count() }} offices · {{ $telemetry['activeAdmins'] }} admins · {{ $telemetry['onLeavePersonnel'] }} on leave
             </div>
             <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: auto; padding-top: 6px;">
               <button type="button" class="kpi-action" style="margin-top: 0; padding-top: 0;" data-section-jump="personnel">
@@ -465,12 +447,10 @@
               <span class="kpi-label">Pending Approvals</span>
               @if ($telemetry['pendingApprovals'] > 0)
                 <span class="pill pill-amber">Action needed</span>
-              @else
-                <span class="pill pill-emerald">Clear</span>
               @endif
             </div>
             <div class="kpi-value">{{ $telemetry['pendingApprovals'] }}</div>
-            <div class="kpi-meta">New account requests awaiting verification</div>
+            <div class="kpi-meta">Waiting for verification</div>
             <button type="button" class="kpi-action" data-section-jump="approvals">
               Review queue
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg>
@@ -480,25 +460,22 @@
           <div class="kpi-cell">
             <div class="kpi-cell-top">
               <span class="kpi-label">Tracked Documents</span>
-              <span class="pill pill-navy">{{ $telemetry['pendingReceipts'] }} in transit</span>
             </div>
             <div class="kpi-value">{{ $telemetry['totalDocuments'] }}</div>
             <div class="kpi-meta">
-              {{ $telemetry['inReview'] }} in review · {{ $telemetry['finalized'] }} finalized
+              {{ $telemetry['pendingReceipts'] }} in transit · {{ $telemetry['inReview'] }} in review · {{ $telemetry['finalized'] }} done
             </div>
             <button type="button" class="kpi-action" data-section-jump="tracking">
-              Open live tracking
+              Open tracking
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg>
             </button>
           </div>
 
           <div class="kpi-cell">
             <div class="kpi-cell-top">
-              <span class="kpi-label">Stalled / SLA Risk</span>
+              <span class="kpi-label">Stalled / Overdue</span>
               @if ($attentionDocs->count() > 0)
                 <span class="pill pill-rose">{{ $telemetry['stalledCount'] }} idle</span>
-              @else
-                <span class="pill pill-emerald">On track</span>
               @endif
             </div>
             <div class="kpi-value">{{ $attentionDocs->count() }}</div>
@@ -506,7 +483,7 @@
               {{ $telemetry['slaRisks'] }} SLA risk · {{ $telemetry['stalledCount'] }} idle ≥{{ $telemetry['stalledThresholdHours'] }}h
             </div>
             <button type="button" class="kpi-action" data-section-jump="custody">
-              Inspect &amp; alert desks
+              Inspect &amp; alert
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg>
             </button>
           </div>
@@ -517,8 +494,8 @@
           <div class="surface-card">
             <div class="card-header">
               <div>
-                <h2 class="card-title">Division Office Load &amp; SLA</h2>
-                <p class="card-subtitle">Active staffing, held documents, and pending receipts per office</p>
+                <h2 class="card-title">Office Load</h2>
+                <p class="card-subtitle">Staff, active files, and pending receipts by office</p>
               </div>
               <button type="button" class="btn btn-secondary btn-sm" data-section-jump="offices">
                 Manage Offices
@@ -555,7 +532,7 @@
                         @if ($row['slaCount'] > 0)
                           <span class="pill pill-rose">{{ $row['slaCount'] }} attention</span>
                         @else
-                          <span class="pill pill-emerald">On track</span>
+                          <span style="color: var(--text-muted); font-size: 12.5px;">On track</span>
                         @endif
                       </td>
                     </tr>
@@ -571,7 +548,7 @@
               <div>
                 <h2 class="card-title">Needs Attention</h2>
                 <p class="card-subtitle">
-                  Pending approvals &amp; stalled documents (auto-alert after {{ $telemetry['stalledThresholdHours'] }}h)
+                  Pending approvals and files idle {{ $telemetry['stalledThresholdHours'] }}h+
                 </p>
               </div>
               <form method="POST" action="{{ route('admin.alerts.sweep') }}" style="margin: 0;">
@@ -593,7 +570,7 @@
                 </div>
                 <p class="empty-title">All queues clear</p>
                 <p class="empty-desc">
-                  No pending staff registrations or stalled documents require intervention right now.
+                  No pending approvals or stalled documents right now.
                 </p>
               </div>
             @else
@@ -688,7 +665,7 @@
         <div class="card-header">
           <div>
             <h2 class="card-title">Pending Registration Requests ({{ $pendingUsers->count() }})</h2>
-            <p class="card-subtitle">Verify employee credentials before activating access to Tracely</p>
+            <p class="card-subtitle">Review and approve new staff registrations</p>
           </div>
 
           @if ($pendingUsers->count() > 1)
@@ -722,7 +699,7 @@
             </div>
             <p class="empty-title">No pending registrations</p>
             <p class="empty-desc">
-              New staff self-registrations from web or mobile will appear here for ICT / HR verification.
+              New staff registrations will appear here for approval.
             </p>
           </div>
         @else
@@ -796,7 +773,7 @@
         <div class="card-header">
           <div>
             <h2 class="card-title">System Administrators ({{ $adminAccounts->count() }})</h2>
-            <p class="card-subtitle">Authorized Admin Portal accounts — managed separately from standard Users</p>
+            <p class="card-subtitle">Admin Portal accounts</p>
           </div>
           <button type="button" class="btn btn-primary btn-sm" data-open-modal="modal-provision-admin">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
@@ -953,7 +930,7 @@
         <div class="card-header">
           <div>
             <h2 class="card-title">Team Directory — Users ({{ $rosterUsers->count() }})</h2>
-            <p class="card-subtitle">Regular team User accounts only — Administrators are managed in the Administrators section</p>
+            <p class="card-subtitle">Staff accounts across offices</p>
           </div>
           <button type="button" class="btn btn-primary btn-sm" data-open-modal="modal-provision-user">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
@@ -1133,7 +1110,7 @@
         <div class="card-header">
           <div>
             <h2 class="card-title">Offices & Units &amp; Units ({{ $offices->count() }})</h2>
-            <p class="card-subtitle">Official routing destinations recognized across Web and Mobile</p>
+            <p class="card-subtitle">Offices available across Web and Mobile</p>
           </div>
           <button type="button" class="btn btn-primary btn-sm" data-open-office-create>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
@@ -1371,7 +1348,7 @@
         <div class="card-header">
           <div>
             <h2 class="card-title">Division Custody &amp; SLA Monitor ({{ $documentRows->count() }})</h2>
-            <p class="card-subtitle">Inspect live holdings, alert stalled offices, or recall / finalize records</p>
+            <p class="card-subtitle">Track active files, alert offices, or update status</p>
           </div>
           <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
             <form method="POST" action="{{ route('admin.alerts.sweep') }}" style="margin: 0;">
@@ -1534,7 +1511,7 @@
         <div class="card-header">
           <div>
             <h2 class="card-title">Global Document Categories ({{ $categories->count() }})</h2>
-            <p class="card-subtitle">Standardized classification taxonomy shared across every office</p>
+            <p class="card-subtitle">Shared categories across all offices</p>
           </div>
           <button type="button" class="btn btn-primary btn-sm" data-open-category-create>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
@@ -1627,7 +1604,7 @@
         <div class="card-header">
           <div>
             <h2 class="card-title">Per-Category SLA &amp; Escalation Rules ({{ $telemetry['configuredSlaPolicies'] }}/{{ $categories->count() }} configured)</h2>
-            <p class="card-subtitle">Set target deadlines, stalled alert triggers, and automatic office escalations per document type</p>
+            <p class="card-subtitle">Deadlines and reminder rules per category</p>
           </div>
           <form method="POST" action="{{ route('admin.alerts.sweep') }}" style="margin: 0;">
             @csrf
@@ -1791,7 +1768,7 @@
           <div class="card-header">
             <div>
               <h2 class="card-title">Live Sanctum Device Sessions ({{ $activeSessions->count() }})</h2>
-              <p class="card-subtitle">Revoke individual lost phones or force sign-out offboarded staff immediately</p>
+              <p class="card-subtitle">Sign out lost or inactive devices remotely</p>
             </div>
             <button type="button" class="btn btn-danger btn-sm" data-open-modal="modal-killswitch-sessions">
               Force Sign-Out All Staff
@@ -1822,7 +1799,7 @@
           @if ($activeSessions->isEmpty())
             <div class="empty-state">
               <p class="empty-title">No active Sanctum API sessions</p>
-              <p class="empty-desc">Active Web and Android logins will appear here with instant remote revocation controls.</p>
+              <p class="empty-desc">Active web and Android sign-ins appear here.</p>
             </div>
           @else
             <div class="table-scroll">
@@ -1944,7 +1921,7 @@
             <div class="card-header">
               <div>
                 <h2 class="card-title">SHA-256 Integrity Ledger</h2>
-                <p class="card-subtitle">Verifiable SHA-256 tamper detection for digital file integrity audits</p>
+                <p class="card-subtitle">File verification status for uploaded documents</p>
               </div>
               <form method="POST" action="{{ route('admin.integrity.verify') }}" style="margin: 0;">
                 @csrf
@@ -2025,7 +2002,7 @@
             <div class="card-header">
               <div>
                 <h2 class="card-title">Disk Usage per Office</h2>
-                <p class="card-subtitle">Total vault footprint and flagged artifacts by unit</p>
+                <p class="card-subtitle">Storage usage by office</p>
               </div>
             </div>
             <div class="table-scroll">
@@ -2124,7 +2101,7 @@
           <div class="card-header">
             <div>
               <h2 class="card-title">Send Diagnostic Realtime &amp; Push Ping</h2>
-              <p class="card-subtitle">Verify live delivery to any team member's Web or Android client immediately</p>
+              <p class="card-subtitle">Send a test alert to any user</p>
             </div>
             <form method="POST" action="{{ route('admin.diagnostics.test-push') }}" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0;">
               @csrf
@@ -2222,14 +2199,14 @@
             <div class="card-header">
               <div>
                 <h2 class="card-title">Recent Push &amp; Pulse Delivery Log</h2>
-                <p class="card-subtitle">Live audit of FCM push dispatches and SSE fallbacks</p>
+                <p class="card-subtitle">Recent push and live-sync deliveries</p>
               </div>
             </div>
 
             @if ($pushLogs->isEmpty())
               <div class="empty-state">
                 <p class="empty-title">No push dispatch attempts logged yet</p>
-                <p class="empty-desc">Use "Send Diagnostic Ping" above or route a document to inspect live delivery telemetry.</p>
+                <p class="empty-desc">Send a test ping or route a document to see delivery logs here.</p>
               </div>
             @else
               <div class="table-scroll">
@@ -2295,7 +2272,7 @@
         <div class="card-header">
           <div>
             <h2 class="card-title">Division Audit Ledger ({{ $auditLogs->count() }})</h2>
-            <p class="card-subtitle">Append-only trail of authentication, directory, alerts, and custody events</p>
+            <p class="card-subtitle">History of account, alert, and document actions</p>
           </div>
           <a href="{{ route('admin.export.audit-logs') }}" class="btn btn-secondary btn-sm">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
