@@ -14,7 +14,6 @@ import {
   ChevronDown,
   Inbox,
   MapPin,
-  Menu,
   Search,
   SlidersHorizontal,
   Square,
@@ -29,6 +28,7 @@ import {
 import { useAppServices } from '../../state/AppServiceContext';
 import { SlaBadge } from '../components/Badges';
 import { EmptyState } from '../components/EmptyState';
+import { MobileHeaderActions } from '../components/MobileHeaderActions';
 import { ScanToReceiveCard } from '../components/ScanToReceiveCard';
 import { SealedQrCard } from '../components/SealedQrCard';
 import { TrackingGroupedList } from '../components/TrackingLocationCard';
@@ -69,7 +69,6 @@ export const InboxScreen: React.FC = () => {
     openDocument,
     openScannerForDocument,
     setActiveTab,
-    openSidebar,
     refreshWorkspace,
     declineMisrouted,
     isRefreshing,
@@ -286,13 +285,7 @@ export const InboxScreen: React.FC = () => {
           </View>
         </Pressable>
 
-        <Pressable
-          onPress={openSidebar}
-          accessibilityLabel="Open navigation sidebar"
-          style={styles.menuBtn}
-        >
-          <Menu size={20} color={SDO_COLORS.navyInk} />
-        </Pressable>
+        <MobileHeaderActions variant="outlined" />
       </View>
 
       <View style={styles.searchRow}>

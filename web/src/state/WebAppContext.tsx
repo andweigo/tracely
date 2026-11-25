@@ -52,6 +52,18 @@ import { buildBatchItemTitle } from '../utils/formatters';
 import { formatWebHash, parseWebHash } from '../utils/hashRouter';
 import { isPendingReceiptForActor, isPendingSentByActor, selectSentDocuments } from '../utils/sentFilter';
 
+export interface FolderAppearancePreferences {
+  readonly mode: 'flap' | 'book';
+  readonly variant: 'solid' | 'glass' | 'matte';
+  readonly layout: 'spread' | 'stack' | 'row';
+}
+
+export const DEFAULT_FOLDER_APPEARANCE: FolderAppearancePreferences = {
+  mode: 'flap',
+  variant: 'solid',
+  layout: 'spread',
+};
+
 export interface WebContextValue {
   route: WebRoute;
   bootstrapping: boolean;
@@ -71,6 +83,8 @@ export interface WebContextValue {
   activeSessions: ReadonlyArray<ActiveDeviceSession>;
   securityPrefs: UserSecurityPreferences;
   userPreferences: UserPreferences;
+  folderAppearance: FolderAppearancePreferences;
+  focusedTrackCode: string | null;
   recentScans: ReadonlyArray<RecentScanEntry>;
   selectedDocumentId: string | null;
   verifyToken: string | null;
@@ -96,6 +110,9 @@ export interface WebContextValue {
   navigate(next: WebRoute): void;
   openDocument(documentId: string): void;
   closeDocument(): void;
+  openTrackForDocument(trackingCode: string): void;
+  clearFocusedTrackCode(): void;
+  updateFolderAppearance(patch: Partial<FolderAppearancePreferences>): void;
   openSoftCopyUnlock(doc: DocumentRecord): void;
   closeSoftCopyUnlock(): void;
   openHardCopyReceive(doc: DocumentRecord): void;
@@ -256,8 +273,35 @@ const STORAGE_KEY_RECENT_SCANS = '@sdo_doctrack/web_recent_scans';
 const STORAGE_KEY_BEARER_TOKEN = '@sdo_doctrack/web_bearer_token';
 const STORAGE_KEY_ACTOR = '@sdo_doctrack/web_actor';
 const STORAGE_KEY_USER_PREFS = '@sdo_doctrack/web_user_prefs';
+const STORAGE_KEY_FOLDER_APPEARANCE = '@tracely/web_folder_appearance';
 const STORAGE_KEY_ANNOUNCED_NOTIFS_PREFIX = '@sdo_doctrack/web_announced_notifs_';
 const STORAGE_KEY_PENDING_REGISTRATION = '@sdo_doctrack/web_pending_registration';
+
+function loadStoredFolderAppearance(): FolderAppearancePreferences {
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY_FOLDER_APPEARANCE);
+    if (!raw) return DEFAULT_FOLDER_APPEARANCE;
+    const parsed = JSON.parse(raw) as Partial<FolderAppearancePreferences> | null;
+    if (!parsed || typeof parsed !== 'object') return DEFAULT_FOLDER_APPEARANCE;
+    return {
+      mode: parsed.mode === 'book' ? 'book' : 'flap',
+      variant:
+        parsed.variant === 'glass' || parsed.variant === 'matte' ? parsed.variant : 'solid',
+      layout:
+        parsed.layout === 'stack' || parsed.layout === 'row' ? parsed.layout : 'spread',
+    };
+  } catch {
+    return DEFAULT_FOLDER_APPEARANCE;
+  }
+}
+
+function saveStoredFolderAppearance(prefs: FolderAppearancePreferences): void {
+  try {
+    window.localStorage.setItem(STORAGE_KEY_FOLDER_APPEARANCE, JSON.stringify(prefs));
+  } catch {
+    // Ignore storage restriction
+  }
+}
 
 function loadStoredPendingRegistration(): PendingRegistrationRecord | null {
   try {
@@ -568,6 +612,10 @@ export const WebAppProvider: React.FC<WebAppProviderProps> = ({
       ? { ...stored, ...restoredSession.user.preferences }
       : stored;
   });
+  const [folderAppearance, setFolderAppearance] = useState<FolderAppearancePreferences>(
+    loadStoredFolderAppearance,
+  );
+  const [focusedTrackCode, setFocusedTrackCode] = useState<string | null>(null);
 
   const activeGateway = useMemo(
     () =>
@@ -1377,6 +1425,8 @@ export const WebAppProvider: React.FC<WebAppProviderProps> = ({
     activeSessions,
     securityPrefs,
     userPreferences,
+    folderAppearance,
+    focusedTrackCode,
     recentScans,
     selectedDocumentId,
     verifyToken,
@@ -1407,6 +1457,21 @@ export const WebAppProvider: React.FC<WebAppProviderProps> = ({
     },
     closeDocument: () => {
       applyRoute('inbox', null);
+    },
+    openTrackForDocument: (trackingCode) => {
+      const clean = trackingCode.trim();
+      setFocusedTrackCode(clean || null);
+      applyRoute('track', null);
+    },
+    clearFocusedTrackCode: () => {
+      setFocusedTrackCode(null);
+    },
+    updateFolderAppearance: (patch) => {
+      setFolderAppearance((prev) => {
+        const next: FolderAppearancePreferences = { ...prev, ...patch };
+        saveStoredFolderAppearance(next);
+        return next;
+      });
     },
     openSoftCopyUnlock,
     closeSoftCopyUnlock,

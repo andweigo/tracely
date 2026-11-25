@@ -469,7 +469,7 @@ export const LoginPage: React.FC = () => {
             <IdentityWalletCard
               testId="web-register-live-card"
               compact
-              lanyardHeight={250}
+              lanyardHeight={315}
               fullName={fullName}
               employeeId={employeeId}
               position={position}
@@ -569,28 +569,24 @@ export const LoginPage: React.FC = () => {
             </div>
 
             <div className="field-group">
-              <span className="field-label">Office / Unit</span>
-              <div className="recipient-strip">
+              <label className="field-label" htmlFor="reg-office-select">
+                Office / Unit
+              </label>
+              <select
+                id="reg-office-select"
+                data-testid="web-register-office-select"
+                className="input"
+                value={selectedOfficeCode}
+                onChange={(e) => setSelectedOfficeCode(e.target.value)}
+                style={{ cursor: 'pointer', background: 'var(--surface)' }}
+              >
                 {availableOffices.map((off) => (
-                  <button
-                    key={off.code}
-                    type="button"
-                    className={`recipient-chip ${
-                      selectedOfficeCode === off.code ? 'recipient-chip-active' : ''
-                    }`}
-                    onClick={() => setSelectedOfficeCode(off.code)}
-                  >
-                    {off.code}
-                  </button>
+                  <option key={off.code} value={off.code}>
+                    {off.name} ({off.code})
+                  </option>
                 ))}
-                <button
-                  type="button"
-                  className={`recipient-chip ${isCustomOffice ? 'recipient-chip-active' : ''}`}
-                  onClick={() => setSelectedOfficeCode(CUSTOM_OFFICE_KEY)}
-                >
-                  Other / Custom
-                </button>
-              </div>
+                <option value={CUSTOM_OFFICE_KEY}>Other / Custom Office</option>
+              </select>
             </div>
 
             {isCustomOffice ? (

@@ -33,21 +33,21 @@ interface NavEntry {
 }
 
 const ROUTE_TITLES: Record<WebRoute, { title: string; sub: string }> = {
-  dashboard: { title: 'Dashboard', sub: 'Office routing flow map and interactive 3D folder organizer' },
-  inbox: { title: 'Dashboard & Inbox', sub: 'Live custody queue, document handoffs, and office tracking' },
-  send: { title: 'Send Document', sub: 'Digital Soft Copy upload or Hard Copy QR tracking' },
-  sent: { title: 'Sent Files', sub: 'All files you originated or dispatched with live receipt status' },
-  completed: { title: 'Completed', sub: 'Approved & Released or Archived documents handled by your office' },
-  document: { title: 'Document Detail', sub: 'Custody chain, physical reference, and file integrity' },
-  track: { title: 'Track Documents', sub: 'Follow office dispatches, custody timestamps, and QR tracking codes' },
-  analytics: { title: 'SLA Analytics', sub: 'Office turnaround speed, bottleneck monitoring, and monthly throughput' },
-  categories: { title: 'Shared Categories', sub: 'Globally declared across all offices' },
-  alerts: { title: 'Alerts & Sync', sub: 'Privacy-safe routing notifications' },
-  profile: { title: 'Profile', sub: 'HR-locked identity, availability, and server settings' },
-  user_profile: { title: 'User Profile & Settings', sub: 'Update your personal info, workflow preferences, and account settings' },
-  settings: { title: 'Settings & System Info', sub: 'About Tracely, platform overview, and workspace shortcuts' },
-  verify: { title: 'Public Verification', sub: 'Verify printed Tracely transmittals without signing in' },
-  pending_approval: { title: 'Pending Approval', sub: 'Awaiting administrator account verification' },
+  dashboard: { title: 'Dashboard', sub: 'Recent tracking and folders' },
+  inbox: { title: 'Inbox', sub: 'Incoming and active documents' },
+  send: { title: 'Send Document', sub: 'Upload a soft copy or register a hard copy' },
+  sent: { title: 'Sent Files', sub: 'Documents sent by your office' },
+  completed: { title: 'Completed', sub: 'Approved and archived records' },
+  document: { title: 'Document Detail', sub: 'Timeline and file details' },
+  track: { title: 'Track Documents', sub: 'Check document status and location' },
+  analytics: { title: 'Analytics', sub: 'Office turnaround and volume' },
+  categories: { title: 'Categories', sub: 'Browse documents by category' },
+  alerts: { title: 'Alerts', sub: 'Document updates and notifications' },
+  profile: { title: 'Profile', sub: 'Identity and account security' },
+  user_profile: { title: 'User Profile', sub: 'Personal details and preferences' },
+  settings: { title: 'Settings', sub: 'Folders, permissions, and app info' },
+  verify: { title: 'Verify QR', sub: 'Check printed transmittals' },
+  pending_approval: { title: 'Pending Approval', sub: 'Waiting for admin approval' },
   login: { title: 'Sign In', sub: 'Tracely Web Portal' },
 };
 
@@ -321,19 +321,19 @@ export const WebShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
       <nav className="mobile-bottom-nav" aria-label="Mobile quick navigation">
         <button
           type="button"
+          className={`bottom-nav-tab ${route === 'dashboard' ? 'bottom-nav-tab-active' : ''}`}
+          onClick={() => handleNav('dashboard')}
+        >
+          <LayoutDashboard size={19} />
+          <span>Dashboard</span>
+        </button>
+        <button
+          type="button"
           className={`bottom-nav-tab ${route === 'inbox' ? 'bottom-nav-tab-active' : ''}`}
           onClick={() => handleNav('inbox')}
         >
           <Inbox size={19} />
           <span>Inbox</span>
-        </button>
-        <button
-          type="button"
-          className={`bottom-nav-tab ${route === 'sent' ? 'bottom-nav-tab-active' : ''}`}
-          onClick={() => handleNav('sent')}
-        >
-          <FileOutput size={19} />
-          <span>Sent</span>
         </button>
         <button
           type="button"
@@ -356,14 +356,11 @@ export const WebShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
         </button>
         <button
           type="button"
-          className={`bottom-nav-tab ${route === 'alerts' ? 'bottom-nav-tab-active' : ''}`}
-          onClick={() => handleNav('alerts')}
+          className={`bottom-nav-tab ${route === 'sent' ? 'bottom-nav-tab-active' : ''}`}
+          onClick={() => handleNav('sent')}
         >
-          <Bell size={19} />
-          {unreadNotificationCount > 0 ? (
-            <span className="bottom-nav-badge">{unreadNotificationCount}</span>
-          ) : null}
-          <span>Alerts</span>
+          <FileOutput size={19} />
+          <span>Sent</span>
         </button>
       </nav>
 

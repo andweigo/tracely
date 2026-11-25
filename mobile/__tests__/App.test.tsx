@@ -437,7 +437,9 @@ describe('DocsTracker React Native App', () => {
     const registerText = extractRenderedText(renderer.toJSON());
     expect(registerText).toContain('Work Email');
     expect(registerText).toContain('Office / Unit');
-    expect(registerText).toContain('Other / Custom');
+    expect(
+      renderer.root.findAllByProps({ testID: 'mobile-register-office-dropdown' }).length,
+    ).toBeGreaterThan(0);
     expect(registerText).toContain('0/50');
     expect(registerText).toContain('0/16');
     expect(registerText).toContain('0/64');
@@ -466,14 +468,18 @@ describe('DocsTracker React Native App', () => {
     expect(placeholders).toContain('e.g. name@tracely.app');
     expect(placeholders).toContain('e.g. Administrative Officer IV');
 
-    // Selecting unlisted Office / Unit reveals Custom Office Code & Name inputs
-    const customOfficeBtn = renderer.root.findAll(
-      (node) =>
-        typeof node.props.onPress === 'function' &&
-        extractInstanceText(node).trim() === 'Other / Custom',
-    );
+    // Opening Office / Unit dropdown and selecting Other / Custom Office reveals Custom Office inputs
+    const officeDropdown = renderer.root.findByProps({
+      testID: 'mobile-register-office-dropdown',
+    });
     await ReactTestRenderer.act(async () => {
-      customOfficeBtn[customOfficeBtn.length - 1].props.onPress();
+      officeDropdown.props.onPress();
+    });
+    const customOfficeOption = renderer.root.findByProps({
+      testID: 'mobile-office-option-custom',
+    });
+    await ReactTestRenderer.act(async () => {
+      customOfficeOption.props.onPress();
     });
 
     const customOfficeText = extractRenderedText(renderer.toJSON());
@@ -574,21 +580,24 @@ describe('DocsTracker React Native App', () => {
     const inboxText = extractRenderedText(renderer.toJSON());
     expect(inboxText).not.toContain('Hard Copy');
 
-    // Bottom navigation puts Send Document cleanly at the center (index 2 of 5 tabs)
+    // Bottom navigation puts Dashboard, Inbox, centered Send, Scan, and Track cleanly in 5 tabs
     const navTabs = renderer.root
       .findAll(
         (node) =>
           typeof node.props.onPress === 'function' &&
           node.props.accessibilityRole === 'button' &&
           typeof node.props.accessibilityLabel === 'string' &&
-          ['Inbox', 'Scan', 'Send Document', 'Track', 'Alerts'].includes(
+          ['Dashboard', 'Inbox', 'Send Document', 'Scan', 'Track'].includes(
             node.props.accessibilityLabel as string,
           ),
       )
       .map((node) => node.props.accessibilityLabel as string);
-    expect(navTabs).toEqual(['Inbox', 'Scan', 'Send Document', 'Track', 'Alerts']);
+    expect(navTabs).toEqual(['Dashboard', 'Inbox', 'Send Document', 'Scan', 'Track']);
+    expect(
+      renderer.root.findAllByProps({ testID: 'mobile-topbar-alerts-btn' }).length,
+    ).toBeGreaterThan(0);
+    expect(inboxText).toContain('Dashboard');
     expect(inboxText).toContain('Track');
-    expect(inboxText).toContain('Alerts');
     expect(inboxText).toContain('Send');
 
     // Tap the centered Send button to open SendScreen
@@ -1184,12 +1193,12 @@ describe('DocsTracker React Native App', () => {
     expect(extractRenderedText(renderer.toJSON())).toContain('Scan to receive');
     expect(extractRenderedText(renderer.toJSON())).not.toContain('Track Code');
 
-    // Bottom nav screens each render their skeleton once on first open
+    // Bottom nav & topbar alert screens each render their skeleton once on first open
     const tabChecks = [
       { label: 'Scan', testID: 'screen-skeleton-scanner' },
       { label: 'Send Document', testID: 'screen-skeleton-send' },
       { label: 'Track', testID: 'screen-skeleton-track' },
-      { label: 'Alerts', testID: 'screen-skeleton-alerts' },
+      { label: 'Open alerts', testID: 'screen-skeleton-alerts' },
     ];
     for (const check of tabChecks) {
       const btn = renderer.root.findAll(
@@ -1281,7 +1290,7 @@ describe('DocsTracker React Native App', () => {
     // Booting an authenticated session must NEVER wipe device notification history before hydration
     expect(clearSpy).not.toHaveBeenCalled();
 
-    // Sidebar menu button should NOT render a badge count; BottomNav Alerts badge reflects unread + pending offline alerts (1 + 1 = 2)
+    // Sidebar menu button should NOT render a badge count; topbar Alert Bell beside sidebar reflects unread + pending offline alerts (1 + 1 = 2)
     expect(renderer.root.findAllByProps({ testID: 'inbox-alert-badge' })).toHaveLength(0);
     expect(renderer.root.findAllByProps({ testID: 'dashboard-alert-badge' })).toHaveLength(0);
     const sidebarTriggerBtn = renderer.root.findAll(
@@ -1292,7 +1301,7 @@ describe('DocsTracker React Native App', () => {
     expect(sidebarTriggerBtn).toBeDefined();
     expect(extractInstanceText(sidebarTriggerBtn).trim()).toBe('');
     expect(
-      extractInstanceText(renderer.root.findByProps({ testID: 'bottom-nav-alerts-badge' })),
+      extractInstanceText(renderer.root.findByProps({ testID: 'mobile-topbar-alerts-badge' })),
     ).toBe('2');
     // Initial first-render sync silently baselines pre-existing unread alerts (silentBaseline = true)
     expect(syncSpy).toHaveBeenCalledWith(
@@ -1308,11 +1317,9 @@ describe('DocsTracker React Native App', () => {
       true,
     );
 
-    const alertsTab = renderer.root.findAll(
-      (node) => node.props.accessibilityLabel === 'Alerts' && typeof node.props.onPress === 'function',
-    )[0];
+    const alertsTopBtn = renderer.root.findByProps({ testID: 'mobile-topbar-alerts-btn' });
     await ReactTestRenderer.act(async () => {
-      alertsTab.props.onPress();
+      alertsTopBtn.props.onPress();
     });
 
     const alertsText = extractRenderedText(renderer.toJSON());
@@ -1350,11 +1357,11 @@ describe('DocsTracker React Native App', () => {
       receivedAt: new Date().toISOString(),
       read: false,
     });
-    const refreshAlertsTab = renderer.root.findAll(
-      (node) => node.props.accessibilityLabel === 'Alerts' && typeof node.props.onPress === 'function',
-    )[0];
+    const refreshAlertsBtn = renderer.root.findByProps({
+      testID: 'mobile-topbar-alerts-btn',
+    });
     await ReactTestRenderer.act(async () => {
-      refreshAlertsTab.props.onPress();
+      refreshAlertsBtn.props.onPress();
     });
     const refreshScroll = renderer.root.findAll(
       (node) => node.props.refreshControl && typeof node.props.refreshControl.props.onRefresh === 'function',
@@ -1973,6 +1980,14 @@ describe('DocsTracker React Native App', () => {
       renderer.root.findAllByProps({ testID: 'mobile-settings-screen' }).length,
     ).toBeGreaterThan(0);
     expect(
+      renderer.root.findAllByProps({ testID: 'mobile-settings-folder-prefs-card' }).length,
+    ).toBeGreaterThan(0);
+    await ReactTestRenderer.act(async () => {
+      renderer.root.findByProps({ testID: 'mobile-pref-folder-mode-book' }).props.onPress();
+      renderer.root.findByProps({ testID: 'mobile-pref-folder-variant-glass' }).props.onPress();
+      renderer.root.findByProps({ testID: 'mobile-pref-folder-layout-stack' }).props.onPress();
+    });
+    expect(
       renderer.root.findAllByProps({ testID: 'mobile-settings-permissions-card' }).length,
     ).toBeGreaterThan(0);
     const devText = extractInstanceText(
@@ -1980,6 +1995,7 @@ describe('DocsTracker React Native App', () => {
     );
     expect(devText).toContain('Andrei Obligar');
     const settingsFullText = extractRenderedText(renderer.toJSON());
+    expect(settingsFullText).toContain('Folder Preferences');
     expect(settingsFullText).toContain('Device & Service Permissions');
     expect(settingsFullText).toContain('Terms & Conditions');
     expect(settingsFullText).toContain('Privacy Policy');
@@ -1995,6 +2011,46 @@ describe('DocsTracker React Native App', () => {
     expect(
       renderer.root.findAllByProps({ testID: 'mobile-dashboard-screen' }).length,
     ).toBeGreaterThan(0);
+
+    // Open Categories via Sidebar and confirm Folder UI holds matching docs & navigates to Track Docs
+    await ReactTestRenderer.act(async () => {
+      renderer.root.findByProps({ testID: 'mobile-dashboard-sidebar-btn' }).props.onPress();
+    });
+    const categoriesDrawerBtn = renderer.root.findAll(
+      (node) =>
+        typeof node.props.onPress === 'function' &&
+        extractInstanceText(node).trim() === 'Categories',
+    )[0];
+    await ReactTestRenderer.act(async () => {
+      categoriesDrawerBtn.props.onPress();
+    });
+    expect(
+      renderer.root.findAllByProps({ testID: 'mobile-categories-folder-grid' }).length,
+    ).toBeGreaterThan(0);
+    const openCatBtn = renderer.root.findAll(
+      (node) =>
+        typeof node.props.testID === 'string' &&
+        node.props.testID.startsWith('mobile-open-category-folder-') &&
+        typeof node.props.onPress === 'function',
+    )[0];
+    await ReactTestRenderer.act(async () => {
+      openCatBtn.props.onPress();
+    });
+    expect(
+      renderer.root.findAllByProps({ testID: 'mobile-category-docs-panel' }).length,
+    ).toBeGreaterThan(0);
+    const trackCatDocBtns = renderer.root.findAll(
+      (node) =>
+        typeof node.props.testID === 'string' &&
+        node.props.testID.startsWith('mobile-cat-doc-track-') &&
+        typeof node.props.onPress === 'function',
+    );
+    if (trackCatDocBtns.length > 0) {
+      await ReactTestRenderer.act(async () => {
+        trackCatDocBtns[0].props.onPress();
+      });
+      expect(extractRenderedText(renderer.toJSON())).toContain('Tracking');
+    }
   });
 
   test('routes Android BackHandler gesture through previous screens back to Dashboard before exiting', async () => {

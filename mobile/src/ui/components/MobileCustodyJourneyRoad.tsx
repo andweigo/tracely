@@ -9,13 +9,10 @@ import {
 import { ArrowUpRight } from 'lucide-react-native';
 import Svg, {
   Circle,
-  ClipPath,
   Defs,
   G,
   LinearGradient,
   Path,
-  RadialGradient,
-  Rect,
   Stop,
   Text as SvgText,
 } from 'react-native-svg';
@@ -24,7 +21,7 @@ import {
   DocumentLifecycleStatus,
   ReceiptStatus,
 } from '../../domain/enums/DomainEnums';
-import { SDO_FONTS } from '../theme/tokens';
+import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 import { formatClockTime, formatCompactDate } from '../utils/formatters';
 
 export type MobileCustodyHopState =
@@ -38,6 +35,7 @@ export interface MobileCustodyHop {
   readonly id: string;
   readonly code: string;
   readonly officeCode: string;
+  readonly displayOffice: string;
   readonly statusLine: string;
   readonly state: MobileCustodyHopState;
   readonly accentHex: string;
@@ -59,23 +57,26 @@ interface BuiltMobileJourney {
   readonly lastY: number;
   readonly maxTruthProgress: number;
   readonly mainPath: string;
-  readonly leftFilamentPath: string;
-  readonly rightFilamentPath: string;
   readonly samples: ReadonlyArray<PathSample>;
   readonly totalLength: number;
   readonly statusSummary: string;
   readonly statusColor: string;
+  readonly statusBg: string;
 }
 
-const VIEW_WIDTH = 440;
-const TOP_PAD = 76;
-const BOTTOM_PAD = 80;
-const STEP_Y = 204;
-
-const HOP_ACCENTS = ['#60A5FA', '#F3B32A', '#2DD4BF', '#34D399'] as const;
+const VIEW_WIDTH = 420;
+const TOP_PAD = 50;
+const BOTTOM_PAD = 54;
+const STEP_Y = 136;
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
+}
+
+function truncateLabel(text: string, maxLen: number): string {
+  const clean = text.trim();
+  if (clean.length <= maxLen) return clean;
+  return `${clean.slice(0, maxLen - 1).trimEnd()}…`;
 }
 
 function cubicPoint(
@@ -101,7 +102,7 @@ function cubicPoint(
 }
 
 function sampleByTargetY(samples: ReadonlyArray<PathSample>, targetY: number): PathSample {
-  if (samples.length === 0) return { len: 0, x: 128, y: TOP_PAD };
+  if (samples.length === 0) return { len: 0, x: 132, y: TOP_PAD };
   if (targetY <= samples[0].y) return samples[0];
   const last = samples[samples.length - 1];
   if (targetY >= last.y) return last;
@@ -132,7 +133,7 @@ function formatShortTime(iso?: string | null): string {
   if (!iso) return '';
   const d = formatCompactDate(iso);
   const t = formatClockTime(iso);
-  if (d && t) return `${d} · ${t}`;
+  if (d && t) return `${d}, ${t}`;
   return t || d || '';
 }
 
@@ -140,6 +141,7 @@ export function buildMobileDocumentJourney(doc: Document): BuiltMobileJourney {
   const rawNodes: Array<{
     id: string;
     officeCode: string;
+    officeName: string;
     statusLine: string;
     state: MobileCustodyHopState;
     accentHex: string;
@@ -153,12 +155,13 @@ export function buildMobileDocumentJourney(doc: Document): BuiltMobileJourney {
   rawNodes.push({
     id: `origin-${doc.originOffice.id}`,
     officeCode: doc.originOffice.code,
+    officeName: doc.originOffice.name || doc.originOffice.code,
     statusLine:
       sortedTxs.length > 0
-        ? `Dispatched${originTime ? ` · ${originTime}` : ''}`
-        : `Registered${originTime ? ` · ${originTime}` : ''}`,
+        ? `Sent${originTime ? ` · ${originTime}` : ''}`
+        : `Created${originTime ? ` · ${originTime}` : ''}`,
     state: sortedTxs.length > 0 ? 'reached' : 'active',
-    accentHex: HOP_ACCENTS[0],
+    accentHex: '#0D3472',
   });
 
   const isCompletedLifecycle =
@@ -171,31 +174,31 @@ export function buildMobileDocumentJourney(doc: Document): BuiltMobileJourney {
 
     let state: MobileCustodyHopState = 'reached';
     let statusLine = `Received${ts ? ` · ${ts}` : ''}`;
-    let accentHex: string = HOP_ACCENTS[(idx + 1) % HOP_ACCENTS.length];
+    let accentHex = '#0D3472';
 
     if (tx.receiptStatus === ReceiptStatus.PENDING) {
       state = 'pending';
-      statusLine = 'In Transit · Awaiting receipt';
-      accentHex = '#F3B32A';
+      statusLine = 'In Transit';
+      accentHex = '#D97706';
     } else if (
       tx.receiptStatus === ReceiptStatus.RETURNED_FOR_REVISION ||
       tx.receiptStatus === ReceiptStatus.DECLINED_MISROUTED
     ) {
       state = isLast ? 'active' : 'reached';
-      statusLine = `${tx.receiptStatus === ReceiptStatus.DECLINED_MISROUTED ? 'Flagged' : 'Returned'}${ts ? ` · ${ts}` : ''}`;
-      accentHex = '#FB7185';
+      statusLine = `${tx.receiptStatus === ReceiptStatus.DECLINED_MISROUTED ? 'Declined' : 'Returned'}${ts ? ` · ${ts}` : ''}`;
+      accentHex = '#E11D48';
     } else if (tx.receiptStatus === ReceiptStatus.RECALLED) {
       state = isLast ? 'active' : 'reached';
       statusLine = `Recalled${ts ? ` · ${ts}` : ''}`;
-      accentHex = '#94A3B8';
+      accentHex = '#64748B';
     } else if (isLast && isCompletedLifecycle) {
       state = 'completed';
       statusLine = `${doc.lifecycleStatus === DocumentLifecycleStatus.ARCHIVED ? 'Archived' : 'Approved'}${ts ? ` · ${ts}` : ''}`;
-      accentHex = '#34D399';
+      accentHex = '#059669';
     } else if (isLast) {
       state = 'active';
-      statusLine = `${doc.lifecycleStatus === DocumentLifecycleStatus.IN_REVIEW ? 'In Review' : 'At Desk'}${ts ? ` · ${ts}` : ''}`;
-      accentHex = '#2DD4BF';
+      statusLine = `${doc.lifecycleStatus === DocumentLifecycleStatus.IN_REVIEW ? 'In Review' : 'Received'}${ts ? ` · ${ts}` : ''}`;
+      accentHex = '#0284C7';
     }
 
     const prev = rawNodes[rawNodes.length - 1];
@@ -212,6 +215,7 @@ export function buildMobileDocumentJourney(doc: Document): BuiltMobileJourney {
     rawNodes.push({
       id: `tx-${tx.id}`,
       officeCode: tx.toOffice.code,
+      officeName: tx.toOffice.name || tx.toOffice.code,
       statusLine,
       state,
       accentHex,
@@ -225,7 +229,8 @@ export function buildMobileDocumentJourney(doc: Document): BuiltMobileJourney {
     trimmed.push({
       id: 'next-unrouted',
       officeCode: 'NEXT',
-      statusLine: 'Ready to route',
+      officeName: 'Next Office',
+      statusLine: 'Waiting to be sent',
       state: 'unreached',
       accentHex: '#94A3B8',
     });
@@ -233,10 +238,15 @@ export function buildMobileDocumentJourney(doc: Document): BuiltMobileJourney {
 
   const hops: MobileCustodyHop[] = trimmed.map((item, idx) => {
     const isLeft = idx % 2 === 0;
+    const readable =
+      item.officeName && item.officeName.toLowerCase() !== item.officeCode.toLowerCase()
+        ? truncateLabel(item.officeName, 20)
+        : item.officeCode;
     return {
       ...item,
-      code: String(idx + 1).padStart(2, '0'),
-      cx: isLeft ? 124 : 316,
+      displayOffice: readable,
+      code: String(idx + 1),
+      cx: isLeft ? 130 : 290,
       cy: TOP_PAD + idx * STEP_Y,
       labelSide: isLeft ? 'right' : 'left',
     };
@@ -249,46 +259,47 @@ export function buildMobileDocumentJourney(doc: Document): BuiltMobileJourney {
   const lastHop = hops[hops.length - 1];
 
   let maxTruthProgress = 1;
-  let statusSummary = `At ${lastHop.officeCode}`;
-  let statusColor = '#5EEAD4';
+  let statusSummary = `At ${lastHop.displayOffice}`;
+  let statusColor = '#0369A1';
+  let statusBg = '#E0F2FE';
 
   if (lastHop.state === 'unreached') {
     maxTruthProgress = 0;
-    statusSummary = `Registered · ${hops[0].officeCode}`;
-    statusColor = '#93C5FD';
+    statusSummary = `At ${hops[0].displayOffice}`;
+    statusColor = '#1D4ED8';
+    statusBg = '#DBEAFE';
   } else if (lastHop.state === 'pending') {
-    maxTruthProgress = clamp((segCount - 1 + 0.72) / segCount, 0.15, 0.94);
-    statusSummary = `In Transit → ${lastHop.officeCode}`;
-    statusColor = '#FDE68A';
+    maxTruthProgress = clamp((segCount - 1 + 0.68) / segCount, 0.15, 0.92);
+    statusSummary = `In Transit to ${lastHop.displayOffice}`;
+    statusColor = '#B45309';
+    statusBg = '#FEF3C7';
   } else if (lastHop.state === 'completed') {
     maxTruthProgress = 1;
-    statusSummary = `${doc.lifecycleStatus === DocumentLifecycleStatus.ARCHIVED ? 'Archived' : 'Approved'} · ${lastHop.officeCode}`;
-    statusColor = '#6EE7B7';
+    statusSummary =
+      doc.lifecycleStatus === DocumentLifecycleStatus.ARCHIVED ? 'Archived' : 'Approved';
+    statusColor = '#047857';
+    statusBg = '#D1FAE5';
   } else if (doc.lifecycleStatus === DocumentLifecycleStatus.RETURNED_FOR_REVISION) {
     maxTruthProgress = 1;
-    statusSummary = `Returned · ${lastHop.officeCode}`;
-    statusColor = '#FDA4AF';
+    statusSummary = `Returned · ${lastHop.displayOffice}`;
+    statusColor = '#BE123C';
+    statusBg = '#FFE4E6';
   }
 
   let mainPath = `M ${hops[0].cx} ${hops[0].cy}`;
-  let leftFilamentPath = `M ${hops[0].cx} ${hops[0].cy}`;
-  let rightFilamentPath = `M ${hops[0].cx} ${hops[0].cy}`;
-
   const samples: PathSample[] = [];
   let accumLen = 0;
   let prevX = hops[0].cx;
   let prevY = hops[0].cy;
   samples.push({ len: 0, x: prevX, y: prevY });
 
-  const stepsPerSeg = 52;
+  const stepsPerSeg = 48;
   for (let i = 0; i < hops.length - 1; i += 1) {
     const a = hops[i];
     const b = hops[i + 1];
     const midY = (a.cy + b.cy) / 2;
 
     mainPath += ` C ${a.cx} ${midY}, ${b.cx} ${midY}, ${b.cx} ${b.cy}`;
-    leftFilamentPath += ` C ${a.cx - 22} ${midY - 8}, ${b.cx - 16} ${midY + 12}, ${b.cx} ${b.cy}`;
-    rightFilamentPath += ` C ${a.cx + 22} ${midY + 8}, ${b.cx + 16} ${midY - 12}, ${b.cx} ${b.cy}`;
 
     for (let s = 1; s <= stepsPerSeg; s += 1) {
       const t = s / stepsPerSeg;
@@ -307,12 +318,11 @@ export function buildMobileDocumentJourney(doc: Document): BuiltMobileJourney {
     lastY,
     maxTruthProgress,
     mainPath,
-    leftFilamentPath,
-    rightFilamentPath,
     samples,
     totalLength: Math.max(1, accumLen),
     statusSummary,
     statusColor,
+    statusBg,
   };
 }
 
@@ -334,19 +344,17 @@ export const MobileCustodyJourneyRoad: React.FC<MobileCustodyJourneyRoadProps> =
   onRequestScrollToY,
 }) => {
   const journey = useMemo(() => buildMobileDocumentJourney(doc), [doc]);
-  const [svgWidth, setSvgWidth] = useState<number>(332);
-  const [svgOffsetInCardY, setSvgOffsetInCardY] = useState<number>(52);
+  const [svgWidth, setSvgWidth] = useState<number>(324);
+  const [svgOffsetInCardY, setSvgOffsetInCardY] = useState<number>(50);
 
   const isJest = typeof jest !== 'undefined';
   const [progress, setProgress] = useState<number>(journey.maxTruthProgress);
-  const [pulsePhase, setPulsePhase] = useState<number>(0);
 
   const targetRef = useRef<number>(journey.maxTruthProgress);
   const displayRef = useRef<number>(journey.maxTruthProgress);
 
   const svgHeightPx = Math.round((svgWidth / VIEW_WIDTH) * journey.viewHeight);
 
-  // Compute truth-capped scroll progress from parent ScrollView position
   useEffect(() => {
     if (isJest || viewportHeight <= 0 || svgHeightPx <= 0) {
       targetRef.current = journey.maxTruthProgress;
@@ -373,7 +381,6 @@ export const MobileCustodyJourneyRoad: React.FC<MobileCustodyJourneyRoadProps> =
     journey,
   ]);
 
-  // Reset softly when switching documents
   useEffect(() => {
     if (isJest) {
       displayRef.current = journey.maxTruthProgress;
@@ -384,7 +391,6 @@ export const MobileCustodyJourneyRoad: React.FC<MobileCustodyJourneyRoadProps> =
     setProgress(0);
   }, [doc.id, isJest, journey.maxTruthProgress]);
 
-  // Lightweight 60fps spring-follow + subtle shockwave pulse loop
   useEffect(() => {
     if (isJest) return;
     let alive = true;
@@ -403,7 +409,6 @@ export const MobileCustodyJourneyRoad: React.FC<MobileCustodyJourneyRoadProps> =
         setProgress(displayRef.current);
       }
 
-      setPulsePhase((now % 2400) / 2400);
       rafId = requestAnimationFrame(tick);
     };
 
@@ -425,9 +430,9 @@ export const MobileCustodyJourneyRoad: React.FC<MobileCustodyJourneyRoadProps> =
   };
 
   const spanY = Math.max(1, journey.lastY - journey.firstY);
-  const cometTargetY = journey.firstY + progress * spanY;
-  const cometSample = sampleByTargetY(journey.samples, cometTargetY);
-  const activeDashOffset = Math.max(0, journey.totalLength - cometSample.len);
+  const markerTargetY = journey.firstY + progress * spanY;
+  const markerSample = sampleByTargetY(journey.samples, markerTargetY);
+  const activeDashOffset = Math.max(0, journey.totalLength - markerSample.len);
 
   const lastHopIdx = journey.hops.length - 1;
   const lastHopIsPending = journey.hops[lastHopIdx]?.state === 'pending';
@@ -443,19 +448,6 @@ export const MobileCustodyJourneyRoad: React.FC<MobileCustodyJourneyRoadProps> =
     }
   }
 
-  const rippleRadius = 22 + pulsePhase * 24;
-  const rippleOpacity = Math.max(0, (1 - pulsePhase) * 0.72);
-  const scrollBoost = Math.min(1, Math.abs(targetRef.current - progress) * 7);
-
-  const sparks = useMemo(() => {
-    const count = Math.max(6, journey.hops.length * 2 + 1);
-    return Array.from({ length: count }, (_, i) => ({
-      cx: i % 2 === 0 ? 48 + ((i * 29) % 66) : 326 + ((i * 31) % 72),
-      cy: Math.round(((i + 0.5) / count) * journey.viewHeight),
-      r: i % 3 === 0 ? 2 : 1.4,
-    }));
-  }, [journey.hops.length, journey.viewHeight]);
-
   const handleHopPress = (hop: MobileCustodyHop) => {
     if (!onRequestScrollToY || viewportHeight <= 0) return;
     const absNodeY =
@@ -463,16 +455,18 @@ export const MobileCustodyJourneyRoad: React.FC<MobileCustodyJourneyRoadProps> =
     onRequestScrollToY(Math.max(0, absNodeY - viewportHeight * 0.56));
   };
 
+  const displayTitle = doc.isSealed ? 'Sealed Document' : doc.title;
+
   return (
     <View testID="mobile-custody-journey-road" style={styles.stageCard}>
       <View style={styles.topBar}>
-        <View style={styles.metaRow}>
-          <View style={styles.codePill}>
-            <Text style={styles.codeText}>{doc.trackingCode}</Text>
-          </View>
-          <View style={styles.statusPill}>
+        <View style={styles.titleBlock}>
+          <Text testID="mobile-custody-road-title" numberOfLines={1} style={styles.docTitle}>
+            {displayTitle}
+          </Text>
+          <View style={[styles.statusPill, { backgroundColor: journey.statusBg }]}>
             <View style={[styles.statusDot, { backgroundColor: journey.statusColor }]} />
-            <Text style={[styles.statusText, { color: journey.statusColor }]}>
+            <Text numberOfLines={1} style={[styles.statusText, { color: journey.statusColor }]}>
               {journey.statusSummary}
             </Text>
           </View>
@@ -485,8 +479,8 @@ export const MobileCustodyJourneyRoad: React.FC<MobileCustodyJourneyRoadProps> =
             accessibilityRole="button"
             style={styles.openBtn}
           >
-            <Text style={styles.openBtnText}>Open</Text>
-            <ArrowUpRight size={13} color="#FFFFFF" />
+            <Text style={styles.openBtnText}>View</Text>
+            <ArrowUpRight size={13} color={SDO_COLORS.navy} />
           </Pressable>
         ) : null}
       </View>
@@ -499,120 +493,41 @@ export const MobileCustodyJourneyRoad: React.FC<MobileCustodyJourneyRoadProps> =
         >
           <Defs>
             <LinearGradient id="mcrRoadGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-              <Stop offset="0%" stopColor="#60A5FA" />
-              <Stop offset="38%" stopColor="#F3B32A" />
-              <Stop offset="72%" stopColor="#2DD4BF" />
-              <Stop offset="100%" stopColor="#34D399" />
+              <Stop offset="0%" stopColor="#0D3472" />
+              <Stop offset="55%" stopColor="#0284C7" />
+              <Stop offset="100%" stopColor="#059669" />
             </LinearGradient>
-
-            <LinearGradient id="mcrFilGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-              <Stop offset="0%" stopColor="#60A5FA" stopOpacity={0.85} />
-              <Stop offset="42%" stopColor="#F3B32A" stopOpacity={0.95} />
-              <Stop offset="76%" stopColor="#2DD4BF" stopOpacity={0.9} />
-              <Stop offset="100%" stopColor="#34D399" stopOpacity={0.95} />
-            </LinearGradient>
-
-            <RadialGradient id="mcrCometGrad" cx="50%" cy="50%" r="50%">
-              <Stop offset="0%" stopColor="#FFFFFF" stopOpacity={1} />
-              <Stop offset="38%" stopColor="#FDE68A" stopOpacity={0.94} />
-              <Stop offset="74%" stopColor="#F3B32A" stopOpacity={0.44} />
-              <Stop offset="100%" stopColor="#F3B32A" stopOpacity={0} />
-            </RadialGradient>
-
-            <ClipPath id="mcrProgressClip">
-              <Rect x={0} y={0} width={VIEW_WIDTH} height={Math.max(0, cometSample.y + 4)} />
-            </ClipPath>
           </Defs>
 
-          {/* Subtle ambient motes */}
-          {sparks.map((sp, i) => (
-            <Circle
-              key={i}
-              cx={sp.cx}
-              cy={sp.cy}
-              r={sp.r}
-              fill={i % 2 === 0 ? '#F3B32A' : '#5EEAD4'}
-              opacity={0.48}
-            />
-          ))}
-
-          {/* Dormant unlit road */}
+          {/* Dormant track */}
           <Path
             d={journey.mainPath}
             fill="none"
-            stroke="rgba(148, 163, 184, 0.17)"
-            strokeWidth={11}
+            stroke="#E2E8F0"
+            strokeWidth={6}
             strokeLinecap="round"
           />
           <Path
             d={journey.mainPath}
             fill="none"
-            stroke="rgba(148, 163, 184, 0.34)"
-            strokeWidth={1.7}
-            strokeDasharray="6 8"
+            stroke="#CBD5E1"
+            strokeWidth={1.5}
+            strokeDasharray="5 6"
             strokeLinecap="round"
           />
 
-          {/* Broad soft glow aura beneath lit path */}
+          {/* Truth-capped active progress line */}
           <Path
             d={journey.mainPath}
             fill="none"
             stroke="url(#mcrRoadGrad)"
-            strokeWidth={16}
-            strokeLinecap="round"
-            opacity={0.26}
-            strokeDasharray={[journey.totalLength, journey.totalLength]}
-            strokeDashoffset={activeDashOffset}
-          />
-
-          {/* Braided energy filaments clipped to the traveling torch */}
-          {progress > 0.008 ? (
-            <G clipPath="url(#mcrProgressClip)">
-              <Path
-                d={journey.leftFilamentPath}
-                fill="none"
-                stroke="url(#mcrFilGrad)"
-                strokeWidth={2}
-                strokeLinecap="round"
-                opacity={0.74}
-              />
-              <Path
-                d={journey.rightFilamentPath}
-                fill="none"
-                stroke="url(#mcrFilGrad)"
-                strokeWidth={1.8}
-                strokeLinecap="round"
-                opacity={0.62}
-              />
-            </G>
-          ) : null}
-
-          {/* Core luminous vertical track */}
-          <Path
-            d={journey.mainPath}
-            fill="none"
-            stroke="url(#mcrRoadGrad)"
-            strokeWidth={5}
+            strokeWidth={4.5}
             strokeLinecap="round"
             strokeDasharray={[journey.totalLength, journey.totalLength]}
             strokeDashoffset={activeDashOffset}
           />
 
-          {/* White-hot core dashes inside lit track */}
-          {progress > 0.015 ? (
-            <Path
-              d={journey.mainPath}
-              fill="none"
-              stroke="#FFFFFF"
-              strokeWidth={1.9}
-              strokeLinecap="round"
-              strokeDasharray="14 24"
-              opacity={0.78}
-              clipPath="url(#mcrProgressClip)"
-            />
-          ) : null}
-
-          {/* Real Office Orbs with minimalist labels */}
+          {/* Office Stops */}
           {journey.hops.map((hop, idx) => {
             const hopFrac = (hop.cy - journey.firstY) / spanY;
             const isUnreached = hop.state === 'pending' || hop.state === 'unreached';
@@ -620,7 +535,7 @@ export const MobileCustodyJourneyRoad: React.FC<MobileCustodyJourneyRoadProps> =
             const isCurrent =
               (!lastHopIsPending && idx === currentLitIdx) ||
               (lastHopIsPending && idx === lastHopIdx && progress >= journey.maxTruthProgress - 0.05);
-            const labelX = hop.labelSide === 'right' ? hop.cx + 42 : hop.cx - 42;
+            const labelX = hop.labelSide === 'right' ? hop.cx + 30 : hop.cx - 30;
             const labelAnchor = hop.labelSide === 'right' ? 'start' : 'end';
 
             return (
@@ -629,53 +544,26 @@ export const MobileCustodyJourneyRoad: React.FC<MobileCustodyJourneyRoadProps> =
                   <Circle
                     cx={hop.cx}
                     cy={hop.cy}
-                    r={rippleRadius}
-                    fill="none"
-                    stroke={hop.accentHex}
-                    strokeWidth={2}
-                    opacity={rippleOpacity}
-                  />
-                ) : null}
-
-                {isLit ? (
-                  <Circle
-                    cx={hop.cx}
-                    cy={hop.cy}
-                    r={isCurrent ? 34 : 25}
+                    r={22}
                     fill={hop.accentHex}
-                    opacity={isCurrent ? 0.24 : 0.14}
+                    opacity={0.14}
                   />
                 ) : null}
 
                 <Circle
                   cx={hop.cx}
                   cy={hop.cy}
-                  r={isCurrent ? 26 : 20}
-                  fill="none"
-                  stroke={
-                    isLit
-                      ? hop.accentHex
-                      : hop.state === 'pending'
-                        ? 'rgba(243, 179, 42, 0.58)'
-                        : 'rgba(148, 163, 184, 0.3)'
-                  }
-                  strokeWidth={isCurrent ? 2 : 1.4}
-                  strokeDasharray={hop.state === 'pending' ? '4 4' : undefined}
-                />
-
-                <Circle
-                  cx={hop.cx}
-                  cy={hop.cy}
-                  r={isCurrent ? 18 : 14.5}
-                  fill={isLit ? hop.accentHex : '#0F254A'}
+                  r={isCurrent ? 15.5 : 13.5}
+                  fill={isLit ? hop.accentHex : '#FFFFFF'}
                   stroke={
                     isLit
                       ? '#FFFFFF'
                       : hop.state === 'pending'
-                        ? '#F3B32A'
-                        : 'rgba(148, 163, 184, 0.4)'
+                        ? '#D97706'
+                        : '#CBD5E1'
                   }
-                  strokeWidth={isCurrent ? 2.3 : 1.5}
+                  strokeWidth={isLit ? 2.4 : 2}
+                  strokeDasharray={hop.state === 'pending' ? '4 3' : undefined}
                 />
 
                 <SvgText
@@ -684,7 +572,7 @@ export const MobileCustodyJourneyRoad: React.FC<MobileCustodyJourneyRoadProps> =
                   textAnchor="middle"
                   fontSize={11}
                   fontWeight="800"
-                  fill={isLit ? '#06142E' : hop.state === 'pending' ? '#FDE68A' : '#94A3B8'}
+                  fill={isLit ? '#FFFFFF' : hop.state === 'pending' ? '#B45309' : '#64748B'}
                 >
                   {hop.code}
                 </SvgText>
@@ -693,19 +581,19 @@ export const MobileCustodyJourneyRoad: React.FC<MobileCustodyJourneyRoadProps> =
                   x={labelX}
                   y={hop.cy - 2}
                   textAnchor={labelAnchor}
-                  fontSize={15}
-                  fontWeight="800"
-                  fill={isLit ? '#FFFFFF' : hop.state === 'pending' ? '#FDE68A' : '#94A3B8'}
+                  fontSize={13.5}
+                  fontWeight="700"
+                  fill={isLit ? '#0F172A' : hop.state === 'pending' ? '#92400E' : '#64748B'}
                 >
-                  {hop.officeCode}
+                  {hop.displayOffice}
                 </SvgText>
                 <SvgText
                   x={labelX}
-                  y={hop.cy + 15}
+                  y={hop.cy + 14}
                   textAnchor={labelAnchor}
-                  fontSize={11}
-                  fontWeight="600"
-                  fill={isLit ? 'rgba(226, 232, 240, 0.84)' : 'rgba(148, 163, 184, 0.72)'}
+                  fontSize={10.5}
+                  fontWeight="500"
+                  fill={isLit ? '#475569' : '#94A3B8'}
                 >
                   {hop.statusLine}
                 </SvgText>
@@ -713,14 +601,18 @@ export const MobileCustodyJourneyRoad: React.FC<MobileCustodyJourneyRoadProps> =
             );
           })}
 
-          {/* Blazing truth-capped scroll-following comet */}
-          <G x={cometSample.x} y={cometSample.y}>
-            <Circle r={20 + scrollBoost * 9} fill="url(#mcrCometGrad)" />
+          {/* Scroll-following marker */}
+          <G x={markerSample.x} y={markerSample.y}>
             <Circle
-              r={6.8 + scrollBoost * 2.4}
-              fill="#FFFFFF"
-              stroke="#F3B32A"
-              strokeWidth={2.2}
+              r={10.5}
+              fill={lastHopIsPending ? '#F59E0B' : '#0284C7'}
+              opacity={0.22}
+            />
+            <Circle
+              r={5.2}
+              fill={lastHopIsPending ? '#D97706' : '#0D3472'}
+              stroke="#FFFFFF"
+              strokeWidth={2}
             />
           </G>
         </Svg>
@@ -731,53 +623,43 @@ export const MobileCustodyJourneyRoad: React.FC<MobileCustodyJourneyRoadProps> =
 
 const styles = StyleSheet.create({
   stageCard: {
-    borderRadius: 22,
-    backgroundColor: '#071A3C',
+    borderRadius: 16,
+    backgroundColor: SDO_COLORS.surface,
     borderWidth: 1,
-    borderColor: 'rgba(148, 163, 184, 0.24)',
+    borderColor: SDO_COLORS.border,
     paddingHorizontal: 14,
     paddingTop: 14,
-    paddingBottom: 12,
+    paddingBottom: 10,
     overflow: 'hidden',
   },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 8,
-    marginBottom: 4,
+    gap: 10,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: SDO_COLORS.border,
   },
-  metaRow: {
+  titleBlock: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 6,
+    gap: 5,
+    minWidth: 0,
   },
-  codePill: {
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.16)',
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-  },
-  codeText: {
-    fontFamily: SDO_FONTS.mono,
-    fontSize: 11,
+  docTitle: {
+    fontFamily: SDO_FONTS.sans,
+    fontSize: 13.5,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: SDO_COLORS.textPrimary,
   },
   statusPill: {
+    alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
     borderRadius: 999,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.14)',
-    backgroundColor: 'rgba(5, 15, 36, 0.45)',
     paddingHorizontal: 9,
-    paddingVertical: 4,
+    paddingVertical: 3,
   },
   statusDot: {
     width: 6,
@@ -795,8 +677,8 @@ const styles = StyleSheet.create({
     gap: 3,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-    backgroundColor: 'rgba(255, 255, 255, 0.09)',
+    borderColor: SDO_COLORS.border,
+    backgroundColor: SDO_COLORS.surfaceSoft,
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
@@ -804,10 +686,13 @@ const styles = StyleSheet.create({
     fontFamily: SDO_FONTS.sans,
     fontSize: 11.5,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: SDO_COLORS.navy,
   },
   svgWrap: {
     width: '100%',
     alignItems: 'center',
+    marginTop: 4,
   },
 });
+
+export default MobileCustodyJourneyRoad;

@@ -1,16 +1,17 @@
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { Archive, CheckCircle2, Menu, Search } from 'lucide-react-native';
+import { Archive, CheckCircle2, Search } from 'lucide-react-native';
 import { DocumentLifecycleStatus } from '../../domain/enums/DomainEnums';
 import { useAppServices } from '../../state/AppServiceContext';
 import { EmptyState } from '../components/EmptyState';
+import { MobileHeaderActions } from '../components/MobileHeaderActions';
 import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 
 type CompletedFilter = 'all' | 'approved' | 'archived';
 const PAGE_SIZE = 15;
 
 export const CompletedScreen: React.FC = () => {
-  const { documents, openDocument, openSidebar } = useAppServices();
+  const { documents, openDocument } = useAppServices();
   const [filter, setFilter] = useState<CompletedFilter>('all');
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(1);
@@ -49,9 +50,7 @@ export const CompletedScreen: React.FC = () => {
     <View style={styles.screen}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Completed</Text>
-        <Pressable onPress={openSidebar} accessibilityLabel="Open navigation sidebar" style={styles.iconBtn}>
-          <Menu size={18} color={SDO_COLORS.navyInk} />
-        </Pressable>
+        <MobileHeaderActions variant="soft" />
       </View>
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">

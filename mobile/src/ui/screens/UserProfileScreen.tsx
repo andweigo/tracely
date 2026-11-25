@@ -160,7 +160,7 @@ export const UserProfileScreen: React.FC = () => {
         <MobileIdentityWalletCard
           testID="mobile-user-profile-wallet-card"
           onDragChange={setLanyardDragging}
-          liveSyncBadge="Live Personnel Pass · Synced With Your Profile"
+          liveSyncBadge="Live ID Preview"
           fullName={fullName || actor?.fullName || 'User Profile'}
           employeeId={actor?.employeeId ?? 'EMP-2026-0001'}
           position={position || actor?.position || 'Staff'}

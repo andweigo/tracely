@@ -159,7 +159,7 @@ export const UserProfilePage: React.FC = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }} data-testid="web-user-profile-page">
       <IdentityWalletCard
         testId="web-user-profile-wallet-card"
-        liveSyncBadge="Live Personnel Pass · Synced With Your Profile"
+        liveSyncBadge="Live ID Preview"
         fullName={fullName || actor?.fullName || 'User Profile'}
         employeeId={actor?.employeeId ?? 'EMP-2026-0001'}
         position={position || actor?.position || 'Staff'}

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, Download, MapPin, Printer, Search, X } from 'lucide-react';
 import { DocumentLifecycleStatus, DocumentTrackingSnapshot } from '../domain/types';
 import { useWebApp } from '../state/WebAppContext';
@@ -12,12 +12,46 @@ const COMPLETED_STATUSES: ReadonlySet<DocumentLifecycleStatus> = new Set(['appro
 const TRACK_ITEMS_PER_PAGE = 10;
 
 export const TrackPage: React.FC = () => {
-  const { actor, trackedSnapshots, trackByCode, openDocument, navigate, isBusy } = useWebApp();
+  const {
+    actor,
+    trackedSnapshots,
+    trackByCode,
+    openDocument,
+    navigate,
+    isBusy,
+    focusedTrackCode,
+    clearFocusedTrackCode,
+  } = useWebApp();
 
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(() => focusedTrackCode ?? '');
   const [scope, setScope] = useState<TrackScope>('all');
   const [page, setPage] = useState(1);
   const [lookupResult, setLookupResult] = useState<DocumentTrackingSnapshot | null>(null);
+
+  useEffect(() => {
+    if (!focusedTrackCode) return;
+    const code = focusedTrackCode.trim();
+    if (!code) {
+      clearFocusedTrackCode();
+      return;
+    }
+    setQuery(code);
+    setScope('all');
+    setPage(1);
+    setLookupResult(null);
+
+    const hasLocal = trackedSnapshots.some(
+      (snap) => snap.trackingCode.toLowerCase() === code.toLowerCase(),
+    );
+    clearFocusedTrackCode();
+    if (!hasLocal && actor) {
+      void trackByCode(code)
+        .then((found) => {
+          if (found) setLookupResult(found);
+        })
+        .catch(() => {});
+    }
+  }, [actor, clearFocusedTrackCode, focusedTrackCode, trackByCode, trackedSnapshots]);
 
   const activeCount = useMemo(
     () => trackedSnapshots.filter((s) => !COMPLETED_STATUSES.has(s.lifecycleStatus)).length,
@@ -231,6 +265,7 @@ export const TrackPage: React.FC = () => {
                 <TrackingLocationCard
                   key={snap.documentId}
                   snapshot={snap}
+                  defaultExpanded={pagedTracked.pageItems.length === 1 && query.trim().length > 0}
                   onOpenDocument={openDocument}
                 />
               ))}

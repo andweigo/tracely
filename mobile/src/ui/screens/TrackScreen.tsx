@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Pressable,
   RefreshControl,
@@ -8,9 +8,10 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { ArrowLeft, MapPin, Menu, Search, X } from 'lucide-react-native';
+import { ArrowLeft, MapPin, Search, X } from 'lucide-react-native';
 import type { DocumentTrackingSnapshot } from '../../domain/security/AccessPolicy';
 import { useAppServices } from '../../state/AppServiceContext';
+import { MobileHeaderActions } from '../components/MobileHeaderActions';
 import {
   TrackingGroupedList,
   TrackingLocationCard,
@@ -19,10 +20,6 @@ import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 
 type TrackerScope = 'sent' | 'all_office';
 
-/**
- * Full-screen Track Documents view accessible directly from BottomNav and Sidebar.
- * Supports browsing office-originated dispatches with expandable timelines and live server code lookup.
- */
 export const TrackScreen: React.FC = () => {
   const {
     actor,
@@ -30,15 +27,40 @@ export const TrackScreen: React.FC = () => {
     trackDocumentByCode,
     openDocument,
     goBack,
-    openSidebar,
     refreshWorkspace,
     isRefreshing,
     isBusy,
+    focusedTrackCode,
+    clearFocusedTrackCode,
   } = useAppServices();
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [scope, setScope] = useState<TrackerScope>('sent');
+  const [searchQuery, setSearchQuery] = useState(() => focusedTrackCode ?? '');
+  const [scope, setScope] = useState<TrackerScope>(() =>
+    focusedTrackCode ? 'all_office' : 'sent',
+  );
   const [lookupResult, setLookupResult] = useState<DocumentTrackingSnapshot | null>(null);
+
+  useEffect(() => {
+    if (!focusedTrackCode) return;
+    const code = focusedTrackCode.trim();
+    if (!code) {
+      clearFocusedTrackCode();
+      return;
+    }
+    setSearchQuery(code);
+    setScope('all_office');
+    setLookupResult(null);
+
+    const hasLocal = trackedSnapshots.some(
+      (snap) => snap.trackingCode.toLowerCase() === code.toLowerCase(),
+    );
+    clearFocusedTrackCode();
+    if (!hasLocal && actor) {
+      trackDocumentByCode(code)
+        .then((res) => setLookupResult(res))
+        .catch(() => {});
+    }
+  }, [actor, clearFocusedTrackCode, focusedTrackCode, trackDocumentByCode, trackedSnapshots]);
 
   const sentByOfficeSnapshots = useMemo(
     () => trackedSnapshots.filter((snap) => snap.sentByActorOffice),
@@ -84,13 +106,7 @@ export const TrackScreen: React.FC = () => {
           <ArrowLeft size={18} color={SDO_COLORS.navyInk} />
         </Pressable>
         <Text style={styles.headerTitle}>Tracking</Text>
-        <Pressable
-          onPress={openSidebar}
-          accessibilityLabel="Open navigation sidebar"
-          style={styles.circleBtn}
-        >
-          <Menu size={19} color={SDO_COLORS.navyInk} />
-        </Pressable>
+        <MobileHeaderActions variant="soft" />
       </View>
 
       <ScrollView
@@ -102,10 +118,6 @@ export const TrackScreen: React.FC = () => {
           <RefreshControl refreshing={isRefreshing} onRefresh={refreshWorkspace} />
         }
       >
-        <Text style={styles.subtitle}>
-          Browse documents sent by {officeCode} and expand any card for timestamps
-        </Text>
-
         {lookupResult ? (
           <View style={styles.detailWrap}>
             <Pressable onPress={() => setLookupResult(null)} style={styles.backBtn}>
@@ -165,7 +177,7 @@ export const TrackScreen: React.FC = () => {
             {activeList.length > 0 ? (
               <TrackingGroupedList
                 snapshots={activeList}
-                expandSingleItem={false}
+                expandSingleItem={searchQuery.trim().length > 0}
                 onOpenDocument={openDocument}
               />
             ) : (

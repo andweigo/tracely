@@ -214,6 +214,18 @@ export interface MobileAppUpdateInfo {
   readonly sizeMb?: number | null;
 }
 
+export interface MobileFolderAppearance {
+  readonly mode: 'flap' | 'book';
+  readonly variant: 'solid' | 'glass' | 'matte';
+  readonly layout: 'spread' | 'stack' | 'row';
+}
+
+export const DEFAULT_MOBILE_FOLDER_APPEARANCE: MobileFolderAppearance = {
+  mode: 'flap',
+  variant: 'solid',
+  layout: 'spread',
+};
+
 export interface AppContextValue {
   bootstrapping: boolean;
   showOnboarding: boolean;
@@ -247,6 +259,8 @@ export interface AppContextValue {
   activeSessions: ReadonlyArray<ActiveDeviceSession>;
   securityPrefs: UserSecurityPreferences;
   userPreferences: UserWorkflowPreferences;
+  folderAppearance: MobileFolderAppearance;
+  focusedTrackCode: string | null;
   workloadSummary: WorkloadSummary;
   scannerTorchOn: boolean;
   scannerPaused: boolean;
@@ -264,6 +278,9 @@ export interface AppContextValue {
   markScreenOpened(key: string): void;
   setActiveTab(tab: MobileTab): void;
   goBack(): boolean;
+  openTrackForDocument(trackingCode: string): void;
+  clearFocusedTrackCode(): void;
+  updateFolderAppearance(patch: Partial<MobileFolderAppearance>): void;
   openScannerForDocument(document: Document, autoStartCamera?: boolean): void;
   clearScannerTarget(): void;
   completeOnboarding(targetTab?: MobileTab): Promise<void>;
@@ -402,8 +419,26 @@ export interface AppContextValue {
 const ONBOARDING_STORAGE_KEY = '@sdo_doctrack/onboarding_done';
 const RECENT_SCANS_STORAGE_KEY = '@sdo_doctrack/recent_scans';
 const USER_PREFS_STORAGE_KEY = '@sdo_doctrack/user_preferences';
+const FOLDER_APPEARANCE_STORAGE_KEY = '@tracely/mobile_folder_appearance';
 const PENDING_REGISTRATION_STORAGE_KEY = '@sdo_doctrack/mobile_pending_registration';
 const AVATAR_COLOR_STORAGE_PREFIX = '@tracely/avatar_color_v1:';
+
+function parseStoredFolderAppearance(raw: string | null): MobileFolderAppearance {
+  if (!raw) return DEFAULT_MOBILE_FOLDER_APPEARANCE;
+  try {
+    const parsed = JSON.parse(raw) as Partial<MobileFolderAppearance> | null;
+    if (!parsed || typeof parsed !== 'object') return DEFAULT_MOBILE_FOLDER_APPEARANCE;
+    return {
+      mode: parsed.mode === 'book' ? 'book' : 'flap',
+      variant:
+        parsed.variant === 'glass' || parsed.variant === 'matte' ? parsed.variant : 'solid',
+      layout:
+        parsed.layout === 'stack' || parsed.layout === 'row' ? parsed.layout : 'spread',
+    };
+  } catch {
+    return DEFAULT_MOBILE_FOLDER_APPEARANCE;
+  }
+}
 
 function parseStoredPendingRegistration(raw: string | null): PendingRegistrationRecord | null {
   if (!raw) return null;
@@ -559,6 +594,24 @@ export const AppServiceProvider: React.FC<{
   const [userPreferences, setUserPreferences] = useState<UserWorkflowPreferences>(
     DEFAULT_USER_WORKFLOW_PREFERENCES,
   );
+  const [folderAppearance, setFolderAppearance] = useState<MobileFolderAppearance>(
+    DEFAULT_MOBILE_FOLDER_APPEARANCE,
+  );
+  const [focusedTrackCode, setFocusedTrackCode] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    AsyncStorage.getItem(FOLDER_APPEARANCE_STORAGE_KEY)
+      .then((raw) => {
+        if (active && raw) {
+          setFolderAppearance(parseStoredFolderAppearance(raw));
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
   const [scannerTorchOn, setScannerTorchOn] = useState(false);
   const [scannerPaused, setScannerPaused] = useState(false);
   const [scannerTarget, setScannerTarget] = useState<ScannerLaunchTarget | null>(null);
@@ -1266,6 +1319,8 @@ export const AppServiceProvider: React.FC<{
     activeSessions,
     securityPrefs,
     userPreferences,
+    folderAppearance,
+    focusedTrackCode,
     workloadSummary,
     scannerTorchOn,
     scannerPaused,
@@ -1283,6 +1338,21 @@ export const AppServiceProvider: React.FC<{
     markScreenOpened,
     setActiveTab: navigateToTab,
     goBack,
+    openTrackForDocument: (trackingCode) => {
+      const clean = trackingCode.trim();
+      setFocusedTrackCode(clean || null);
+      navigateToTab('track');
+    },
+    clearFocusedTrackCode: () => {
+      setFocusedTrackCode(null);
+    },
+    updateFolderAppearance: (patch) => {
+      setFolderAppearance((prev) => {
+        const next: MobileFolderAppearance = { ...prev, ...patch };
+        AsyncStorage.setItem(FOLDER_APPEARANCE_STORAGE_KEY, JSON.stringify(next)).catch(() => {});
+        return next;
+      });
+    },
     openScannerForDocument: (doc, autoStartCamera = true) => {
       const latest = doc.latestTransaction;
       const fromOffice = latest?.fromOffice ?? doc.originOffice;

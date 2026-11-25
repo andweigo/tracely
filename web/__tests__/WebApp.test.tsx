@@ -155,7 +155,6 @@ describe('DocsTracker Web App', () => {
       window.location.hash = '#/scanner';
       window.dispatchEvent(new HashChangeEvent('hashchange'));
     });
-    expect(screen.getByText('Dashboard & Inbox')).toBeTruthy();
     expect(screen.getByText('Desk Queue Overview')).toBeTruthy();
     expect(screen.getByTestId('web-mobile-companion-card')).toBeTruthy();
   });
@@ -244,7 +243,9 @@ describe('DocsTracker Web App', () => {
     expect(screen.getByText('8–32 chars')).toBeTruthy();
     expect(screen.getByText('Upper & lower')).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Other / Custom' }));
+    fireEvent.change(screen.getByTestId('web-register-office-select'), {
+      target: { value: '__CUSTOM__' },
+    });
     expect(screen.getByLabelText('Custom Office / Unit Code')).toBeTruthy();
     expect(screen.getByLabelText('Custom Office / Unit Name')).toBeTruthy();
   });
@@ -2966,17 +2967,26 @@ describe('DocsTracker Web App', () => {
     expect(screen.getByTestId('analytics-office-table')).toBeTruthy();
     expect(screen.getByTestId('web-analytics-export-csv')).toBeTruthy();
 
-    // Dedicated Dashboard screen renders Wallet Card + Vertical Scroll-Tracked Custody Road + 3D Folder Organizer
+    // Dedicated Dashboard screen renders vertical portrait ID Card + Minimal Custody Road (Title-based, Top 5) + Folders
     fireEvent.click(within(mainNav).getByRole('button', { name: /^Dashboard$/i }));
     expect(await screen.findByTestId('web-dashboard-page')).toBeTruthy();
     expect(screen.getByTestId('web-dashboard-wallet-card')).toBeTruthy();
+    expect(
+      screen.getByTestId('web-dashboard-wallet-card').getAttribute('data-orientation'),
+    ).toBe('portrait');
     fireEvent.click(screen.getByTestId('web-dashboard-wallet-card-flip-btn'));
     fireEvent.click(screen.getByTestId('web-dashboard-wallet-card-mask-btn'));
     expect(screen.getByTestId('web-routing-flow-analytics')).toBeTruthy();
     expect(screen.getByTestId('web-custody-journey-road')).toBeTruthy();
+    expect(screen.getByTestId('web-custody-road-title').textContent).toBe(
+      'Outgoing Budget Allotment Slip',
+    );
     expect(
       screen.getByTestId('web-custody-journey-road').querySelectorAll('[data-testid^="custody-hop-"]').length,
     ).toBeGreaterThanOrEqual(2);
+    expect(
+      screen.getByTestId('web-routing-flow-analytics').querySelectorAll('[data-testid^="custody-doc-pill-"]').length,
+    ).toBeLessThanOrEqual(5);
     fireEvent.click(screen.getByTestId('flow-scope-user'));
     expect(screen.getByTestId('web-custody-journey-road')).toBeTruthy();
     fireEvent.click(screen.getByTestId('flow-scope-office'));
@@ -2994,12 +3004,27 @@ describe('DocsTracker Web App', () => {
     fireEvent.click(screen.getByTestId('folder-group-category'));
     fireEvent.click(screen.getByTestId('folder-group-stage'));
 
-    // Settings & System Information screen (Developer: Andrei Obligar, Permissions, Legal, zero secrets)
+    // Categories screen renders Dashboard-style folders holding matching docs and navigates to Track Docs
+    fireEvent.click(within(mainNav).getByRole('button', { name: /^Categories$/i }));
+    expect(await screen.findByTestId('web-categories-folder-grid')).toBeTruthy();
+    fireEvent.click(screen.getByTestId('web-open-category-folder-cat-bur'));
+    expect(await screen.findByTestId('web-category-docs-panel')).toBeTruthy();
+    fireEvent.click(screen.getByTestId('web-cat-doc-track-doc-sent-b'));
+    expect((await screen.findByLabelText('Search tracking code or title') as HTMLInputElement).value).toBe(
+      'TRC-2026-001002',
+    );
+
+    // Settings screen includes Folder Preferences + Permissions + Developer + Legal (zero secrets)
     fireEvent.click(screen.getByTestId('web-sidebar-settings-btn'));
     expect(await screen.findByTestId('web-settings-page')).toBeTruthy();
+    expect(screen.getByTestId('web-settings-folder-prefs-card')).toBeTruthy();
+    fireEvent.click(screen.getByTestId('web-pref-folder-mode-book'));
+    fireEvent.click(screen.getByTestId('web-pref-folder-variant-glass'));
+    fireEvent.click(screen.getByTestId('web-pref-folder-layout-stack'));
     expect(screen.getByTestId('web-settings-permissions-card')).toBeTruthy();
     expect(screen.getByTestId('web-system-developer').textContent).toBe('Andrei Obligar');
     const settingsText = screen.getByTestId('web-settings-page').textContent ?? '';
+    expect(settingsText).toContain('Folder Preferences');
     expect(settingsText).toContain('Device & Service Permissions');
     expect(settingsText).toContain('Terms & Conditions');
     expect(settingsText).toContain('Privacy Policy');

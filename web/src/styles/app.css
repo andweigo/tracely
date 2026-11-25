@@ -4567,7 +4567,7 @@ body,
 }
 
 
-/* ===== DASHBOARD VERTICAL SCROLL-TRACKED CUSTODY ROAD ===== */
+/* ===== DASHBOARD MINIMAL VERTICAL CUSTODY TRACK ===== */
 .custody-doc-strip {
   display: flex;
   gap: 8px;
@@ -4581,6 +4581,7 @@ body,
   align-items: center;
   gap: 7px;
   flex-shrink: 0;
+  max-width: 220px;
   border-radius: 999px;
   border: 1px solid var(--border);
   background: var(--surface);
@@ -4590,6 +4591,12 @@ body,
   font-weight: 600;
   cursor: pointer;
   transition: border-color 0.16s ease, background 0.16s ease, color 0.16s ease;
+}
+
+.custody-doc-pill-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .custody-doc-pill:hover {
@@ -4613,56 +4620,43 @@ body,
 .custody-road-stage {
   position: relative;
   width: 100%;
-  max-width: 740px;
+  max-width: 680px;
   margin: 0 auto;
-  border-radius: 22px;
+  border-radius: 16px;
   overflow: hidden;
-  padding: 18px 18px 20px;
-  background:
-    radial-gradient(480px 300px at 24% 14%, rgba(96, 165, 250, 0.15), transparent 68%),
-    radial-gradient(480px 300px at 78% 44%, rgba(243, 179, 42, 0.13), transparent 70%),
-    radial-gradient(480px 300px at 26% 74%, rgba(45, 212, 191, 0.14), transparent 70%),
-    linear-gradient(180deg, #050f24 0%, #09234d 54%, #0b2d63 100%);
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  box-shadow: 0 20px 52px rgba(5, 15, 36, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-}
-
-.custody-road-nebula {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(circle at 28% 20%, rgba(96, 165, 250, 0.1), transparent 36%),
-    radial-gradient(circle at 72% 48%, rgba(243, 179, 42, 0.08), transparent 36%),
-    radial-gradient(circle at 30% 78%, rgba(52, 211, 153, 0.1), transparent 36%);
+  padding: 16px 18px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
 }
 
 .custody-road-topbar {
-  position: relative;
-  z-index: 3;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
   flex-wrap: wrap;
-  margin-bottom: 6px;
+  padding-bottom: 12px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--border);
 }
 
 .custody-road-meta {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  min-width: 0;
+  flex: 1;
 }
 
-.custody-road-code {
-  font-size: 12px;
+.custody-road-title {
+  font-size: 14px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.92);
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 999px;
-  padding: 4px 10px;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 340px;
 }
 
 .custody-road-status-pill {
@@ -4672,10 +4666,9 @@ body,
   font-size: 11.5px;
   font-weight: 700;
   border-radius: 999px;
-  padding: 4px 10px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(5, 15, 36, 0.45);
-  color: #e2e8f0;
+  padding: 3px 10px;
+  background: var(--surface-soft);
+  color: var(--text-secondary);
 }
 
 .custody-road-status-dot {
@@ -4685,21 +4678,21 @@ body,
   background: currentColor;
 }
 
-.custody-road-status-pill.tone-amber { color: #fde68a; border-color: rgba(243, 179, 42, 0.35); }
-.custody-road-status-pill.tone-teal { color: #5eead4; border-color: rgba(45, 212, 191, 0.35); }
-.custody-road-status-pill.tone-emerald { color: #6ee7b7; border-color: rgba(52, 211, 153, 0.35); }
-.custody-road-status-pill.tone-rose { color: #fda4af; border-color: rgba(251, 113, 133, 0.35); }
-.custody-road-status-pill.tone-sky { color: #93c5fd; border-color: rgba(96, 165, 250, 0.35); }
+.custody-road-status-pill.tone-amber { color: #b45309; background: #fef3c7; }
+.custody-road-status-pill.tone-teal { color: #0369a1; background: #e0f2fe; }
+.custody-road-status-pill.tone-emerald { color: #047857; background: #d1fae5; }
+.custody-road-status-pill.tone-rose { color: #be123c; background: #ffe4e6; }
+.custody-road-status-pill.tone-sky { color: #1d4ed8; background: #dbeafe; }
 
 .custody-road-open-btn {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
-  font-size: 11.5px;
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+  color: var(--navy);
+  font-size: 12px;
   font-weight: 700;
   padding: 5px 11px;
   cursor: pointer;
@@ -4707,13 +4700,11 @@ body,
 }
 
 .custody-road-open-btn:hover {
-  background: rgba(255, 255, 255, 0.16);
-  border-color: rgba(255, 255, 255, 0.36);
+  background: var(--sky-soft);
+  border-color: var(--navy);
 }
 
 .custody-road-svg {
-  position: relative;
-  z-index: 2;
   display: block;
   width: 100%;
   max-width: 500px;
@@ -4731,75 +4722,21 @@ body,
 }
 
 .custody-road-orb-code {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 11.5px;
   font-weight: 800;
 }
 
 .custody-road-office {
   font-family: var(--font-sans);
-  font-size: 15.5px;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  transition: fill 0.25s ease;
+  font-size: 14px;
+  font-weight: 700;
+  transition: fill 0.2s ease;
 }
 
 .custody-road-sub {
   font-family: var(--font-sans);
   font-size: 11.5px;
-  font-weight: 600;
-  transition: fill 0.25s ease;
-}
-
-.custody-road-spark {
-  animation: custodyRoadTwinkle 3.2s ease-in-out infinite;
-}
-
-@keyframes custodyRoadTwinkle {
-  0%, 100% { opacity: 0.2; }
-  50% { opacity: 0.85; }
-}
-
-.custody-road-stream {
-  animation: custodyRoadFlow 1.6s linear infinite;
-}
-
-@keyframes custodyRoadFlow {
-  from { stroke-dashoffset: 40; }
-  to { stroke-dashoffset: 0; }
-}
-
-.custody-road-shockwave {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: custodyRoadRipple 2.4s ease-out infinite;
-}
-
-.custody-road-shockwave.delayed {
-  animation-delay: 0.7s;
-}
-
-@keyframes custodyRoadRipple {
-  0% { transform: scale(0.85); opacity: 0.85; }
-  100% { transform: scale(2.1); opacity: 0; }
-}
-
-.custody-road-orbit {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: custodyRoadSpin 12s linear infinite;
-}
-
-@keyframes custodyRoadSpin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .custody-road-spark,
-  .custody-road-stream,
-  .custody-road-shockwave,
-  .custody-road-orbit {
-    animation: none;
-  }
+  font-weight: 500;
+  transition: fill 0.2s ease;
 }

@@ -3,14 +3,11 @@ import {
   ArrowUpRight,
   ChevronLeft,
   ChevronRight,
-  FolderKanban,
   FolderOpen,
   Inbox,
-  Layers,
   MapPin,
   Search,
   Send,
-  Sparkles,
   X,
 } from 'lucide-react';
 import { SlaBadge, TierBadge } from '../components/Badges';
@@ -72,15 +69,12 @@ function getDocumentTimestampMs(doc: DocumentRecord): number {
 }
 
 export const DashboardPage: React.FC = () => {
-  const { actor, documents, categories, openDocument, navigate } = useWebApp();
+  const { actor, documents, categories, folderAppearance, openDocument, navigate } = useWebApp();
 
   const [flowScope, setFlowScope] = useState<RoutingScopeFilter>('office');
   const [selectedJourneyDocId, setSelectedJourneyDocId] = useState<string | null>(null);
 
   const [folderGroupMode, setFolderGroupMode] = useState<FolderGroupingMode>('stage');
-  const [folderMode, setFolderMode] = useState<'flap' | 'book'>('flap');
-  const [folderVariant, setFolderVariant] = useState<'solid' | 'glass' | 'matte'>('solid');
-  const [folderLayout, setFolderLayout] = useState<'spread' | 'stack' | 'row'>('spread');
   const [selectedFolderDoc, setSelectedFolderDoc] = useState<DocumentRecord | null>(null);
 
   // High-scale shelf pagination & searchable folder ledger state
@@ -119,7 +113,7 @@ export const DashboardPage: React.FC = () => {
     () =>
       [...scopedDocuments]
         .sort((a, b) => getDocumentTimestampMs(b) - getDocumentTimestampMs(a))
-        .slice(0, 12),
+        .slice(0, 5),
     [scopedDocuments],
   );
 
@@ -393,18 +387,18 @@ export const DashboardPage: React.FC = () => {
           actionLabel="Send Document"
           onActionClick={() => navigate('send')}
           defaultMasked={true}
-          lanyardHeight={300}
+          lanyardHeight={365}
         />
       </section>
 
-      {/* SECTION 1: Vertical Scroll-Tracked Live Custody Road */}
+      {/* SECTION 1: Top 5 Recent Document Tracking */}
       <section
         data-testid="web-routing-flow-analytics"
         style={{
           display: 'flex',
           flexDirection: 'column',
-          gap: 18,
-          paddingBottom: 36,
+          gap: 16,
+          paddingBottom: 32,
           borderBottom: '1px solid var(--border)',
         }}
       >
@@ -414,43 +408,19 @@ export const DashboardPage: React.FC = () => {
             flexWrap: 'wrap',
             alignItems: 'center',
             justifyContent: 'space-between',
-            gap: 16,
-            paddingBottom: 14,
-            borderBottom: '1px solid var(--border)',
+            gap: 12,
           }}
         >
-          <div>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                fontSize: 11,
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                letterSpacing: '0.06em',
-                color: 'var(--text-muted)',
-              }}
-            >
-              <span>Live Custody Track</span>
-              <span>·</span>
-              <span>
-                {flowScope === 'user'
-                  ? 'My Sent Dispatches'
-                  : `${actor?.office.code ?? 'Office'} Sent Dispatches`}
-              </span>
-            </div>
-            <h3
-              style={{
-                margin: '2px 0 0',
-                fontSize: 15,
-                fontWeight: 700,
-                color: 'var(--text-main)',
-              }}
-            >
-              Scroll-Tracked Office Custody Road
-            </h3>
-          </div>
+          <h3
+            style={{
+              margin: 0,
+              fontSize: 16,
+              fontWeight: 700,
+              color: 'var(--text-main)',
+            }}
+          >
+            Recent Tracking
+          </h3>
 
           <div
             style={{
@@ -506,19 +476,20 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         {journeyDocuments.length > 0 ? (
-          <div className="custody-doc-strip" role="tablist" aria-label="Select tracked document">
+          <div className="custody-doc-strip" role="tablist" aria-label="Select recent document">
             {journeyDocuments.map((doc) => {
               const isSelected = activeJourneyDoc?.id === doc.id;
               const isCompleted =
                 doc.lifecycleStatus === 'approved' || doc.lifecycleStatus === 'archived';
               const hasPending = doc.transactions.some((tx) => tx.status === 'pending');
               const dotColor = isCompleted
-                ? '#34D399'
+                ? '#059669'
                 : hasPending || doc.lifecycleStatus === 'in_transit'
-                  ? '#F3B32A'
+                  ? '#D97706'
                   : doc.lifecycleStatus === 'returned_for_revision'
-                    ? '#FB7185'
-                    : '#2DD4BF';
+                    ? '#E11D48'
+                    : '#0284C7';
+              const pillLabel = doc.isSealed ? 'Sealed Document' : doc.title;
               return (
                 <button
                   key={doc.id}
@@ -528,10 +499,10 @@ export const DashboardPage: React.FC = () => {
                   data-testid={`custody-doc-pill-${doc.id}`}
                   className={`custody-doc-pill ${isSelected ? 'is-active' : ''}`}
                   onClick={() => setSelectedJourneyDocId(doc.id)}
+                  title={pillLabel}
                 >
                   <span className="custody-doc-pill-dot" style={{ background: dotColor }} />
-                  <span className="mono">{doc.trackingCode}</span>
-                  <span>· {doc.currentOffice.code}</span>
+                  <span className="custody-doc-pill-title">{pillLabel}</span>
                 </button>
               );
             })}
@@ -541,25 +512,25 @@ export const DashboardPage: React.FC = () => {
         {!activeJourneyDoc ? (
           <div
             style={{
-              padding: '36px 12px',
+              padding: '32px 12px',
               textAlign: 'center',
               fontSize: 13,
               color: 'var(--text-muted)',
             }}
           >
             {flowScope === 'user'
-              ? 'No outgoing documents sent by you yet.'
-              : 'No outgoing documents sent by your office yet.'}
+              ? 'No documents sent by you yet.'
+              : 'No documents sent by your office yet.'}
           </div>
         ) : (
           <CustodyJourneyRoad document={activeJourneyDoc} onOpenDocument={openDocument} />
         )}
       </section>
 
-      {/* SECTION 2: High-Scale Interactive 3D <Folder /> Document Organizer */}
+      {/* SECTION 2: Folders */}
       <section
         data-testid="web-folder-organizer"
-        style={{ display: 'flex', flexDirection: 'column', gap: 26 }}
+        style={{ display: 'flex', flexDirection: 'column', gap: 22 }}
       >
         <div
           style={{
@@ -567,40 +538,21 @@ export const DashboardPage: React.FC = () => {
             flexWrap: 'wrap',
             alignItems: 'center',
             justifyContent: 'space-between',
-            gap: 16,
-            paddingBottom: 16,
-            borderBottom: '1px solid var(--border)',
+            gap: 12,
           }}
         >
-          <div>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                fontSize: 11,
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                letterSpacing: '0.06em',
-                color: 'var(--text-muted)',
-              }}
-            >
-              <FolderKanban size={13} />
-              <span>Interactive Desk Organizer · High-Scale Ready</span>
-            </div>
-            <h3
-              style={{
-                margin: '2px 0 0',
-                fontSize: 15,
-                fontWeight: 700,
-                color: 'var(--text-main)',
-              }}
-            >
-              Top-5 Priority Sheets Inside Each 3D Folder + Paginated Full Folder Ledger
-            </h3>
-          </div>
+          <h3
+            style={{
+              margin: 0,
+              fontSize: 16,
+              fontWeight: 700,
+              color: 'var(--text-main)',
+            }}
+          >
+            Folders
+          </h3>
 
-          {/* Organizer Controls */}
+          {/* Grouping Control (Appearance options now live in Settings) */}
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
             <div
               style={{
@@ -630,7 +582,7 @@ export const DashboardPage: React.FC = () => {
                   color: folderGroupMode === 'stage' ? 'var(--bg-surface)' : 'var(--text-muted)',
                 }}
               >
-                By Desk Stage
+                By Stage
               </button>
               <button
                 type="button"
@@ -653,102 +605,6 @@ export const DashboardPage: React.FC = () => {
               >
                 By Category ({categories.length})
               </button>
-            </div>
-
-            <div
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 3,
-                padding: 3,
-                borderRadius: 9,
-                border: '1px solid var(--border)',
-              }}
-            >
-              {(['flap', 'book'] as const).map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => setFolderMode(m)}
-                  style={{
-                    border: 'none',
-                    borderRadius: 6,
-                    padding: '4px 9px',
-                    fontSize: 11.5,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    textTransform: 'capitalize',
-                    background: folderMode === m ? 'var(--text-main)' : 'transparent',
-                    color: folderMode === m ? 'var(--bg-surface)' : 'var(--text-muted)',
-                  }}
-                >
-                  {m}
-                </button>
-              ))}
-            </div>
-
-            <div
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 3,
-                padding: 3,
-                borderRadius: 9,
-                border: '1px solid var(--border)',
-              }}
-            >
-              {(['solid', 'glass', 'matte'] as const).map((v) => (
-                <button
-                  key={v}
-                  type="button"
-                  onClick={() => setFolderVariant(v)}
-                  style={{
-                    border: 'none',
-                    borderRadius: 6,
-                    padding: '4px 9px',
-                    fontSize: 11.5,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    textTransform: 'capitalize',
-                    background: folderVariant === v ? 'var(--text-main)' : 'transparent',
-                    color: folderVariant === v ? 'var(--bg-surface)' : 'var(--text-muted)',
-                  }}
-                >
-                  {v}
-                </button>
-              ))}
-            </div>
-
-            <div
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 3,
-                padding: 3,
-                borderRadius: 9,
-                border: '1px solid var(--border)',
-              }}
-            >
-              {(['spread', 'stack', 'row'] as const).map((l) => (
-                <button
-                  key={l}
-                  type="button"
-                  onClick={() => setFolderLayout(l)}
-                  style={{
-                    border: 'none',
-                    borderRadius: 6,
-                    padding: '4px 9px',
-                    fontSize: 11.5,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    textTransform: 'capitalize',
-                    background: folderLayout === l ? 'var(--text-main)' : 'transparent',
-                    color: folderLayout === l ? 'var(--bg-surface)' : 'var(--text-muted)',
-                  }}
-                >
-                  {l}
-                </button>
-              ))}
             </div>
           </div>
         </div>
@@ -828,22 +684,19 @@ export const DashboardPage: React.FC = () => {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <Sparkles size={15} color="#0ea5e9" />
               <div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-main)' }}>
                   {selectedFolderDoc.isSealed
-                    ? `Sealed Transfer (${selectedFolderDoc.trackingCode})`
+                    ? 'Sealed Document'
                     : selectedFolderDoc.title}
                 </div>
                 <div
                   style={{
                     fontSize: 11.5,
-                    fontFamily: 'monospace',
                     color: 'var(--text-muted)',
                   }}
                 >
-                  {selectedFolderDoc.trackingCode} · {selectedFolderDoc.categoryName} · Current Desk:{' '}
-                  {selectedFolderDoc.currentOffice.code}
+                  {selectedFolderDoc.categoryName} · {selectedFolderDoc.currentOffice.name}
                 </div>
               </div>
             </div>
@@ -854,7 +707,7 @@ export const DashboardPage: React.FC = () => {
                 style={{ minHeight: 32, padding: '4px 12px', fontSize: 12 }}
                 onClick={() => openDocument(selectedFolderDoc.id)}
               >
-                Open Document Detail <ArrowUpRight size={13} />
+                View <ArrowUpRight size={13} />
               </button>
               <button
                 type="button"
@@ -862,13 +715,13 @@ export const DashboardPage: React.FC = () => {
                 style={{ minHeight: 32, padding: '4px 10px', fontSize: 12 }}
                 onClick={() => setSelectedFolderDoc(null)}
               >
-                Dismiss
+                Close
               </button>
             </div>
           </div>
         ) : null}
 
-        {/* 3D Folders Row (Capped at 4 mounted 3D instances per shelf page) */}
+        {/* Folders Grid */}
         <div
           style={{
             display: 'grid',
@@ -894,9 +747,9 @@ export const DashboardPage: React.FC = () => {
                 <Folder
                   label={bucket.label}
                   color={bucket.color}
-                  mode={folderMode}
-                  variant={folderVariant}
-                  layout={folderLayout}
+                  mode={folderAppearance.mode}
+                  variant={folderAppearance.variant}
+                  layout={folderAppearance.layout}
                   size={0.86}
                   theme="light"
                   intro={false}
@@ -916,13 +769,7 @@ export const DashboardPage: React.FC = () => {
                 />
                 <div style={{ textAlign: 'center' }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-main)' }}>
-                    {bucket.code} · {bucket.totalCount.toLocaleString()}{' '}
-                    {bucket.totalCount === 1 ? 'record' : 'records'}
-                  </div>
-                  <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>
-                    {bucket.overflowCount > 0
-                      ? `Top 5 urgent sheets shown · +${bucket.overflowCount.toLocaleString()} in ledger`
-                      : bucket.subtitle}
+                    {bucket.code} ({bucket.totalCount.toLocaleString()})
                   </div>
                   <button
                     type="button"
@@ -931,7 +778,7 @@ export const DashboardPage: React.FC = () => {
                       isLedgerActive ? setActiveLedgerBucketId(null) : openFolderLedger(bucket.id)
                     }
                     style={{
-                      marginTop: 6,
+                      marginTop: 4,
                       background: 'none',
                       border: 'none',
                       padding: '2px 6px',
@@ -946,8 +793,8 @@ export const DashboardPage: React.FC = () => {
                   >
                     <FolderOpen size={12} />
                     {isLedgerActive
-                      ? 'Hide Folder Ledger'
-                      : `Browse All (${formatCompactCount(bucket.totalCount)}) →`}
+                      ? 'Hide list'
+                      : `View all (${formatCompactCount(bucket.totalCount)})`}
                   </button>
                 </div>
               </div>
@@ -1186,43 +1033,36 @@ export const DashboardPage: React.FC = () => {
             display: 'flex',
             flexWrap: 'wrap',
             alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 10,
+            justifyContent: 'flex-end',
+            gap: 8,
             paddingTop: 14,
             borderTop: '1px solid var(--border)',
           }}
         >
-          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-            <Layers size={13} style={{ verticalAlign: 'text-bottom', marginRight: 5 }} />
-            Each 3D folder displays up to 5 highest-priority sheets plus an overflow index card; use
-            Browse All for instant search, date partitioning, and pagination across 100K+ records.
-          </span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <button
-              type="button"
-              className="btn btn-soft"
-              style={{ minHeight: 34, padding: '4px 12px', fontSize: 12 }}
-              onClick={() => navigate('inbox')}
-            >
-              <Inbox size={13} /> Go to Inbox Queue
-            </button>
-            <button
-              type="button"
-              className="btn btn-soft"
-              style={{ minHeight: 34, padding: '4px 12px', fontSize: 12 }}
-              onClick={() => navigate('track')}
-            >
-              <MapPin size={13} /> Track Docs
-            </button>
-            <button
-              type="button"
-              className="btn btn-amber"
-              style={{ minHeight: 34, padding: '4px 12px', fontSize: 12 }}
-              onClick={() => navigate('send')}
-            >
-              <Send size={13} /> Send Document
-            </button>
-          </div>
+          <button
+            type="button"
+            className="btn btn-soft"
+            style={{ minHeight: 34, padding: '4px 12px', fontSize: 12 }}
+            onClick={() => navigate('inbox')}
+          >
+            <Inbox size={13} /> Inbox
+          </button>
+          <button
+            type="button"
+            className="btn btn-soft"
+            style={{ minHeight: 34, padding: '4px 12px', fontSize: 12 }}
+            onClick={() => navigate('track')}
+          >
+            <MapPin size={13} /> Track Docs
+          </button>
+          <button
+            type="button"
+            className="btn btn-amber"
+            style={{ minHeight: 34, padding: '4px 12px', fontSize: 12 }}
+            onClick={() => navigate('send')}
+          >
+            <Send size={13} /> Send
+          </button>
         </div>
       </section>
     </div>

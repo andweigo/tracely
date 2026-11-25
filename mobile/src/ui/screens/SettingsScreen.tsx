@@ -6,16 +6,12 @@ import {
   Camera,
   ChevronRight,
   Code2,
-  Cpu,
   FileText,
-  FolderKanban,
+  Folder,
   HardDrive,
   Info,
-  Layers,
   LogOut,
-  Menu,
   Palette,
-  QrCode,
   ShieldCheck,
 } from 'lucide-react-native';
 import { MOBILE_APP_VERSION } from '../../config/ApiConfig';
@@ -30,30 +26,9 @@ import {
 } from '../../domain/security/DevicePermissionsBridge';
 import { useAppServices } from '../../state/AppServiceContext';
 import { AppIconBadge } from '../components/AppIconBadge';
+import { MobileHeaderActions } from '../components/MobileHeaderActions';
 import { LegalPolicySheet } from '../sheets/LegalPolicySheet';
 import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
-
-const SYSTEM_CAPABILITIES: ReadonlyArray<{
-  readonly title: string;
-  readonly detail: string;
-}> = [
-  {
-    title: 'Verified QR Custody & Sealed Transfers',
-    detail: 'Track physical and digital document handoffs with tamper-evident receipt steps.',
-  },
-  {
-    title: 'Routing Flow Analytics',
-    detail: 'Visualize per-user and per-office outgoing document corridors and transit volume.',
-  },
-  {
-    title: 'High-Scale Interactive Desk Folders',
-    detail: 'Organize active records with priority sheets and searchable paginated ledgers.',
-  },
-  {
-    title: 'Offline Capture Queue & Privacy Guard',
-    detail: 'Capture receipts offline and protect restricted records with device-level privacy controls.',
-  },
-];
 
 function permissionStatusLabel(status: DevicePermissionStatus): string {
   switch (status) {
@@ -74,10 +49,11 @@ export const SettingsScreen: React.FC = () => {
     isBusy,
     securityPrefs,
     updateSecurityPrefs,
+    folderAppearance,
+    updateFolderAppearance,
     signOutAndWipeCache,
     setActiveTab,
     goBack,
-    openSidebar,
     notify,
   } = useAppServices();
 
@@ -143,19 +119,19 @@ export const SettingsScreen: React.FC = () => {
     {
       key: 'camera',
       title: 'Camera',
-      detail: 'Scan QR custody slips and capture receipt proofs',
+      detail: 'Scan QR codes and capture proofs',
       icon: <Camera size={15} color={SDO_COLORS.navy} />,
     },
     {
       key: 'notifications',
       title: 'Notifications',
-      detail: 'Receive real-time incoming document & approval alerts',
+      detail: 'Incoming document alerts',
       icon: <Bell size={15} color={SDO_COLORS.navy} />,
     },
     {
       key: 'media',
       title: 'Files & Media',
-      detail: 'Attach documents and proof photos from your device',
+      detail: 'Attach documents and photos',
       icon: <HardDrive size={15} color={SDO_COLORS.navy} />,
     },
   ];
@@ -170,25 +146,103 @@ export const SettingsScreen: React.FC = () => {
         >
           <ArrowLeft size={18} color={SDO_COLORS.navyInk} />
         </Pressable>
-        <Text style={styles.headerTitle}>Settings &amp; System Info</Text>
-        <Pressable
-          onPress={openSidebar}
-          accessibilityLabel="Open navigation sidebar"
-          style={styles.circleBtn}
-        >
-          <Menu size={18} color={SDO_COLORS.navyInk} />
-        </Pressable>
+        <Text style={styles.headerTitle}>Settings</Text>
+        <MobileHeaderActions variant="soft" />
       </View>
 
       <ScrollView contentContainerStyle={styles.container}>
         {/* System Identity Header */}
         <View style={styles.brandBlock}>
-          <AppIconBadge size={48} animated />
+          <AppIconBadge size={44} animated />
           <View style={styles.brandCopy}>
             <Text style={styles.brandName}>Tracely</Text>
-            <Text style={styles.brandTagline}>
-              Document Custody, Routing &amp; QR Tracking Workspace
-            </Text>
+            <Text style={styles.brandTagline}>Document Tracking App</Text>
+          </View>
+        </View>
+
+        {/* Folder Appearance Preferences */}
+        <View testID="mobile-settings-folder-prefs-card" style={styles.sectionCard}>
+          <View style={styles.sectionHeader}>
+            <Folder size={15} color={SDO_COLORS.navy} />
+            <Text style={styles.sectionTitle}>Folder Preferences</Text>
+          </View>
+
+          <View style={styles.prefGroup}>
+            <Text style={styles.prefLabel}>Style</Text>
+            <View style={styles.segmentedRow}>
+              {(['flap', 'book'] as const).map((m) => (
+                <Pressable
+                  key={m}
+                  testID={`mobile-pref-folder-mode-${m}`}
+                  onPress={() => updateFolderAppearance({ mode: m })}
+                  style={[
+                    styles.segBtn,
+                    folderAppearance.mode === m && styles.segBtnActive,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.segText,
+                      folderAppearance.mode === m && styles.segTextActive,
+                    ]}
+                  >
+                    {m === 'flap' ? 'Flap' : 'Book'}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.prefGroup}>
+            <Text style={styles.prefLabel}>Surface</Text>
+            <View style={styles.segmentedRow}>
+              {(['solid', 'glass', 'matte'] as const).map((v) => (
+                <Pressable
+                  key={v}
+                  testID={`mobile-pref-folder-variant-${v}`}
+                  onPress={() => updateFolderAppearance({ variant: v })}
+                  style={[
+                    styles.segBtn,
+                    folderAppearance.variant === v && styles.segBtnActive,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.segText,
+                      folderAppearance.variant === v && styles.segTextActive,
+                    ]}
+                  >
+                    {v === 'solid' ? 'Solid' : v === 'glass' ? 'Glass' : 'Matte'}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.prefGroup}>
+            <Text style={styles.prefLabel}>Sheet Layout</Text>
+            <View style={styles.segmentedRow}>
+              {(['spread', 'stack', 'row'] as const).map((l) => (
+                <Pressable
+                  key={l}
+                  testID={`mobile-pref-folder-layout-${l}`}
+                  onPress={() => updateFolderAppearance({ layout: l })}
+                  style={[
+                    styles.segBtn,
+                    folderAppearance.layout === l && styles.segBtnActive,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.segText,
+                      folderAppearance.layout === l && styles.segTextActive,
+                    ]}
+                  >
+                    {l === 'spread' ? 'Spread' : l === 'stack' ? 'Stack' : 'Row'}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
           </View>
         </View>
 
@@ -199,7 +253,7 @@ export const SettingsScreen: React.FC = () => {
             <Text style={styles.sectionTitle}>Device &amp; Service Permissions</Text>
           </View>
 
-          <Text style={styles.subsectionLabel}>DEVICE ACCESS</Text>
+          <Text style={styles.subsectionLabel}>Device Access</Text>
           <View style={styles.infoList}>
             {devicePermissionRows.map((row, idx) => {
               const status = devicePerms[row.key];
@@ -244,14 +298,12 @@ export const SettingsScreen: React.FC = () => {
             })}
           </View>
 
-          <Text style={styles.subsectionLabel}>APP SERVICES</Text>
+          <Text style={styles.subsectionLabel}>App Services</Text>
           <View style={styles.infoList}>
             <View style={styles.serviceRow}>
               <View style={styles.capCopy}>
-                <Text style={styles.capTitle}>Real-Time Live Sync</Text>
-                <Text style={styles.capDetail}>
-                  Automatically sync incoming transfers and office updates
-                </Text>
+                <Text style={styles.capTitle}>Live Sync</Text>
+                <Text style={styles.capDetail}>Sync incoming documents automatically</Text>
               </View>
               <Switch
                 testID="mobile-service-live-sync-switch"
@@ -266,10 +318,8 @@ export const SettingsScreen: React.FC = () => {
 
             <View style={styles.serviceRow}>
               <View style={styles.capCopy}>
-                <Text style={styles.capTitle}>Offline Queue &amp; Local Cache</Text>
-                <Text style={styles.capDetail}>
-                  Store tracking snapshots and retry captures when offline
-                </Text>
+                <Text style={styles.capTitle}>Offline Cache</Text>
+                <Text style={styles.capDetail}>Save captures when offline</Text>
               </View>
               <Switch
                 testID="mobile-service-offline-cache-switch"
@@ -284,10 +334,8 @@ export const SettingsScreen: React.FC = () => {
 
             <View style={styles.serviceRow}>
               <View style={styles.capCopy}>
-                <Text style={styles.capTitle}>Custody Alert Notifications</Text>
-                <Text style={styles.capDetail}>
-                  Deliver privacy-safe alerts without exposing titles on lock screen
-                </Text>
+                <Text style={styles.capTitle}>Document Alerts</Text>
+                <Text style={styles.capDetail}>Hide titles on lock screen</Text>
               </View>
               <Switch
                 testID="mobile-service-alerts-switch"
@@ -302,10 +350,8 @@ export const SettingsScreen: React.FC = () => {
 
             <View style={[styles.serviceRow, styles.infoRowLast]}>
               <View style={styles.capCopy}>
-                <Text style={styles.capTitle}>Screenshot Privacy Shield</Text>
-                <Text style={styles.capDetail}>
-                  Prevent screen capture while viewing restricted files
-                </Text>
+                <Text style={styles.capTitle}>Screenshot Shield</Text>
+                <Text style={styles.capDetail}>Block screenshots on restricted files</Text>
               </View>
               <Switch
                 testID="mobile-service-screenshot-switch"
@@ -321,7 +367,7 @@ export const SettingsScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* System Information Table (Public-Safe, Zero Secrets) */}
+        {/* System Information (Public-Safe, Zero Secrets) */}
         <View testID="mobile-system-info-card" style={styles.sectionCard}>
           <View style={styles.sectionHeader}>
             <Info size={15} color={SDO_COLORS.navy} />
@@ -339,9 +385,9 @@ export const SettingsScreen: React.FC = () => {
             </View>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Platform</Text>
-              <Text style={styles.infoValue}>Mobile Companion App</Text>
+              <Text style={styles.infoValue}>Mobile App</Text>
             </View>
-            <View style={styles.infoRow}>
+            <View style={[styles.infoRow, styles.infoRowLast]}>
               <View style={styles.labelIconRow}>
                 <Code2 size={13} color={SDO_COLORS.textMuted} />
                 <Text style={styles.infoLabel}>Developer</Text>
@@ -350,58 +396,12 @@ export const SettingsScreen: React.FC = () => {
                 Andrei Obligar
               </Text>
             </View>
-            <View style={styles.infoRow}>
-              <View style={styles.labelIconRow}>
-                <Cpu size={13} color={SDO_COLORS.textMuted} />
-                <Text style={styles.infoLabel}>Architecture</Text>
-              </View>
-              <Text style={styles.infoValue}>Encrypted Workspace · QR Ledger</Text>
-            </View>
-            <View style={[styles.infoRow, styles.infoRowLast]}>
-              <View style={styles.labelIconRow}>
-                <ShieldCheck size={13} color={SDO_COLORS.emeraldText} />
-                <Text style={styles.infoLabel}>Security Model</Text>
-              </View>
-              <Text style={styles.infoValue}>TLS · RBAC · Privacy Masking</Text>
-            </View>
           </View>
         </View>
 
-        {/* Core Capabilities */}
+        {/* Account & Legal */}
         <View style={styles.sectionCard}>
-          <View style={styles.sectionHeader}>
-            <Layers size={15} color={SDO_COLORS.navy} />
-            <Text style={styles.sectionTitle}>Core Capabilities</Text>
-          </View>
-
-          <View style={styles.capList}>
-            {SYSTEM_CAPABILITIES.map((cap, idx) => (
-              <View
-                key={cap.title}
-                style={[
-                  styles.capRow,
-                  idx === SYSTEM_CAPABILITIES.length - 1 ? styles.capRowLast : null,
-                ]}
-              >
-                <View style={styles.capIconWrap}>
-                  {idx % 2 === 0 ? (
-                    <QrCode size={14} color={SDO_COLORS.navy} />
-                  ) : (
-                    <FolderKanban size={14} color={SDO_COLORS.navy} />
-                  )}
-                </View>
-                <View style={styles.capCopy}>
-                  <Text style={styles.capTitle}>{cap.title}</Text>
-                  <Text style={styles.capDetail}>{cap.detail}</Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* Quick Settings Navigation */}
-        <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Workspace &amp; Legal</Text>
+          <Text style={styles.sectionTitle}>Account &amp; Legal</Text>
 
           <Pressable
             testID="mobile-settings-open-profile-btn"
@@ -412,12 +412,7 @@ export const SettingsScreen: React.FC = () => {
               <View style={styles.capIconWrap}>
                 <Palette size={15} color={SDO_COLORS.navy} />
               </View>
-              <View style={styles.capCopy}>
-                <Text style={styles.capTitle}>Profile Theme &amp; Lanyard Color</Text>
-                <Text style={styles.capDetail}>
-                  Customize accent color, personal details, and routing defaults
-                </Text>
-              </View>
+              <Text style={styles.capTitle}>Profile &amp; ID Color</Text>
             </View>
             <ChevronRight size={16} color={SDO_COLORS.textMuted} />
           </Pressable>
@@ -431,12 +426,7 @@ export const SettingsScreen: React.FC = () => {
               <View style={styles.capIconWrap}>
                 <ShieldCheck size={15} color={SDO_COLORS.emeraldText} />
               </View>
-              <View style={styles.capCopy}>
-                <Text style={styles.capTitle}>Availability &amp; Account Security</Text>
-                <Text style={styles.capDetail}>
-                  Manage device lock, password updates, and active sessions
-                </Text>
-              </View>
+              <Text style={styles.capTitle}>Security &amp; Availability</Text>
             </View>
             <ChevronRight size={16} color={SDO_COLORS.textMuted} />
           </Pressable>
@@ -450,12 +440,7 @@ export const SettingsScreen: React.FC = () => {
               <View style={styles.capIconWrap}>
                 <FileText size={15} color={SDO_COLORS.navy} />
               </View>
-              <View style={styles.capCopy}>
-                <Text style={styles.capTitle}>Terms &amp; Conditions</Text>
-                <Text style={styles.capDetail}>
-                  Authorized custody usage and account guidelines
-                </Text>
-              </View>
+              <Text style={styles.capTitle}>Terms &amp; Conditions</Text>
             </View>
             <ChevronRight size={16} color={SDO_COLORS.textMuted} />
           </Pressable>
@@ -469,12 +454,7 @@ export const SettingsScreen: React.FC = () => {
               <View style={styles.capIconWrap}>
                 <ShieldCheck size={15} color={SDO_COLORS.navy} />
               </View>
-              <View style={styles.capCopy}>
-                <Text style={styles.capTitle}>Privacy Policy</Text>
-                <Text style={styles.capDetail}>
-                  Data privacy safeguards, encryption, and user rights
-                </Text>
-              </View>
+              <Text style={styles.capTitle}>Privacy Policy</Text>
             </View>
             <ChevronRight size={16} color={SDO_COLORS.textMuted} />
           </Pressable>
@@ -494,10 +474,6 @@ export const SettingsScreen: React.FC = () => {
             <Text style={styles.signOutBtnText}>Sign Out</Text>
           </Pressable>
         ) : null}
-
-        <Text style={styles.footerCaption}>
-          Tracely · Designed &amp; Developed by Andrei Obligar
-        </Text>
       </ScrollView>
 
       <LegalPolicySheet
@@ -539,39 +515,37 @@ const styles = StyleSheet.create({
   },
   container: {
     paddingHorizontal: 18,
-    paddingTop: 18,
+    paddingTop: 16,
     paddingBottom: 36,
     gap: 16,
   },
   brandBlock: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
-    paddingVertical: 6,
+    gap: 12,
+    paddingVertical: 4,
   },
   brandCopy: {
     flex: 1,
-    gap: 2,
+    gap: 1,
   },
   brandName: {
     fontFamily: SDO_FONTS.sans,
-    fontSize: 20,
+    fontSize: 19,
     fontWeight: '900',
     color: SDO_COLORS.navyInk,
-    letterSpacing: -0.3,
   },
   brandTagline: {
     fontFamily: SDO_FONTS.sans,
     fontSize: 12,
     fontWeight: '600',
     color: SDO_COLORS.textSecondary,
-    lineHeight: 16,
   },
   sectionCard: {
     borderRadius: 18,
     backgroundColor: SDO_COLORS.surfaceSoft,
-    padding: 16,
-    gap: 12,
+    padding: 15,
+    gap: 11,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -584,11 +558,47 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: SDO_COLORS.textPrimary,
   },
+  prefGroup: {
+    gap: 6,
+  },
+  prefLabel: {
+    fontFamily: SDO_FONTS.sans,
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: SDO_COLORS.textSecondary,
+  },
+  segmentedRow: {
+    flexDirection: 'row',
+    gap: 6,
+    backgroundColor: SDO_COLORS.surface,
+    padding: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: SDO_COLORS.border,
+  },
+  segBtn: {
+    flex: 1,
+    minHeight: 34,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  segBtnActive: {
+    backgroundColor: SDO_COLORS.navy,
+  },
+  segText: {
+    fontFamily: SDO_FONTS.sans,
+    fontSize: 12,
+    fontWeight: '700',
+    color: SDO_COLORS.textSecondary,
+  },
+  segTextActive: {
+    color: '#FFFFFF',
+  },
   subsectionLabel: {
     fontFamily: SDO_FONTS.sans,
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.8,
+    fontSize: 11,
+    fontWeight: '700',
     color: SDO_COLORS.textMuted,
     marginTop: 2,
   },
@@ -689,21 +699,6 @@ const styles = StyleSheet.create({
     fontFamily: SDO_FONTS.mono,
     color: SDO_COLORS.textPrimary,
   },
-  capList: {
-    gap: 10,
-  },
-  capRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: SDO_COLORS.border,
-  },
-  capRowLast: {
-    paddingBottom: 0,
-    borderBottomWidth: 0,
-  },
   capIconWrap: {
     width: 30,
     height: 30,
@@ -719,7 +714,7 @@ const styles = StyleSheet.create({
   capTitle: {
     fontFamily: SDO_FONTS.sans,
     fontSize: 12.5,
-    fontWeight: '800',
+    fontWeight: '700',
     color: SDO_COLORS.textPrimary,
   },
   capDetail: {
@@ -760,14 +755,6 @@ const styles = StyleSheet.create({
   },
   disabled: {
     opacity: 0.55,
-  },
-  footerCaption: {
-    fontFamily: SDO_FONTS.sans,
-    textAlign: 'center',
-    fontSize: 11,
-    fontWeight: '600',
-    color: SDO_COLORS.textMuted,
-    marginTop: 4,
   },
 });
 

@@ -15,7 +15,6 @@ import {
   FileText,
   FileUp,
   Lock,
-  Menu,
   Pencil,
   Plus,
   Printer,
@@ -34,6 +33,7 @@ import { DocumentViewerBridge } from '../../domain/security/DocumentViewerBridge
 import { DISPOSITION_REMARK_PRESETS } from '../../repositories/contracts/IDocumentRepository';
 import { useAppServices } from '../../state/AppServiceContext';
 import { AvailabilityBadge } from '../components/Badges';
+import { MobileHeaderActions } from '../components/MobileHeaderActions';
 import { OpaqueQrModal } from '../sheets/OpaqueQrModal';
 import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 import {
@@ -93,7 +93,6 @@ export const SendScreen: React.FC = () => {
     declareCategory,
     findSimilarCategories,
     openDocument,
-    openSidebar,
     isBusy,
     notify,
   } = useAppServices();
@@ -514,15 +513,8 @@ export const SendScreen: React.FC = () => {
       <View style={styles.topHeader}>
         <View style={styles.headerCopy}>
           <Text style={styles.screenTitle}>Send Document</Text>
-          <Text style={styles.screenSub}>Digital upload or physical QR tracking</Text>
         </View>
-        <Pressable
-          onPress={openSidebar}
-          accessibilityLabel="Open navigation sidebar"
-          style={styles.menuBtn}
-        >
-          <Menu size={20} color={SDO_COLORS.navyInk} />
-        </Pressable>
+        <MobileHeaderActions variant="outlined" />
       </View>
 
       {/* Recent Sent / Generated Banner */}

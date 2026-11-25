@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -14,11 +15,13 @@ import {
   ArrowLeft,
   Check,
   CheckCircle2,
+  ChevronDown,
   Clock,
   Eye,
   EyeOff,
   Lock,
   Sparkles,
+  X,
 } from 'lucide-react-native';
 import { OfficeSummary } from '../../domain/entities/Personnel';
 import { LegalDocumentType } from '../../domain/legal/LegalPolicies';
@@ -188,6 +191,7 @@ export const LoginScreen: React.FC = () => {
   const [selectedOfficeKey, setSelectedOfficeKey] = useState(
     officeChoices[0]?.code ?? 'RECORDS',
   );
+  const [officeDropdownOpen, setOfficeDropdownOpen] = useState(false);
   const [customOfficeCode, setCustomOfficeCode] = useState('');
   const [customOfficeName, setCustomOfficeName] = useState('');
   const [regPassword, setRegPassword] = useState('');
@@ -668,44 +672,111 @@ export const LoginScreen: React.FC = () => {
 
             <View style={styles.field}>
               <Text style={styles.label}>Office / Unit</Text>
-              <View style={styles.officeGrid}>
-                {officeChoices.map((office) => {
-                  const selected = !isCustomOffice && office.code === selectedPresetOffice?.code;
-                  return (
-                    <Pressable
-                      key={office.id}
-                      onPress={() => {
-                        setFormError(null);
-                        setSelectedOfficeKey(office.code);
-                      }}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected }}
-                      style={[styles.officeChip, selected && styles.officeChipActive]}
-                    >
-                      <Text
-                        style={[styles.officeChipText, selected && styles.officeChipTextActive]}
-                      >
-                        {office.code}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
+              <Pressable
+                testID="mobile-register-office-dropdown"
+                onPress={() => setOfficeDropdownOpen(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Select Office or Unit"
+                style={styles.dropdownTrigger}
+              >
+                <Text numberOfLines={1} style={styles.dropdownTriggerText}>
+                  {isCustomOffice
+                    ? 'Other / Custom Office'
+                    : selectedPresetOffice
+                      ? `${selectedPresetOffice.name} (${selectedPresetOffice.code})`
+                      : 'Select office'}
+                </Text>
+                <ChevronDown size={17} color={SDO_COLORS.textSecondary} />
+              </Pressable>
+
+              <Modal
+                visible={officeDropdownOpen}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setOfficeDropdownOpen(false)}
+              >
                 <Pressable
-                  onPress={() => {
-                    setFormError(null);
-                    setSelectedOfficeKey(CUSTOM_OFFICE_KEY);
-                  }}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: isCustomOffice }}
-                  style={[styles.officeChip, isCustomOffice && styles.officeChipActive]}
+                  style={styles.dropdownBackdrop}
+                  onPress={() => setOfficeDropdownOpen(false)}
                 >
-                  <Text
-                    style={[styles.officeChipText, isCustomOffice && styles.officeChipTextActive]}
+                  <Pressable
+                    style={styles.dropdownSheet}
+                    onPress={() => {
+                      // Prevent backdrop dismiss when interacting inside modal
+                    }}
                   >
-                    Other / Custom
-                  </Text>
+                    <View style={styles.dropdownHeader}>
+                      <Text style={styles.dropdownTitle}>Select Office / Unit</Text>
+                      <Pressable
+                        onPress={() => setOfficeDropdownOpen(false)}
+                        accessibilityLabel="Close office picker"
+                        style={styles.dropdownCloseBtn}
+                      >
+                        <X size={16} color={SDO_COLORS.textSecondary} />
+                      </Pressable>
+                    </View>
+                    <ScrollView style={styles.dropdownList}>
+                      {officeChoices.map((office) => {
+                        const selected =
+                          !isCustomOffice && office.code === selectedPresetOffice?.code;
+                        return (
+                          <Pressable
+                            key={office.id}
+                            testID={`mobile-office-option-${office.code}`}
+                            onPress={() => {
+                              setFormError(null);
+                              setSelectedOfficeKey(office.code);
+                              setOfficeDropdownOpen(false);
+                            }}
+                            style={[
+                              styles.dropdownOption,
+                              selected && styles.dropdownOptionActive,
+                            ]}
+                          >
+                            <View style={styles.dropdownOptionCopy}>
+                              <Text
+                                style={[
+                                  styles.dropdownOptionName,
+                                  selected && styles.dropdownOptionNameActive,
+                                ]}
+                              >
+                                {office.name}
+                              </Text>
+                              <Text style={styles.dropdownOptionCode}>{office.code}</Text>
+                            </View>
+                            {selected ? <Check size={16} color={SDO_COLORS.navy} /> : null}
+                          </Pressable>
+                        );
+                      })}
+                      <Pressable
+                        testID="mobile-office-option-custom"
+                        onPress={() => {
+                          setFormError(null);
+                          setSelectedOfficeKey(CUSTOM_OFFICE_KEY);
+                          setOfficeDropdownOpen(false);
+                        }}
+                        style={[
+                          styles.dropdownOption,
+                          isCustomOffice && styles.dropdownOptionActive,
+                        ]}
+                      >
+                        <View style={styles.dropdownOptionCopy}>
+                          <Text
+                            style={[
+                              styles.dropdownOptionName,
+                              isCustomOffice && styles.dropdownOptionNameActive,
+                            ]}
+                          >
+                            Other / Custom Office
+                          </Text>
+                          <Text style={styles.dropdownOptionCode}>Enter custom unit details</Text>
+                        </View>
+                        {isCustomOffice ? <Check size={16} color={SDO_COLORS.navy} /> : null}
+                      </Pressable>
+                    </ScrollView>
+                  </Pressable>
                 </Pressable>
-              </View>
+              </Modal>
 
               {isCustomOffice ? (
                 <View style={styles.customOfficeBox}>
@@ -734,8 +805,6 @@ export const LoginScreen: React.FC = () => {
                     autoCapitalize="words"
                   />
                 </View>
-              ) : selectedPresetOffice ? (
-                <Text style={styles.officeHint}>{selectedPresetOffice.name}</Text>
               ) : null}
             </View>
 
@@ -1339,5 +1408,95 @@ const styles = StyleSheet.create({
     fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     color: SDO_COLORS.textMuted,
+  },
+  dropdownTrigger: {
+    minHeight: 46,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: SDO_COLORS.border,
+    backgroundColor: SDO_COLORS.surfaceSoft,
+    paddingHorizontal: 13,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  dropdownTriggerText: {
+    fontFamily: SDO_FONTS.sans,
+    fontSize: 13.5,
+    fontWeight: '600',
+    color: SDO_COLORS.textPrimary,
+    flex: 1,
+  },
+  dropdownBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.45)',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  dropdownSheet: {
+    borderRadius: 18,
+    backgroundColor: SDO_COLORS.surface,
+    maxHeight: '72%',
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: SDO_COLORS.border,
+  },
+  dropdownHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: SDO_COLORS.border,
+  },
+  dropdownTitle: {
+    fontFamily: SDO_FONTS.sans,
+    fontSize: 15,
+    fontWeight: '800',
+    color: SDO_COLORS.textPrimary,
+  },
+  dropdownCloseBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: SDO_COLORS.surfaceSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dropdownList: {
+    padding: 8,
+  },
+  dropdownOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    borderRadius: 12,
+  },
+  dropdownOptionActive: {
+    backgroundColor: SDO_COLORS.skySoft,
+  },
+  dropdownOptionCopy: {
+    flex: 1,
+    gap: 1,
+  },
+  dropdownOptionName: {
+    fontFamily: SDO_FONTS.sans,
+    fontSize: 13.5,
+    fontWeight: '600',
+    color: SDO_COLORS.textPrimary,
+  },
+  dropdownOptionNameActive: {
+    fontWeight: '800',
+    color: SDO_COLORS.navy,
+  },
+  dropdownOptionCode: {
+    fontFamily: SDO_FONTS.mono,
+    fontSize: 11,
+    color: SDO_COLORS.textSecondary,
   },
 });

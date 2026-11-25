@@ -16,14 +16,10 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  FolderKanban,
   FolderOpen,
   Inbox,
-  Layers,
   MapPin,
-  Menu,
   Search,
-  Sparkles,
   X,
 } from 'lucide-react-native';
 import { Document } from '../../domain/entities/Document';
@@ -36,6 +32,7 @@ import { useAppServices } from '../../state/AppServiceContext';
 import { ConfidentialityBadge, SlaBadge } from '../components/Badges';
 import { MobileCustodyJourneyRoad } from '../components/MobileCustodyJourneyRoad';
 import { MobileFolder, MobileFolderSheetItem } from '../components/MobileFolder';
+import { MobileHeaderActions } from '../components/MobileHeaderActions';
 import { MobileIdentityWalletCard } from '../components/MobileIdentityWalletCard';
 import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 import { sortDocuments } from '../utils/inboxFilter';
@@ -87,9 +84,9 @@ export const DashboardScreen: React.FC = () => {
     actor,
     documents,
     categories,
+    folderAppearance,
     openDocument,
     setActiveTab,
-    openSidebar,
     refreshWorkspace,
     isRefreshing,
   } = useAppServices();
@@ -101,12 +98,9 @@ export const DashboardScreen: React.FC = () => {
   const scrollViewRef = useRef<React.ComponentRef<typeof ScrollView> | null>(null);
   const [scrollY, setScrollY] = useState<number>(0);
   const [viewportHeight, setViewportHeight] = useState<number>(720);
-  const [journeySectionY, setJourneySectionY] = useState<number>(380);
+  const [journeySectionY, setJourneySectionY] = useState<number>(420);
 
   const [folderGroupMode, setFolderGroupMode] = useState<FolderGroupingMode>('stage');
-  const [folderMode, setFolderMode] = useState<'flap' | 'book'>('flap');
-  const [folderVariant, setFolderVariant] = useState<'solid' | 'glass' | 'matte'>('solid');
-  const [folderLayout, setFolderLayout] = useState<'spread' | 'stack' | 'row'>('spread');
   const [selectedFolderDoc, setSelectedFolderDoc] = useState<Document | null>(null);
 
   const [shelfPage, setShelfPage] = useState(1);
@@ -141,7 +135,7 @@ export const DashboardScreen: React.FC = () => {
     () =>
       [...scopedDocuments]
         .sort((a, b) => getDocumentTimestampMs(b) - getDocumentTimestampMs(a))
-        .slice(0, 12),
+        .slice(0, 5),
     [scopedDocuments],
   );
 
@@ -431,14 +425,7 @@ export const DashboardScreen: React.FC = () => {
           </View>
         </Pressable>
 
-        <Pressable
-          testID="mobile-dashboard-sidebar-btn"
-          onPress={openSidebar}
-          accessibilityLabel="Open navigation sidebar"
-          style={styles.menuBtn}
-        >
-          <Menu size={20} color={SDO_COLORS.navyInk} />
-        </Pressable>
+        <MobileHeaderActions sidebarTestID="mobile-dashboard-sidebar-btn" variant="outlined" />
       </View>
 
       <ScrollView
@@ -453,7 +440,7 @@ export const DashboardScreen: React.FC = () => {
           <RefreshControl refreshing={isRefreshing} onRefresh={refreshWorkspace} />
         }
       >
-        {/* SECTION 0: User Identity & Desk Pass Wallet Card */}
+        {/* SECTION 0: Vertical Identification Card */}
         <View style={styles.sectionBlock}>
           <MobileIdentityWalletCard
             testID="mobile-dashboard-wallet-card"
@@ -486,21 +473,14 @@ export const DashboardScreen: React.FC = () => {
           />
         </View>
 
-        {/* SECTION 1: Vertical Scroll-Tracked Live Custody Road */}
+        {/* SECTION 1: Top 5 Recent Document Tracking */}
         <View
           testID="mobile-routing-flow-analytics"
           onLayout={handleJourneySectionLayout}
           style={styles.sectionBlock}
         >
           <View style={styles.sectionHeaderRow}>
-            <View style={styles.sectionTitleWrap}>
-              <Text style={styles.eyebrowText}>
-                {flowScope === 'user'
-                  ? 'LIVE CUSTODY TRACK · MY SENT'
-                  : `LIVE CUSTODY TRACK · ${actor?.office.code ?? 'OFFICE'}`}
-              </Text>
-              <Text style={styles.sectionTitle}>Scroll-Tracked Office Custody Road</Text>
-            </View>
+            <Text style={styles.sectionTitle}>Recent Tracking</Text>
 
             <View style={styles.segmentedControl}>
               <Pressable
@@ -555,12 +535,13 @@ export const DashboardScreen: React.FC = () => {
                   (tx) => tx.receiptStatus === ReceiptStatus.PENDING,
                 );
                 const dotColor = isCompleted
-                  ? '#34D399'
+                  ? '#059669'
                   : hasPending || doc.lifecycleStatus === DocumentLifecycleStatus.IN_TRANSIT
-                    ? '#F3B32A'
+                    ? '#D97706'
                     : doc.lifecycleStatus === DocumentLifecycleStatus.RETURNED_FOR_REVISION
-                      ? '#FB7185'
-                      : '#2DD4BF';
+                      ? '#E11D48'
+                      : '#0284C7';
+                const pillTitle = doc.isSealed ? 'Sealed Document' : doc.title;
                 return (
                   <Pressable
                     key={doc.id}
@@ -573,20 +554,13 @@ export const DashboardScreen: React.FC = () => {
                   >
                     <View style={[styles.journeyDocDot, { backgroundColor: dotColor }]} />
                     <Text
+                      numberOfLines={1}
                       style={[
-                        styles.journeyDocCode,
+                        styles.journeyDocTitle,
                         isSelected && styles.journeyDocTextActive,
                       ]}
                     >
-                      {doc.trackingCode}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.journeyDocOffice,
-                        isSelected && styles.journeyDocTextActive,
-                      ]}
-                    >
-                      {`· ${doc.currentOffice.code}`}
+                      {pillTitle}
                     </Text>
                   </Pressable>
                 );
@@ -598,8 +572,8 @@ export const DashboardScreen: React.FC = () => {
             <View style={styles.emptyFlowBox}>
               <Text style={styles.emptyFlowText}>
                 {flowScope === 'user'
-                  ? 'No outgoing documents sent by you yet.'
-                  : 'No outgoing documents sent by your office yet.'}
+                  ? 'No documents sent by you yet.'
+                  : 'No documents sent by your office yet.'}
               </Text>
             </View>
           ) : (
@@ -616,20 +590,10 @@ export const DashboardScreen: React.FC = () => {
           )}
         </View>
 
-        {/* SECTION 2: High-Scale Interactive Folder Organizer */}
+        {/* SECTION 2: Folders (Appearance configured in Settings) */}
         <View testID="mobile-folder-organizer" style={styles.sectionBlock}>
           <View style={styles.sectionHeaderRow}>
-            <View style={styles.sectionTitleWrap}>
-              <View style={styles.eyebrowIconRow}>
-                <FolderKanban size={12} color={SDO_COLORS.textMuted} />
-                <Text style={styles.eyebrowText}>
-                  INTERACTIVE DESK ORGANIZER · HIGH-SCALE READY
-                </Text>
-              </View>
-              <Text style={styles.sectionTitle}>
-                Top-5 Priority Sheets + Paginated Folder Ledger
-              </Text>
-            </View>
+            <Text style={styles.sectionTitle}>Folders</Text>
 
             <View style={styles.segmentedControl}>
               <Pressable
@@ -669,66 +633,6 @@ export const DashboardScreen: React.FC = () => {
                   By Category ({categories.length})
                 </Text>
               </Pressable>
-            </View>
-          </View>
-
-          {/* Mode & Layout Controls */}
-          <View style={styles.organizerControlRow}>
-            <View style={styles.segmentedControl}>
-              {(['flap', 'book'] as const).map((m) => (
-                <Pressable
-                  key={m}
-                  onPress={() => setFolderMode(m)}
-                  style={[styles.segmentBtn, folderMode === m && styles.segmentBtnActive]}
-                >
-                  <Text
-                    style={[
-                      styles.segmentBtnText,
-                      folderMode === m && styles.segmentBtnTextActive,
-                    ]}
-                  >
-                    {m === 'flap' ? 'Flap' : 'Book'}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-
-            <View style={styles.segmentedControl}>
-              {(['solid', 'glass', 'matte'] as const).map((v) => (
-                <Pressable
-                  key={v}
-                  onPress={() => setFolderVariant(v)}
-                  style={[styles.segmentBtn, folderVariant === v && styles.segmentBtnActive]}
-                >
-                  <Text
-                    style={[
-                      styles.segmentBtnText,
-                      folderVariant === v && styles.segmentBtnTextActive,
-                    ]}
-                  >
-                    {v === 'solid' ? 'Solid' : v === 'glass' ? 'Glass' : 'Matte'}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-
-            <View style={styles.segmentedControl}>
-              {(['spread', 'stack', 'row'] as const).map((l) => (
-                <Pressable
-                  key={l}
-                  onPress={() => setFolderLayout(l)}
-                  style={[styles.segmentBtn, folderLayout === l && styles.segmentBtnActive]}
-                >
-                  <Text
-                    style={[
-                      styles.segmentBtnText,
-                      folderLayout === l && styles.segmentBtnTextActive,
-                    ]}
-                  >
-                    {l === 'spread' ? 'Spread' : l === 'stack' ? 'Stack' : 'Row'}
-                  </Text>
-                </Pressable>
-              ))}
             </View>
           </View>
 
@@ -781,17 +685,13 @@ export const DashboardScreen: React.FC = () => {
           {selectedFolderDoc ? (
             <View testID="mobile-folder-selected-doc" style={styles.selectedDocBanner}>
               <View style={styles.selectedDocCopy}>
-                <View style={styles.selectedDocTitleRow}>
-                  <Sparkles size={13} color="#0EA5E9" />
-                  <Text numberOfLines={1} style={styles.selectedDocTitle}>
-                    {selectedFolderDoc.isSealed
-                      ? `Sealed Transfer (${selectedFolderDoc.trackingCode})`
-                      : selectedFolderDoc.title}
-                  </Text>
-                </View>
+                <Text numberOfLines={1} style={styles.selectedDocTitle}>
+                  {selectedFolderDoc.isSealed
+                    ? 'Sealed Document'
+                    : selectedFolderDoc.title}
+                </Text>
                 <Text style={styles.selectedDocMeta}>
-                  {selectedFolderDoc.trackingCode} · {selectedFolderDoc.categoryName} · Desk:{' '}
-                  {selectedFolderDoc.currentOffice.code}
+                  {selectedFolderDoc.categoryName} · {selectedFolderDoc.currentOffice.name}
                 </Text>
               </View>
               <View style={styles.selectedDocActions}>
@@ -799,7 +699,7 @@ export const DashboardScreen: React.FC = () => {
                   onPress={() => openDocument(selectedFolderDoc.id)}
                   style={styles.openDocBtn}
                 >
-                  <Text style={styles.openDocBtnText}>Open</Text>
+                  <Text style={styles.openDocBtnText}>View</Text>
                   <ArrowUpRight size={12} color="#FFFFFF" />
                 </Pressable>
                 <Pressable
@@ -826,9 +726,9 @@ export const DashboardScreen: React.FC = () => {
                     testID={`mobile-folder-widget-${bucket.id}`}
                     label={bucket.label}
                     color={bucket.color}
-                    mode={folderMode}
-                    variant={folderVariant}
-                    layout={folderLayout}
+                    mode={folderAppearance.mode}
+                    variant={folderAppearance.variant}
+                    layout={folderAppearance.layout}
                     items={bucket.items}
                     onOpenDocument={openDocument}
                     onItemClick={(item) => {
@@ -843,13 +743,7 @@ export const DashboardScreen: React.FC = () => {
                     }}
                   />
                   <Text style={styles.folderCellTitle}>
-                    {bucket.code} · {bucket.totalCount.toLocaleString()}{' '}
-                    {bucket.totalCount === 1 ? 'record' : 'records'}
-                  </Text>
-                  <Text numberOfLines={2} style={styles.folderCellSub}>
-                    {bucket.overflowCount > 0
-                      ? `Top 5 urgent sheets · +${bucket.overflowCount.toLocaleString()} in ledger`
-                      : bucket.subtitle}
+                    {bucket.code} ({bucket.totalCount.toLocaleString()})
                   </Text>
                   <Pressable
                     testID={`mobile-open-folder-ledger-${bucket.id}`}
@@ -863,8 +757,8 @@ export const DashboardScreen: React.FC = () => {
                     <FolderOpen size={12} color="#0284C7" />
                     <Text style={styles.browseLedgerBtnText}>
                       {isLedgerActive
-                        ? 'Hide Ledger'
-                        : `Browse All (${formatMobileCompactCount(bucket.totalCount)}) →`}
+                        ? 'Hide list'
+                        : `View all (${formatMobileCompactCount(bucket.totalCount)})`}
                     </Text>
                   </Pressable>
                 </View>
@@ -1035,20 +929,13 @@ export const DashboardScreen: React.FC = () => {
 
           {/* Footer Quick Actions */}
           <View style={styles.footerRow}>
-            <View style={styles.footerTipRow}>
-              <Layers size={13} color={SDO_COLORS.textMuted} />
-              <Text style={styles.footerTipText}>
-                Tap any folder to fan its top-5 urgent sheets open, or tap Browse All for
-                searchable 100K+ folder pagination.
-              </Text>
-            </View>
             <View style={styles.footerActionRow}>
               <Pressable
                 onPress={() => setActiveTab('inbox')}
                 style={styles.footerSecondaryBtn}
               >
                 <Inbox size={13} color={SDO_COLORS.navyInk} />
-                <Text style={styles.footerSecondaryBtnText}>Inbox Queue</Text>
+                <Text style={styles.footerSecondaryBtnText}>Inbox</Text>
               </Pressable>
               <Pressable
                 onPress={() => setActiveTab('track')}
@@ -1723,6 +1610,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    maxWidth: 196,
     borderRadius: 999,
     borderWidth: 1,
     borderColor: SDO_COLORS.border,
@@ -1739,17 +1627,12 @@ const styles = StyleSheet.create({
     height: 7,
     borderRadius: 3.5,
   },
-  journeyDocCode: {
-    fontFamily: SDO_FONTS.mono,
-    fontSize: 11,
+  journeyDocTitle: {
+    fontFamily: SDO_FONTS.sans,
+    fontSize: 11.5,
     fontWeight: '700',
     color: SDO_COLORS.textPrimary,
-  },
-  journeyDocOffice: {
-    fontFamily: SDO_FONTS.sans,
-    fontSize: 11,
-    fontWeight: '600',
-    color: SDO_COLORS.textSecondary,
+    flexShrink: 1,
   },
   journeyDocTextActive: {
     color: '#FFFFFF',

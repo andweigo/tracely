@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Bell, Home, MapPin, Scan, Send } from 'lucide-react-native';
+import { Inbox, LayoutDashboard, MapPin, Scan, Send } from 'lucide-react-native';
 import { MobileTab, useAppServices } from '../../state/AppServiceContext';
 import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 
@@ -8,33 +8,25 @@ interface NavItemSpec {
   readonly id: MobileTab;
   readonly label: string;
   readonly featured?: boolean;
-  readonly badge?: number;
   readonly renderIcon: (color: string, active: boolean) => React.ReactNode;
 }
 
 export const BottomNav: React.FC = () => {
-  const {
-    activeTab,
-    setActiveTab,
-    unreadNotificationCount,
-    pendingOfflineCount,
-  } = useAppServices();
-
-  const alertBadge = unreadNotificationCount + pendingOfflineCount;
+  const { activeTab, setActiveTab } = useAppServices();
 
   const items: ReadonlyArray<NavItemSpec> = [
+    {
+      id: 'dashboard',
+      label: 'Dashboard',
+      renderIcon: (c, active) => (
+        <LayoutDashboard size={active ? 21 : 19} strokeWidth={active ? 2.4 : 1.8} color={c} />
+      ),
+    },
     {
       id: 'inbox',
       label: 'Inbox',
       renderIcon: (c, active) => (
-        <Home size={active ? 22 : 20} strokeWidth={active ? 2.5 : 1.8} color={c} />
-      ),
-    },
-    {
-      id: 'scanner',
-      label: 'Scan',
-      renderIcon: (c, active) => (
-        <Scan size={active ? 22 : 20} strokeWidth={active ? 2.5 : 1.8} color={c} />
+        <Inbox size={active ? 21 : 19} strokeWidth={active ? 2.4 : 1.8} color={c} />
       ),
     },
     {
@@ -46,18 +38,17 @@ export const BottomNav: React.FC = () => {
       ),
     },
     {
-      id: 'track',
-      label: 'Track',
+      id: 'scanner',
+      label: 'Scan',
       renderIcon: (c, active) => (
-        <MapPin size={active ? 22 : 20} strokeWidth={active ? 2.5 : 1.8} color={c} />
+        <Scan size={active ? 21 : 19} strokeWidth={active ? 2.4 : 1.8} color={c} />
       ),
     },
     {
-      id: 'alerts',
-      label: 'Alerts',
-      badge: alertBadge,
+      id: 'track',
+      label: 'Track',
       renderIcon: (c, active) => (
-        <Bell size={active ? 22 : 20} strokeWidth={active ? 2.5 : 1.8} color={c} />
+        <MapPin size={active ? 21 : 19} strokeWidth={active ? 2.4 : 1.8} color={c} />
       ),
     },
   ];
@@ -73,6 +64,7 @@ export const BottomNav: React.FC = () => {
             return (
               <Pressable
                 key={item.id}
+                testID={`bottom-nav-tab-${item.id}`}
                 onPress={() => setActiveTab(item.id)}
                 accessibilityRole="button"
                 accessibilityLabel="Send Document"
@@ -97,27 +89,14 @@ export const BottomNav: React.FC = () => {
           return (
             <Pressable
               key={item.id}
+              testID={`bottom-nav-tab-${item.id}`}
               onPress={() => setActiveTab(item.id)}
               accessibilityRole="button"
               accessibilityLabel={item.label}
               accessibilityState={{ selected: active }}
               style={styles.tabCol}
             >
-              <View style={styles.iconSlot}>
-                <View style={styles.iconWrap}>
-                  {item.renderIcon(iconColor, active)}
-                  {item.badge && item.badge > 0 ? (
-                    <View
-                      testID={item.id === 'alerts' ? 'bottom-nav-alerts-badge' : undefined}
-                      style={styles.badge}
-                    >
-                      <Text style={styles.badgeText}>
-                        {item.badge > 99 ? '99+' : String(item.badge)}
-                      </Text>
-                    </View>
-                  ) : null}
-                </View>
-              </View>
+              <View style={styles.iconSlot}>{item.renderIcon(iconColor, active)}</View>
               <Text numberOfLines={1} style={[styles.tabLabel, active && styles.tabLabelActive]}>
                 {item.label}
               </Text>
@@ -134,7 +113,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: SDO_COLORS.border,
     backgroundColor: SDO_COLORS.surface,
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingTop: 8,
     paddingBottom: 10,
     alignItems: 'center',
@@ -143,18 +122,20 @@ const styles = StyleSheet.create({
   tabGroup: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    justifyContent: 'center',
-    gap: 10,
+    justifyContent: 'space-around',
+    width: '100%',
+    maxWidth: 420,
   },
   tabCol: {
+    flex: 1,
     minWidth: 52,
     alignItems: 'center',
     justifyContent: 'flex-end',
     gap: 3,
-    paddingHorizontal: 4,
+    paddingHorizontal: 2,
   },
   iconSlot: {
-    height: 28,
+    height: 26,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -169,11 +150,12 @@ const styles = StyleSheet.create({
     color: SDO_COLORS.navy,
   },
   centerTabCol: {
+    flex: 1,
     minWidth: 56,
     alignItems: 'center',
     justifyContent: 'flex-end',
     gap: 3,
-    paddingHorizontal: 4,
+    paddingHorizontal: 2,
   },
   centerCircle: {
     width: 46,
@@ -186,9 +168,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: SDO_COLORS.navyDeep,
-    shadowOpacity: 0.28,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.24,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
     elevation: 6,
   },
   centerCircleActive: {
@@ -203,28 +185,5 @@ const styles = StyleSheet.create({
   },
   centerLabelActive: {
     color: SDO_COLORS.navyInk,
-  },
-  iconWrap: {
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  badge: {
-    position: 'absolute',
-    right: -7,
-    top: -5,
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: SDO_COLORS.rose,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 4,
-  },
-  badgeText: {
-    fontFamily: SDO_FONTS.sans,
-    fontSize: 9,
-    fontWeight: '800',
-    color: '#FFFFFF',
   },
 });

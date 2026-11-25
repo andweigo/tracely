@@ -15,7 +15,6 @@ import {
   ChevronRight,
   FileText,
   FolderKanban,
-  Menu,
   Printer,
   QrCode,
   Search,
@@ -28,6 +27,7 @@ import { DocumentViewerBridge } from '../../domain/security/DocumentViewerBridge
 import { useAppServices } from '../../state/AppServiceContext';
 import { CopyFormatBadge, SlaBadge } from '../components/Badges';
 import { EmptyState } from '../components/EmptyState';
+import { MobileHeaderActions } from '../components/MobileHeaderActions';
 import { OpaqueQrModal } from '../sheets/OpaqueQrModal';
 import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 import { formatClockTime, formatCompactDate, formatRelativeTime } from '../utils/formatters';
@@ -75,7 +75,6 @@ export const SentScreen: React.FC = () => {
     documents,
     openDocument,
     setActiveTab,
-    openSidebar,
     recallTransfer,
     refreshWorkspace,
     notify,
@@ -197,15 +196,8 @@ export const SentScreen: React.FC = () => {
       <View style={styles.topHeader}>
         <View style={styles.headerCopy}>
           <Text style={styles.screenTitle}>Sent Files</Text>
-          <Text style={styles.screenSub}>Track all files &amp; slips you dispatched</Text>
         </View>
-        <Pressable
-          onPress={openSidebar}
-          accessibilityLabel="Open navigation sidebar"
-          style={styles.menuBtn}
-        >
-          <Menu size={20} color={SDO_COLORS.navyInk} />
-        </Pressable>
+        <MobileHeaderActions variant="outlined" />
       </View>
 
       <View style={styles.statsGrid}>

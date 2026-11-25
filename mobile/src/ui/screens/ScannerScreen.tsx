@@ -6,13 +6,13 @@ import {
   KeyRound,
   Lock,
   MapPin,
-  Menu,
   UploadCloud,
   X,
 } from 'lucide-react-native';
 import { Document } from '../../domain/entities/Document';
 import { DocumentCopyFormat } from '../../domain/enums/DomainEnums';
 import { useAppServices } from '../../state/AppServiceContext';
+import { MobileHeaderActions } from '../components/MobileHeaderActions';
 import { ScanToReceiveCard } from '../components/ScanToReceiveCard';
 import { SealedQrCard } from '../components/SealedQrCard';
 import { ActionRemarksSheet } from '../sheets/ActionRemarksSheet';
@@ -34,7 +34,6 @@ export const ScannerScreen: React.FC = () => {
     unlockSoftCopyWithPassword,
     setActiveTab,
     goBack,
-    openSidebar,
     scannerPaused,
     setScannerPaused,
     recentScans,
@@ -69,13 +68,7 @@ export const ScannerScreen: React.FC = () => {
           <ArrowLeft size={18} color={SDO_COLORS.navyInk} />
         </Pressable>
         <Text style={styles.headerTitle}>QR Scanner</Text>
-        <Pressable
-          onPress={openSidebar}
-          accessibilityLabel="Open navigation sidebar"
-          style={styles.circleBtn}
-        >
-          <Menu size={19} color={SDO_COLORS.navyInk} />
-        </Pressable>
+        <MobileHeaderActions variant="soft" />
       </View>
 
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">

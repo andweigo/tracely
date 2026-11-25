@@ -4,14 +4,11 @@ import {
   Camera,
   ChevronRight,
   Code2,
-  Cpu,
   FileText,
-  FolderKanban,
+  Folder,
   Info,
-  Layers,
   LogOut,
   Palette,
-  QrCode,
   ShieldCheck,
 } from 'lucide-react';
 import { AppIconBadge } from '../components/AppIconBadge';
@@ -20,28 +17,6 @@ import { LegalDocumentType } from '../domain/legalPolicies';
 import { useWebApp } from '../state/WebAppContext';
 
 type BrowserPermState = 'granted' | 'denied' | 'prompt' | 'unsupported';
-
-const SYSTEM_CAPABILITIES: ReadonlyArray<{
-  readonly title: string;
-  readonly detail: string;
-}> = [
-  {
-    title: 'Verified QR Custody & Sealed Transfers',
-    detail: 'Track physical and digital document handoffs with tamper-evident receipt verification.',
-  },
-  {
-    title: 'Routing Flow Analytics',
-    detail: 'Visualize per-user and per-office outgoing document corridors and active transit volume.',
-  },
-  {
-    title: 'High-Scale Interactive 3D Desk Folders',
-    detail: 'Organize active records with priority sheets and searchable paginated folder ledgers.',
-  },
-  {
-    title: 'Privacy Controls & Cross-Device Sync',
-    detail: 'Protect restricted records with privacy masking and synchronized workspace preferences.',
-  },
-];
 
 function readNotificationPermission(): BrowserPermState {
   if (typeof window === 'undefined' || !window.Notification) return 'unsupported';
@@ -58,6 +33,8 @@ export const SettingsPage: React.FC = () => {
     signOut,
     userPreferences,
     updateUserPreferences,
+    folderAppearance,
+    updateFolderAppearance,
     securityPrefs,
     updateSecurityPrefs,
     notify,
@@ -135,25 +112,107 @@ export const SettingsPage: React.FC = () => {
   return (
     <div
       data-testid="web-settings-page"
-      style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 880 }}
+      style={{ display: 'flex', flexDirection: 'column', gap: 18, maxWidth: 880 }}
     >
-      {/* System Identity Banner */}
+      {/* System Identity Header */}
       <div
         className="card"
         style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}
       >
-        <AppIconBadge size={52} animated interactive />
-        <div style={{ flex: 1, minWidth: 220 }}>
-          <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: 'var(--text-primary)' }}>
+        <AppIconBadge size={48} animated interactive />
+        <div style={{ flex: 1, minWidth: 200 }}>
+          <h3 style={{ margin: 0, fontSize: 19, fontWeight: 800, color: 'var(--text-primary)' }}>
             Tracely
           </h3>
-          <p style={{ margin: '3px 0 0', fontSize: 13, color: 'var(--text-secondary)' }}>
-            Document Custody, Routing &amp; QR Tracking Workspace
+          <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--text-secondary)' }}>
+            Document Tracking Workspace
           </p>
         </div>
         <span className="pill pill-sky" style={{ fontSize: 11 }}>
-          v1.0.7
+          v1.0.8
         </span>
+      </div>
+
+      {/* Folder Appearance Preferences (Dashboard + Categories) */}
+      <div
+        className="card"
+        data-testid="web-settings-folder-prefs-card"
+        style={{ display: 'flex', flexDirection: 'column', gap: 14 }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Folder size={16} color="var(--navy)" />
+          <h4 className="section-title" style={{ fontSize: 15 }}>
+            Folder Preferences
+          </h4>
+        </div>
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
+            gap: 12,
+          }}
+        >
+          <div className="card-soft" style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)' }}>
+              Folder Style
+            </span>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {(['flap', 'book'] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  data-testid={`web-pref-folder-mode-${m}`}
+                  className={folderAppearance.mode === m ? 'btn btn-primary' : 'btn btn-outline'}
+                  style={{ flex: 1, minHeight: 34, padding: '4px 10px', fontSize: 12, textTransform: 'capitalize' }}
+                  onClick={() => updateFolderAppearance({ mode: m })}
+                >
+                  {m}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="card-soft" style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)' }}>
+              Folder Surface
+            </span>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {(['solid', 'glass', 'matte'] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  data-testid={`web-pref-folder-variant-${v}`}
+                  className={folderAppearance.variant === v ? 'btn btn-primary' : 'btn btn-outline'}
+                  style={{ flex: 1, minHeight: 34, padding: '4px 8px', fontSize: 12, textTransform: 'capitalize' }}
+                  onClick={() => updateFolderAppearance({ variant: v })}
+                >
+                  {v}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="card-soft" style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)' }}>
+              Sheet Layout
+            </span>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {(['spread', 'stack', 'row'] as const).map((l) => (
+                <button
+                  key={l}
+                  type="button"
+                  data-testid={`web-pref-folder-layout-${l}`}
+                  className={folderAppearance.layout === l ? 'btn btn-primary' : 'btn btn-outline'}
+                  style={{ flex: 1, minHeight: 34, padding: '4px 8px', fontSize: 12, textTransform: 'capitalize' }}
+                  onClick={() => updateFolderAppearance({ layout: l })}
+                >
+                  {l}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Device & Service Permissions */}
@@ -171,8 +230,8 @@ export const SettingsPage: React.FC = () => {
 
         <div className="profile-grid">
           <div className="card-soft" style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.06em', color: 'var(--text-muted)' }}>
-              DEVICE ACCESS
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)' }}>
+              Device Access
             </span>
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
@@ -180,10 +239,10 @@ export const SettingsPage: React.FC = () => {
                 <Bell size={15} color="var(--navy)" />
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>
-                    Browser Notifications
+                    Notifications
                   </div>
                   <div style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>
-                    Receive real-time incoming document alerts
+                    Incoming document alerts
                   </div>
                 </div>
               </div>
@@ -222,10 +281,10 @@ export const SettingsPage: React.FC = () => {
                 <Camera size={15} color="var(--navy)" />
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>
-                    Camera Access
+                    Camera
                   </div>
                   <div style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>
-                    Optional camera verification for QR capture
+                    Scan QR codes
                   </div>
                 </div>
               </div>
@@ -252,15 +311,15 @@ export const SettingsPage: React.FC = () => {
           </div>
 
           <div className="card-soft" style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 4 }}>
-              ACTIVE SERVICES
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4 }}>
+              Services
             </span>
 
             <label className="switch-row" style={{ padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
               <div>
-                <div style={{ fontSize: 13, fontWeight: 700 }}>Desktop Custody Alerts</div>
+                <div style={{ fontSize: 13, fontWeight: 700 }}>Desktop Alerts</div>
                 <div style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>
-                  Show live alerts when new transfers arrive
+                  Show alerts for new transfers
                 </div>
               </div>
               <span className="switch-control">
@@ -280,7 +339,7 @@ export const SettingsPage: React.FC = () => {
               <div>
                 <div style={{ fontSize: 13, fontWeight: 700 }}>Hide Titles on Lock Screen</div>
                 <div style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>
-                  Mask document titles inside alert previews
+                  Keep alert previews private
                 </div>
               </div>
               <span className="switch-control">
@@ -298,9 +357,9 @@ export const SettingsPage: React.FC = () => {
 
             <label className="switch-row" style={{ padding: '6px 0' }}>
               <div>
-                <div style={{ fontSize: 13, fontWeight: 700 }}>Confidential File Verification</div>
+                <div style={{ fontSize: 13, fontWeight: 700 }}>Confidential File Lock</div>
                 <div style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>
-                  Require verification before opening confidential records
+                  Verify before opening restricted files
                 </div>
               </div>
               <span className="switch-control">
@@ -319,7 +378,7 @@ export const SettingsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* System Information (Public-Safe, Zero Secrets) */}
+      {/* System Information & Account Links */}
       <div className="profile-grid">
         <div
           className="card"
@@ -362,7 +421,7 @@ export const SettingsPage: React.FC = () => {
               }}
             >
               <span style={{ color: 'var(--text-secondary)' }}>Version</span>
-              <strong className="mono">1.0.7</strong>
+              <strong className="mono">1.0.8</strong>
             </div>
 
             <div
@@ -376,7 +435,7 @@ export const SettingsPage: React.FC = () => {
               }}
             >
               <span style={{ color: 'var(--text-secondary)' }}>Platform</span>
-              <strong>Web Workspace Portal</strong>
+              <strong>Web Portal</strong>
             </div>
 
             <div
@@ -385,7 +444,6 @@ export const SettingsPage: React.FC = () => {
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 padding: '10px 0',
-                borderBottom: '1px solid var(--border)',
                 fontSize: 13,
               }}
             >
@@ -403,170 +461,73 @@ export const SettingsPage: React.FC = () => {
                 Andrei Obligar
               </strong>
             </div>
-
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: '10px 0',
-                borderBottom: '1px solid var(--border)',
-                fontSize: 13,
-              }}
-            >
-              <span
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  color: 'var(--text-secondary)',
-                }}
-              >
-                <Cpu size={14} /> Architecture
-              </span>
-              <strong>Encrypted Workspace · QR Ledger</strong>
-            </div>
-
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: '10px 0',
-                fontSize: 13,
-              }}
-            >
-              <span
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  color: 'var(--text-secondary)',
-                }}
-              >
-                <ShieldCheck size={14} color="var(--emerald-text)" /> Security Model
-              </span>
-              <strong>TLS · RBAC · Privacy Masking</strong>
-            </div>
           </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Layers size={16} color="var(--navy)" />
-              <h4 className="section-title" style={{ fontSize: 15 }}>
-                Core Capabilities
-              </h4>
-            </div>
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <h4 className="section-title" style={{ fontSize: 15 }}>
+            Account &amp; Legal
+          </h4>
+          <button
+            type="button"
+            className="btn btn-soft"
+            style={{ justifyContent: 'space-between', width: '100%' }}
+            onClick={() => navigate('user_profile')}
+          >
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              <Palette size={15} /> Profile &amp; ID Color
+            </span>
+            <ChevronRight size={15} />
+          </button>
+          <button
+            type="button"
+            className="btn btn-soft"
+            style={{ justifyContent: 'space-between', width: '100%' }}
+            onClick={() => navigate('profile')}
+          >
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              <ShieldCheck size={15} /> Security &amp; Availability
+            </span>
+            <ChevronRight size={15} />
+          </button>
+          <button
+            type="button"
+            data-testid="web-settings-terms-btn"
+            className="btn btn-soft"
+            style={{ justifyContent: 'space-between', width: '100%' }}
+            onClick={() => setLegalModalTab('terms')}
+          >
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              <FileText size={15} /> Terms &amp; Conditions
+            </span>
+            <ChevronRight size={15} />
+          </button>
+          <button
+            type="button"
+            data-testid="web-settings-privacy-btn"
+            className="btn btn-soft"
+            style={{ justifyContent: 'space-between', width: '100%' }}
+            onClick={() => setLegalModalTab('privacy')}
+          >
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              <ShieldCheck size={15} /> Privacy Policy
+            </span>
+            <ChevronRight size={15} />
+          </button>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {SYSTEM_CAPABILITIES.map((cap, idx) => (
-                <div
-                  key={cap.title}
-                  className="card-soft"
-                  style={{ padding: 11, display: 'flex', alignItems: 'flex-start', gap: 10 }}
-                >
-                  <div
-                    style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: 8,
-                      background: 'var(--surface)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                    }}
-                  >
-                    {idx % 2 === 0 ? (
-                      <QrCode size={14} color="var(--navy)" />
-                    ) : (
-                      <FolderKanban size={14} color="var(--navy)" />
-                    )}
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>
-                      {cap.title}
-                    </div>
-                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
-                      {cap.detail}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <h4 className="section-title" style={{ fontSize: 15 }}>
-              Workspace &amp; Legal
-            </h4>
+          {actor ? (
             <button
               type="button"
-              className="btn btn-soft"
-              style={{ justifyContent: 'space-between', width: '100%' }}
-              onClick={() => navigate('user_profile')}
+              data-testid="web-settings-signout-btn"
+              className="btn btn-danger-outline"
+              style={{ width: '100%', marginTop: 4 }}
+              onClick={() => void signOut()}
             >
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                <Palette size={15} /> Profile Theme &amp; Lanyard Color
-              </span>
-              <ChevronRight size={15} />
+              <LogOut size={14} /> Sign Out
             </button>
-            <button
-              type="button"
-              className="btn btn-soft"
-              style={{ justifyContent: 'space-between', width: '100%' }}
-              onClick={() => navigate('profile')}
-            >
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                <ShieldCheck size={15} /> Availability &amp; Account Security
-              </span>
-              <ChevronRight size={15} />
-            </button>
-            <button
-              type="button"
-              data-testid="web-settings-terms-btn"
-              className="btn btn-soft"
-              style={{ justifyContent: 'space-between', width: '100%' }}
-              onClick={() => setLegalModalTab('terms')}
-            >
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                <FileText size={15} /> Terms &amp; Conditions
-              </span>
-              <ChevronRight size={15} />
-            </button>
-            <button
-              type="button"
-              data-testid="web-settings-privacy-btn"
-              className="btn btn-soft"
-              style={{ justifyContent: 'space-between', width: '100%' }}
-              onClick={() => setLegalModalTab('privacy')}
-            >
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                <ShieldCheck size={15} /> Privacy Policy
-              </span>
-              <ChevronRight size={15} />
-            </button>
-
-            {actor ? (
-              <button
-                type="button"
-                data-testid="web-settings-signout-btn"
-                className="btn btn-danger-outline"
-                style={{ width: '100%', marginTop: 4 }}
-                onClick={() => void signOut()}
-              >
-                <LogOut size={14} /> Sign Out
-              </button>
-            ) : null}
-          </div>
+          ) : null}
         </div>
       </div>
-
-      <p style={{ margin: 0, fontSize: 12, color: 'var(--text-muted)', textAlign: 'center' }}>
-        Tracely · Designed &amp; Developed by Andrei Obligar
-      </p>
 
       <LegalPolicyModal
         open={legalModalTab !== null}
