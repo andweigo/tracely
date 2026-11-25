@@ -1,20 +1,11 @@
 import React, { useState } from 'react';
-import {
-  Activity,
-  CheckCircle2,
-  Clock,
-  FileCheck2,
-  QrCode,
-  ShieldCheck,
-} from 'lucide-react';
 
 interface OrbitCard {
   readonly id: string;
   readonly slot: 'top-left' | 'front-left' | 'right' | 'back-left' | 'back-right';
+  readonly code: string;
   readonly title: string;
   readonly subtitle: string;
-  readonly tone: 'teal' | 'navy' | 'amber' | 'emerald' | 'slate';
-  readonly icon: React.ReactNode;
   readonly detail: string;
 }
 
@@ -22,62 +13,47 @@ const ORBIT_CARDS: ReadonlyArray<OrbitCard> = [
   {
     id: 'qr',
     slot: 'top-left',
+    code: '01',
     title: 'QR Handoff',
-    subtitle: 'Sealed until recipient scans.',
-    tone: 'teal',
-    icon: <QrCode size={15} />,
-    detail: 'Private QR codes ensure only the receiving office can accept custody.',
+    subtitle: 'Sealed until recipient scans',
+    detail: 'Private QR slips ensure only the receiving office can confirm custody.',
   },
   {
     id: 'sha',
     slot: 'front-left',
+    code: '02',
     title: 'Verified Files',
-    subtitle: 'Check every file & revision.',
-    tone: 'navy',
-    icon: <ShieldCheck size={15} />,
-    detail: 'Uploaded documents and revisions are checked automatically for tampering.',
+    subtitle: 'Checked on every revision',
+    detail: 'Uploaded files and revisions are checked automatically so edits never go unnoticed.',
   },
   {
     id: 'sla',
     slot: 'right',
+    code: '03',
     title: 'Deadlines',
-    subtitle: 'Spot delays before they slip.',
-    tone: 'amber',
-    icon: <Clock size={15} />,
-    detail: 'Track due-soon and overdue items with out-of-office delegate support.',
+    subtitle: 'Flagged before due dates slip',
+    detail: 'Monitor turnaround times per office with out-of-office delegate handoffs.',
   },
   {
     id: 'audit',
     slot: 'back-left',
+    code: '04',
     title: 'Budget Proposal',
     subtitle: 'Records → Finance',
-    tone: 'slate',
-    icon: <FileCheck2 size={14} />,
-    detail: 'Timestamped handoff history for physical folders and digital files.',
+    detail: 'Timestamped handoff ledger for physical folders and digital packets.',
   },
   {
     id: 'approved',
     slot: 'back-right',
+    code: '05',
     title: 'Approved',
-    subtitle: 'Verified · 2h 41m',
-    tone: 'emerald',
-    icon: <CheckCircle2 size={14} />,
-    detail: 'Export complete document history to printable reports or CSV.',
+    subtitle: 'Logged · 2h 41m',
+    detail: 'Export full custody histories as printable summaries or CSV logs.',
   },
 ];
 
-const UNIT_BADGES = [
-  { code: 'REC', bg: '#0D3472', fg: '#FFFFFF' },
-  { code: 'FIN', bg: '#0F766E', fg: '#FFFFFF' },
-  { code: 'EXC', bg: '#F3B32A', fg: '#0D1B3E' },
-] as const;
-
-const TRUST_UNITS = [
-  { code: 'REC', bg: '#0D3472', fg: '#FFFFFF' },
-  { code: 'BUD', bg: '#164A9E', fg: '#FFFFFF' },
-  { code: 'HR', bg: '#0F766E', fg: '#FFFFFF' },
-  { code: 'ICT', bg: '#F3B32A', fg: '#0D1B3E' },
-] as const;
+const OFFICE_STAMPS = ['REC', 'FIN', 'EXC'] as const;
+const TRUST_STAMPS = ['REC', 'BUD', 'HR', 'ICT'] as const;
 
 export const OrbitalHeroStage: React.FC = () => {
   const [pinnedCardId, setPinnedCardId] = useState<string | null>(null);
@@ -87,7 +63,7 @@ export const OrbitalHeroStage: React.FC = () => {
 
   return (
     <div className="orbital-stage" aria-label="Tracely editorial custody showcase">
-      {/* Delicate curved SVG connectors flowing from tilted side cards to centerpiece */}
+      {/* Subtle architectural hairline connectors */}
       <svg
         className="orbital-arcs"
         viewBox="0 0 1120 380"
@@ -97,53 +73,50 @@ export const OrbitalHeroStage: React.FC = () => {
       >
         <path
           d="M 142 86 C 150 248, 310 292, 426 262"
-          stroke="rgba(13, 52, 114, 0.16)"
-          strokeWidth="1.25"
+          stroke="rgba(15, 27, 51, 0.14)"
+          strokeWidth="1"
+          strokeDasharray="3 4"
         />
         <path
           d="M 974 132 C 942 266, 792 298, 686 262"
-          stroke="rgba(13, 52, 114, 0.16)"
-          strokeWidth="1.25"
+          stroke="rgba(15, 27, 51, 0.14)"
+          strokeWidth="1"
+          strokeDasharray="3 4"
         />
       </svg>
 
-      {/* Left floating slightly-tilted glass card */}
+      {/* Left floating archival index slip */}
       <div className="float-card float-card-left">
-        <div className="float-icon-badge">
-          <Activity size={16} />
+        <div className="float-slip-meta">
+          <span className="slip-index">LOG · 01</span>
+          <span className="slip-dot" aria-hidden="true" />
         </div>
         <h3>Turn folders into live trails.</h3>
         <p>Scan, organize, and verify custody across offices.</p>
       </div>
 
-      {/* Right floating slightly-tilted glass card */}
+      {/* Right floating office stamp slip */}
       <div className="float-card float-card-right">
-        <div className="unit-avatar-stack" aria-hidden="true">
-          {UNIT_BADGES.map((u) => (
-            <span
-              key={u.code}
-              className="unit-avatar"
-              style={{ background: u.bg, color: u.fg }}
-            >
-              {u.code}
+        <div className="office-stamp-row" aria-hidden="true">
+          {OFFICE_STAMPS.map((code) => (
+            <span key={code} className="office-stamp">
+              {code}
             </span>
           ))}
-          <span className="unit-avatar unit-avatar-plus">+</span>
         </div>
-        <h3>Synced, anytime, anywhere.</h3>
-        <p>Web workspace &amp; Android across all your devices.</p>
+        <h3>Synced across desks &amp; phones.</h3>
+        <p>Web workspace &amp; Android always on the same ledger.</p>
       </div>
 
-      {/* Center editorial portrait + 3D orbiting frosted glass cards */}
+      {/* Center editorial portrait + interactive paper routing tags */}
       <div className="orbital-center">
-        <div className="portrait-halo" aria-hidden="true" />
         <img
           src="/hero-editorial.png"
-          alt="Poised office professional surrounded by Tracely QR custody tracking cards"
+          alt="Office staff surrounded by Tracely QR document routing slips"
           className="orbital-portrait"
         />
 
-        <div className="orbit-ring" aria-label="Interactive Tracely capability cards">
+        <div className="orbit-ring" aria-label="Interactive Tracely capability tags">
           {ORBIT_CARDS.map((card) => {
             const isSelected = activeCardId === card.id;
             return (
@@ -158,7 +131,9 @@ export const OrbitalHeroStage: React.FC = () => {
                 onMouseEnter={() => setHoveredCardId(card.id)}
                 onMouseLeave={() => setHoveredCardId((prev) => (prev === card.id ? null : prev))}
               >
-                <span className={`orbit-icon tone-${card.tone}`}>{card.icon}</span>
+                <span className="orbit-index" aria-hidden="true">
+                  {card.code}
+                </span>
                 <span className="orbit-copy">
                   <strong>{card.title}</strong>
                   <span>{card.subtitle}</span>
@@ -176,38 +151,28 @@ export const OrbitalHeroStage: React.FC = () => {
         ) : null}
       </div>
 
-      {/* Bottom-left editorial micro-trust block */}
+      {/* Bottom-left editorial colophon */}
       <div className="editorial-corner corner-left">
         <span className="corner-rule" aria-hidden="true" />
-        <p>Built for agencies &amp; enterprise teams.</p>
-        <div className="unit-avatar-stack compact" aria-hidden="true">
-          {TRUST_UNITS.map((u) => (
-            <span
-              key={u.code}
-              className="unit-avatar sm"
-              style={{ background: u.bg, color: u.fg }}
-            >
-              {u.code}
+        <p>Built for public agencies &amp; multi-office teams.</p>
+        <div className="office-stamp-row compact" aria-hidden="true">
+          {TRUST_STAMPS.map((code) => (
+            <span key={code} className="office-stamp sm">
+              {code}
             </span>
           ))}
-          <span className="unit-avatar sm unit-avatar-plus">+</span>
         </div>
       </div>
 
-      {/* Bottom-right editorial micro-motto */}
+      {/* Bottom-right editorial motto */}
       <div className="editorial-corner corner-right">
-        <svg className="corner-star" width="15" height="15" viewBox="0 0 24 24" aria-hidden="true">
-          <path
-            d="M12 2L14.3 9.7L22 12L14.3 14.3L12 22L9.7 14.3L2 12L9.7 9.7L12 2Z"
-            fill="#0D3472"
-          />
-        </svg>
+        <span className="corner-kicker">CUSTODY RECORD</span>
         <div className="corner-motto">
           <span className="corner-rule" aria-hidden="true" />
           <p>
-            Less paper chaos.
+            Less paper guesswork.
             <br />
-            More clarity.
+            Clearer handoffs.
           </p>
         </div>
       </div>

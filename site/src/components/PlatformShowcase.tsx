@@ -1,14 +1,5 @@
 import React, { useState } from 'react';
-import {
-  ArrowUpRight,
-  Check,
-  Copy,
-  Download,
-  Monitor,
-  QrCode,
-  ShieldCheck,
-  Smartphone,
-} from 'lucide-react';
+import { ArrowUpRight, Check, Copy, Download } from 'lucide-react';
 import { SITE_CONFIG } from '../config';
 import { QrMatrixSvg } from './QrMatrixSvg';
 
@@ -26,23 +17,24 @@ export const PlatformShowcase: React.FC = () => {
   };
 
   return (
-    <section id="platforms" className="section">
+    <section id="platforms" className="section section-paper">
       <div className="container">
         <div className="section-header center">
-          <h2>Works on desktop and Android.</h2>
+          <span className="section-kicker">PLATFORMS</span>
+          <h2 className="editorial-heading">
+            Works on desktop <em>and Android.</em>
+          </h2>
           <p>
             Open Tracely in your browser or install the Android app directly on your phone.
           </p>
         </div>
 
-        <div className="platforms-grid">
-          {/* Web Workspace Card */}
-          <article className="platform-card">
-            <div className="platform-card-top">
-              <div className="platform-icon navy">
-                <Monitor size={22} />
-              </div>
-              <span className="platform-tag">Web</span>
+        <div className="platforms-ledger">
+          {/* Web Workspace Column */}
+          <article className="platform-cell">
+            <div className="platform-meta">
+              <span>01 / WEB WORKSPACE</span>
+              <span>ANY BROWSER</span>
             </div>
             <h3>Tracely Web App</h3>
             <p>
@@ -62,24 +54,19 @@ export const PlatformShowcase: React.FC = () => {
                 className="btn btn-primary"
               >
                 <span>Open Web App</span>
-                <ArrowUpRight size={16} />
+                <ArrowUpRight size={15} strokeWidth={1.8} />
               </a>
               <a href="#security" className="btn btn-outline">
-                <ShieldCheck size={15} />
-                <span>Security</span>
+                <span>Read security spec</span>
               </a>
             </div>
           </article>
 
-          {/* Native Android App + Scannable QR Card */}
-          <article className="platform-card platform-card-featured">
-            <div className="platform-card-top">
-              <div className="platform-icon teal">
-                <Smartphone size={22} />
-              </div>
-              <span className="platform-tag teal-tag">
-                Android · v{SITE_CONFIG.androidVersion}
-              </span>
+          {/* Native Android App + Scannable QR Column */}
+          <article className="platform-cell">
+            <div className="platform-meta">
+              <span>02 / ANDROID NATIVE</span>
+              <span>v{SITE_CONFIG.androidVersion}</span>
             </div>
             <h3>Tracely for Android</h3>
             <p>
@@ -91,18 +78,15 @@ export const PlatformShowcase: React.FC = () => {
               <div className="android-qr-box">
                 <QrMatrixSvg
                   value={SITE_CONFIG.downloadUrl}
-                  size={132}
+                  size={120}
                   label="Scan with your Android phone to download Tracely APK"
                 />
               </div>
               <div className="android-qr-copy">
-                <div className="qr-kicker">
-                  <QrCode size={14} />
-                  <span>Scan on Your Phone</span>
-                </div>
+                <span className="qr-kicker">SCAN ON YOUR PHONE</span>
                 <p>
-                  Point your Android camera here to download
-                  <strong> Tracely v{SITE_CONFIG.androidVersion}</strong>.
+                  Point your Android camera here to download{' '}
+                  <strong>Tracely v{SITE_CONFIG.androidVersion}</strong>.
                 </p>
               </div>
             </div>
@@ -112,9 +96,9 @@ export const PlatformShowcase: React.FC = () => {
                 href={SITE_CONFIG.downloadUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn btn-amber"
+                className="btn btn-primary"
               >
-                <Download size={16} />
+                <Download size={15} strokeWidth={1.8} />
                 <span>Download Android APK</span>
               </a>
               <button
@@ -122,7 +106,7 @@ export const PlatformShowcase: React.FC = () => {
                 className="btn btn-outline"
                 onClick={handleCopyDownloadLink}
               >
-                {copied ? <Check size={15} /> : <Copy size={15} />}
+                {copied ? <Check size={14} strokeWidth={1.8} /> : <Copy size={14} strokeWidth={1.8} />}
                 <span>{copied ? 'Link Copied' : 'Copy Link'}</span>
               </button>
             </div>

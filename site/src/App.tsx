@@ -3,24 +3,19 @@ import {
   ArrowRight,
   ArrowUpRight,
   BellOff,
-  CheckCircle2,
   Clock,
   Download,
-  FileCheck2,
   FileStack,
   Fingerprint,
   FolderKanban,
   KeyRound,
   Lock,
   Menu,
-  Play,
   QrCode,
   ScanLine,
   ShieldAlert,
   Smartphone,
-  UserCheck,
   X,
-  XCircle,
 } from 'lucide-react';
 import { FaqSection } from './components/FaqSection';
 import { HeroCustodyDemo } from './components/HeroCustodyDemo';
@@ -38,20 +33,63 @@ const NAV_LINKS = [
 
 const PAIN_COMPARISONS = [
   {
+    index: '01',
     before: 'Paper logbooks with messy initials and missing times',
-    after: 'QR scan receipts that log who received each file and when',
+    after: 'QR scan receipts logging exactly who received each file and when',
   },
   {
+    index: '02',
     before: 'Calling offices one by one to ask who has a folder',
-    after: 'Live tracking showing the exact office and deadline at a glance',
+    after: 'Live custody trail showing the current office and deadline at a glance',
   },
   {
+    index: '03',
     before: 'Unverified file copies scattered across email and chat',
-    after: 'Verified digital files sealed until the receiving office scans',
+    after: 'Verified digital packets sealed in transit until the receiving desk scans',
   },
   {
+    index: '04',
     before: 'Documents sitting idle whenever an approver is away',
-    after: 'Out-of-office delegates and reminders before deadlines slip',
+    after: 'Out-of-office delegates and early reminders before due dates slip',
+  },
+] as const;
+
+const FEATURES = [
+  {
+    code: '01',
+    title: 'Physical & Digital Routing',
+    icon: <FileStack size={17} strokeWidth={1.6} />,
+    body: 'Print QR routing slips for physical folders or upload single PDFs, bundled packets, and batch dispatches under one code.',
+  },
+  {
+    code: '02',
+    title: 'QR-Confirmed Handoffs',
+    icon: <ScanLine size={17} strokeWidth={1.6} />,
+    body: 'Transfers stay sealed in transit until the receiving office scans the QR code on Android or enters the unlock code.',
+  },
+  {
+    code: '03',
+    title: 'Phone-to-Desktop Capture',
+    icon: <Smartphone size={17} strokeWidth={1.6} />,
+    body: 'Pair your phone to a desktop draft with one scan to photograph paper pages, with automatic sync when back online.',
+  },
+  {
+    code: '04',
+    title: 'Deadlines & Delegates',
+    icon: <Clock size={17} strokeWidth={1.6} />,
+    body: 'Spot due-soon and overdue files early, assign out-of-office delegates, and measure office turnaround times.',
+  },
+  {
+    code: '05',
+    title: 'Privacy Controls',
+    icon: <Lock size={17} strokeWidth={1.6} />,
+    body: 'Set Standard, Restricted, or Confidential access per file, with auto-locking views and private lock-screen alerts.',
+  },
+  {
+    code: '06',
+    title: 'Dedicated Admin Portal',
+    icon: <FolderKanban size={17} strokeWidth={1.6} />,
+    body: 'Approve staff accounts, organize offices and categories, manage signed-in devices, and export reports.',
   },
 ] as const;
 
@@ -59,51 +97,81 @@ const WORKFLOW_STEPS = [
   {
     num: '01',
     title: 'Register & Seal',
-    icon: <QrCode size={19} />,
     body: 'Print a QR slip for a physical folder or upload digital files under one tracking code.',
+    mark: (
+      <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true">
+        <rect x="3" y="3" width="8" height="8" stroke="currentColor" strokeWidth="1.5" />
+        <rect x="5.5" y="5.5" width="3" height="3" fill="currentColor" />
+        <rect x="15" y="3" width="8" height="8" stroke="currentColor" strokeWidth="1.5" />
+        <rect x="17.5" y="5.5" width="3" height="3" fill="currentColor" />
+        <rect x="3" y="15" width="8" height="8" stroke="currentColor" strokeWidth="1.5" />
+        <rect x="5.5" y="17.5" width="3" height="3" fill="currentColor" />
+        <path d="M15 15h3v3h-3zM20 15h3v3h-3zM15 20h3v3h-3zM20 20h3v3h-3z" fill="currentColor" />
+      </svg>
+    ),
   },
   {
     num: '02',
     title: 'Send & Scan to Receive',
-    icon: <ScanLine size={19} />,
     body: 'Route the file to the next office. It stays sealed until the receiving staff scans the QR code.',
+    mark: (
+      <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true">
+        <path d="M3 8V4.5A1.5 1.5 0 0 1 4.5 3H8" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M18 3h3.5A1.5 1.5 0 0 1 23 4.5V8" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M23 18v3.5a1.5 1.5 0 0 1-1.5 1.5H18" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M8 23H4.5A1.5 1.5 0 0 1 3 21.5V18" stroke="currentColor" strokeWidth="1.5" />
+        <line x1="5" y1="13" x2="21" y2="13" stroke="currentColor" strokeWidth="1.5" />
+      </svg>
+    ),
   },
   {
     num: '03',
     title: 'Track & Complete',
-    icon: <FileCheck2 size={19} />,
     body: 'Follow deadlines, add remarks, approve or archive, and share a public verification link.',
+    mark: (
+      <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true">
+        <rect x="4" y="3" width="18" height="20" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M8.5 13l3 3 6-6.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="square" />
+        <line x1="8" y1="19" x2="18" y2="19" stroke="currentColor" strokeWidth="1.3" opacity="0.5" />
+      </svg>
+    ),
   },
 ] as const;
 
 const SECURITY_PILLARS = [
   {
-    icon: <Fingerprint size={18} />,
+    code: 'SEC-01',
+    icon: <Fingerprint size={16} strokeWidth={1.6} />,
     title: 'File Verification',
     body: 'Every uploaded file and revision is checked automatically so tampering is caught early.',
   },
   {
-    icon: <QrCode size={18} />,
+    code: 'SEC-02',
+    icon: <QrCode size={16} strokeWidth={1.6} />,
     title: 'Private QR Codes',
-    body: 'Printed QR slips contain only a random code — never document titles or staff details.',
+    body: 'Printed QR slips contain only a random token — never document titles or staff details.',
   },
   {
-    icon: <ShieldAlert size={18} />,
+    code: 'SEC-03',
+    icon: <ShieldAlert size={16} strokeWidth={1.6} />,
     title: 'No Self-Receipt',
     body: 'Senders cannot confirm receipt of their own dispatches. Only the receiving office can.',
   },
   {
-    icon: <Lock size={18} />,
+    code: 'SEC-04',
+    icon: <Lock size={16} strokeWidth={1.6} />,
     title: 'Confidential View Lock',
     body: 'Confidential files lock automatically after 60 seconds and block unauthorized sharing.',
   },
   {
-    icon: <BellOff size={18} />,
+    code: 'SEC-05',
+    icon: <BellOff size={16} strokeWidth={1.6} />,
     title: 'Private Lock-Screen Alerts',
     body: 'Phone and desktop alerts hide document titles until you unlock and open the app.',
   },
   {
-    icon: <KeyRound size={18} />,
+    code: 'SEC-06',
+    icon: <KeyRound size={16} strokeWidth={1.6} />,
     title: 'Remote Device Sign-Out',
     body: 'Staff and admins can review signed-in browsers or phones and sign them out anytime.',
   },
@@ -115,22 +183,20 @@ export const App: React.FC = () => {
 
   return (
     <div className="site-root">
-      {/* Minimalist Floating Pill Header matching template */}
+      {/* Crisp Architectural Header */}
       <header className="site-header">
         <div className="container header-inner">
           <a href="#top" className="brand-link" aria-label="Tracely Home">
             <img src="/tracely-logo.png" alt="Tracely" className="brand-logo" />
-            <span className="brand-wordmark">
-              Tracely<sup className="brand-deg">°</sup>
-            </span>
+            <span className="brand-wordmark">Tracely</span>
           </a>
 
-          <nav className="nav-pill" aria-label="Primary navigation">
+          <nav className="nav-links" aria-label="Primary navigation">
             {NAV_LINKS.map((link) => (
               <a
                 key={link.href}
                 href={link.href}
-                className={`nav-pill-link ${activeNav === link.href ? 'is-active' : ''}`}
+                className={`nav-link ${activeNav === link.href ? 'is-active' : ''}`}
                 onClick={() => setActiveNav(link.href)}
               >
                 {link.label}
@@ -143,10 +209,10 @@ export const App: React.FC = () => {
               href={SITE_CONFIG.downloadUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn btn-navy-pill btn-sm"
+              className="btn btn-primary btn-sm"
             >
               <span>Get the app</span>
-              <ArrowUpRight size={14} />
+              <ArrowUpRight size={14} strokeWidth={1.8} />
             </a>
             <button
               type="button"
@@ -155,7 +221,7 @@ export const App: React.FC = () => {
               aria-expanded={mobileMenuOpen}
               onClick={() => setMobileMenuOpen((open) => !open)}
             >
-              {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+              {mobileMenuOpen ? <X size={19} strokeWidth={1.7} /> : <Menu size={19} strokeWidth={1.7} />}
             </button>
           </div>
         </div>
@@ -181,7 +247,7 @@ export const App: React.FC = () => {
                 className="mobile-nav-link"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Live Simulator
+                Custody Trail
               </a>
               <a
                 href="#faq"
@@ -195,20 +261,20 @@ export const App: React.FC = () => {
                   href={SITE_CONFIG.webAppUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="btn btn-navy-pill"
+                  className="btn btn-primary"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <span>Open Web App</span>
-                  <ArrowRight size={15} />
+                  <ArrowRight size={15} strokeWidth={1.8} />
                 </a>
                 <a
                   href={SITE_CONFIG.downloadUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="btn btn-white-pill"
+                  className="btn btn-outline"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  <Download size={15} />
+                  <Download size={15} strokeWidth={1.8} />
                   <span>Download Android APK</span>
                 </a>
               </div>
@@ -218,10 +284,10 @@ export const App: React.FC = () => {
       </header>
 
       <main id="top">
-        {/* Editorial Centered Hero matching Mindly template in Tracely's Navy/Amber/Teal colorway */}
+        {/* Editorial Hero */}
         <section className="hero-editorial">
           <div className="container hero-editorial-inner">
-            {/* Rotating Circular Editorial Stamp (top-right) */}
+            {/* Circular Archival Seal (no AI sparkle — crisp registration crosshair) */}
             <div className="hero-stamp" aria-hidden="true">
               <svg viewBox="0 0 116 116" className="stamp-ring">
                 <defs>
@@ -232,20 +298,17 @@ export const App: React.FC = () => {
                 </defs>
                 <text className="stamp-text">
                   <textPath href="#tracelyStampCircle" startOffset="0%">
-                    VERIFIED CUSTODY • EVERY OFFICE •
+                    VERIFIED CUSTODY · EVERY OFFICE ·
                   </textPath>
                 </text>
               </svg>
-              <svg viewBox="0 0 24 24" className="stamp-star">
-                <path
-                  d="M12 2L14.2 9.8L22 12L14.2 14.2L12 22L9.8 14.2L2 12L9.8 9.8L12 2Z"
-                  fill="#0D3472"
-                />
-                <circle cx="12" cy="12" r="2" fill="#F3B32A" />
+              <svg viewBox="0 0 24 24" className="stamp-mark">
+                <line x1="12" y1="3" x2="12" y2="21" stroke="#0D3472" strokeWidth="1.2" />
+                <line x1="3" y1="12" x2="21" y2="12" stroke="#0D3472" strokeWidth="1.2" />
+                <circle cx="12" cy="12" r="3" fill="#FAF9F6" stroke="#0D3472" strokeWidth="1.4" />
               </svg>
             </div>
 
-            {/* Centered High-Contrast Editorial Serif Headline */}
             <div className="hero-center-copy">
               <h1 className="hero-serif-title">
                 A clearer trail
@@ -257,34 +320,31 @@ export const App: React.FC = () => {
                 clear deadlines.
               </p>
 
-              <div className="hero-pill-ctas">
+              <div className="hero-ctas">
                 <a
                   href={SITE_CONFIG.webAppUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="btn btn-navy-pill btn-lg"
+                  className="btn btn-primary btn-lg"
                 >
                   <span>Open Web App</span>
-                  <ArrowRight size={16} />
+                  <ArrowRight size={15} strokeWidth={1.8} />
                 </a>
-                <a href="#simulator" className="btn btn-white-pill btn-lg">
-                  <span className="play-badge" aria-hidden="true">
-                    <Play size={10} fill="currentColor" />
-                  </span>
-                  <span>Try live demo</span>
+                <a href="#simulator" className="btn btn-outline btn-lg">
+                  <span>See custody trail</span>
                 </a>
               </div>
             </div>
 
-            {/* Signature Orbital Centerpiece + Tilted Floating Cards + Hairline Arcs */}
             <OrbitalHeroStage />
           </div>
         </section>
 
-        {/* Minimalist Custody-Road Visual Presentation */}
-        <section id="simulator" className="section section-editorial-band">
+        {/* Scroll-Tracked Paper Custody Trail */}
+        <section id="simulator" className="section section-paper">
           <div className="container">
             <div className="section-header center simulator-minimal-header">
+              <span className="section-kicker">CUSTODY LEDGER</span>
               <h2 className="editorial-heading">
                 From one office <em>to the next.</em>
               </h2>
@@ -294,56 +354,45 @@ export const App: React.FC = () => {
           </div>
         </section>
 
-        {/* Problem vs. Tracely Comparison */}
-        <section className="section section-compact">
+        {/* Editorial Comparison Ledger (No Red/Green AI Boxes) */}
+        <section className="section section-compact section-stone">
           <div className="container">
-            <div className="comparison-shell">
-              <div className="comparison-head">
-                <h2 className="editorial-heading">
-                  End the logbook blind spot <em>across every office.</em>
-                </h2>
-              </div>
-              <div className="comparison-grid">
-                <div className="comparison-col comparison-before">
-                  <div className="comparison-col-label">
-                    <XCircle size={16} />
-                    <span>Traditional Paper &amp; Email Routing</span>
-                  </div>
-                  <ul>
-                    {PAIN_COMPARISONS.map((item) => (
-                      <li key={item.before}>
-                        <XCircle size={15} className="cmp-icon-rose" />
-                        <span>{item.before}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+            <div className="section-header center">
+              <span className="section-kicker">WHY SWITCH</span>
+              <h2 className="editorial-heading">
+                End the logbook blind spot <em>across every office.</em>
+              </h2>
+            </div>
 
-                <div className="comparison-col comparison-after">
-                  <div className="comparison-col-label">
-                    <CheckCircle2 size={16} />
-                    <span>With Tracely QR Custody</span>
-                  </div>
-                  <ul>
-                    {PAIN_COMPARISONS.map((item) => (
-                      <li key={item.after}>
-                        <CheckCircle2 size={15} className="cmp-icon-teal" />
-                        <span>{item.after}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+            <div className="comparison-ledger">
+              <div className="comparison-ledger-head">
+                <span className="ledger-col-head muted">Paper &amp; Email Routing</span>
+                <span className="ledger-col-head strong">With Tracely QR Custody</span>
               </div>
+
+              {PAIN_COMPARISONS.map((item) => (
+                <div key={item.index} className="comparison-ledger-row">
+                  <div className="ledger-cell ledger-before">
+                    <span className="ledger-num">{item.index}</span>
+                    <span>{item.before}</span>
+                  </div>
+                  <div className="ledger-cell ledger-after">
+                    <span className="ledger-check" aria-hidden="true" />
+                    <span>{item.after}</span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </section>
 
-        {/* Core Capabilities Bento Grid */}
-        <section id="features" className="section">
+        {/* Ruled Feature Grid (No Pastel Icon Squares) */}
+        <section id="features" className="section section-paper">
           <div className="container">
             <div className="section-header center">
+              <span className="section-kicker">CAPABILITIES</span>
               <h2 className="editorial-heading">
-                Built for <em>everyday office work</em>
+                Built for <em>everyday office work.</em>
               </h2>
               <p>
                 Move physical folders, digital packets, revisions, and approvals without losing
@@ -351,95 +400,43 @@ export const App: React.FC = () => {
               </p>
             </div>
 
-            <div className="bento-grid">
-              <article className="bento-card bento-wide">
-                <div className="bento-icon navy">
-                  <FileStack size={20} />
-                </div>
-                <h3>Physical &amp; Digital Routing</h3>
-                <p>
-                  Print QR routing slips for physical folders or upload single PDFs, bundled files,
-                  and batch dispatches in one place.
-                </p>
-              </article>
-
-              <article className="bento-card bento-wide">
-                <div className="bento-icon teal">
-                  <ScanLine size={20} />
-                </div>
-                <h3>QR-Confirmed Handoffs</h3>
-                <p>
-                  Transfers stay sealed in transit until the receiving office scans the QR code on
-                  Android or enters the unlock code. Senders can never mark their own files received.
-                </p>
-              </article>
-
-              <article className="bento-card">
-                <div className="bento-icon amber">
-                  <Smartphone size={20} />
-                </div>
-                <h3>Phone-to-Desktop Capture</h3>
-                <p>
-                  Pair your phone to a desktop draft with one scan to photograph paper pages, even
-                  when offline.
-                </p>
-              </article>
-
-              <article className="bento-card">
-                <div className="bento-icon navy">
-                  <Clock size={20} />
-                </div>
-                <h3>Deadlines &amp; Delegates</h3>
-                <p>
-                  Spot due-soon and overdue files early, assign out-of-office delegates, and track
-                  office turnaround times.
-                </p>
-              </article>
-
-              <article className="bento-card">
-                <div className="bento-icon teal">
-                  <Lock size={20} />
-                </div>
-                <h3>Privacy Controls</h3>
-                <p>
-                  Set Standard, Restricted, or Confidential access per file, with auto-locking views
-                  and private notifications.
-                </p>
-              </article>
-
-              <article className="bento-card">
-                <div className="bento-icon amber">
-                  <FolderKanban size={20} />
-                </div>
-                <h3>Dedicated Admin Portal</h3>
-                <p>
-                  Approve staff accounts, organize offices and categories, manage devices, and
-                  export reports.
-                </p>
-              </article>
+            <div className="feature-ledger">
+              {FEATURES.map((feat) => (
+                <article key={feat.code} className="feature-cell">
+                  <div className="feature-cell-top">
+                    <span className="feature-code">{feat.code}</span>
+                    <span className="feature-glyph" aria-hidden="true">
+                      {feat.icon}
+                    </span>
+                  </div>
+                  <h3>{feat.title}</h3>
+                  <p>{feat.body}</p>
+                </article>
+              ))}
             </div>
           </div>
         </section>
 
-        {/* How It Works */}
-        <section id="how-it-works" className="section section-soft">
+        {/* How It Works — Ruled 3-Step Track */}
+        <section id="how-it-works" className="section section-stone">
           <div className="container">
             <div className="section-header center">
+              <span className="section-kicker">WORKFLOW</span>
               <h2 className="editorial-heading">
-                Three steps from <em>intake to archive</em>
+                Three steps from <em>intake to archive.</em>
               </h2>
               <p>
                 Every handoff takes seconds and leaves a clear record of where the file is.
               </p>
             </div>
 
-            <div className="workflow-grid">
+            <div className="workflow-strip">
               {WORKFLOW_STEPS.map((step) => (
-                <article key={step.num} className="workflow-card">
-                  <div className="workflow-top">
-                    <span className="workflow-num">{step.num}</span>
+                <article key={step.num} className="workflow-step">
+                  <div className="workflow-step-head">
+                    <span className="workflow-step-num">STEP {step.num}</span>
+                    <span className="workflow-step-mark">{step.mark}</span>
                   </div>
-                  <div className="workflow-icon-wrap">{step.icon}</div>
                   <h3>{step.title}</h3>
                   <p>{step.body}</p>
                 </article>
@@ -451,22 +448,28 @@ export const App: React.FC = () => {
         {/* Interactive Role Showcase */}
         <RoleShowcase />
 
-        {/* Enterprise Security Deep Navy Band */}
-        <section id="security" className="section section-navy">
+        {/* Matte Deep-Ink Security Spec Sheet (No Gradients, No Glass Cards, No Amber Icon Boxes) */}
+        <section id="security" className="section section-ink">
           <div className="container">
             <div className="section-header center light">
+              <span className="section-kicker light">SECURITY SPECIFICATION</span>
               <h2 className="editorial-heading light">
-                Built for <em>privacy and accountability</em>
+                Built for <em>privacy and accountability.</em>
               </h2>
               <p>
                 Every file transfer is verified and logged so offices can rely on the record.
               </p>
             </div>
 
-            <div className="security-grid">
+            <div className="security-ledger">
               {SECURITY_PILLARS.map((item) => (
-                <article key={item.title} className="security-card">
-                  <div className="security-icon">{item.icon}</div>
+                <article key={item.code} className="security-cell">
+                  <div className="security-cell-top">
+                    <span className="security-code">{item.code}</span>
+                    <span className="security-glyph" aria-hidden="true">
+                      {item.icon}
+                    </span>
+                  </div>
                   <h3>{item.title}</h3>
                   <p>{item.body}</p>
                 </article>
@@ -474,10 +477,7 @@ export const App: React.FC = () => {
             </div>
 
             <div className="security-footer-bar">
-              <div className="security-footer-item">
-                <UserCheck size={16} />
-                <span>Every new staff account is reviewed and approved by an admin</span>
-              </div>
+              <span>Every new staff account is reviewed and approved by an administrator before access is granted.</span>
               <a
                 href={SITE_CONFIG.webAppUrl}
                 target="_blank"
@@ -485,7 +485,7 @@ export const App: React.FC = () => {
                 className="security-link"
               >
                 <span>Open Web App</span>
-                <ArrowUpRight size={15} />
+                <ArrowUpRight size={14} strokeWidth={1.8} />
               </a>
             </div>
           </div>
@@ -497,8 +497,8 @@ export const App: React.FC = () => {
         {/* FAQ Accordion */}
         <FaqSection />
 
-        {/* Final Editorial CTA */}
-        <section className="section section-compact">
+        {/* Final Restraint-Driven CTA Band */}
+        <section className="section section-compact section-paper">
           <div className="container">
             <div className="cta-banner">
               <div className="cta-banner-copy">
@@ -514,18 +514,18 @@ export const App: React.FC = () => {
                   href={SITE_CONFIG.webAppUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="btn btn-amber-pill btn-lg"
+                  className="btn btn-white btn-lg"
                 >
                   <span>Open Web App</span>
-                  <ArrowUpRight size={17} />
+                  <ArrowUpRight size={16} strokeWidth={1.8} />
                 </a>
                 <a
                   href={SITE_CONFIG.downloadUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="btn btn-light-pill btn-lg"
+                  className="btn btn-ink-outline btn-lg"
                 >
-                  <Download size={17} />
+                  <Download size={16} strokeWidth={1.8} />
                   <span>Download Android v{SITE_CONFIG.androidVersion}</span>
                 </a>
               </div>
@@ -540,9 +540,7 @@ export const App: React.FC = () => {
           <div className="footer-brand">
             <div className="brand-link">
               <img src="/tracely-logo.png" alt="Tracely" className="brand-logo" />
-              <span className="brand-wordmark">
-                Tracely<sup className="brand-deg">°</sup>
-              </span>
+              <span className="brand-wordmark">Tracely</span>
             </div>
             <p className="footer-desc">
               Physical and digital document tracking with QR handoffs and clear deadlines.
@@ -552,9 +550,9 @@ export const App: React.FC = () => {
           <div className="footer-cols">
             <div className="footer-col">
               <h4>Product</h4>
-              <a href="#features">Core Features</a>
-              <a href="#simulator">Custody Presentation</a>
-              <a href="#how-it-works">How It Works</a>
+              <a href="#features">Capabilities</a>
+              <a href="#simulator">Custody Ledger</a>
+              <a href="#how-it-works">Workflow</a>
               <a href="#security">Security</a>
             </div>
             <div className="footer-col">

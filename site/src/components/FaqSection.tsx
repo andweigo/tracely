@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
 
 interface FaqItem {
   readonly question: string;
@@ -43,10 +42,11 @@ export const FaqSection: React.FC = () => {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   return (
-    <section id="faq" className="section section-soft">
+    <section id="faq" className="section section-stone">
       <div className="container container-narrow">
         <div className="section-header center">
-          <h2>Common questions</h2>
+          <span className="section-kicker">QUESTIONS</span>
+          <h2 className="editorial-heading">Common questions</h2>
         </div>
 
         <div className="faq-list">
@@ -61,7 +61,9 @@ export const FaqSection: React.FC = () => {
                   onClick={() => setOpenIndex(isOpen ? null : idx)}
                 >
                   <span>{item.question}</span>
-                  <ChevronDown size={18} className="faq-chevron" />
+                  <span className="faq-toggle" aria-hidden="true">
+                    {isOpen ? '−' : '+'}
+                  </span>
                 </button>
                 {isOpen ? (
                   <div className="faq-body">
