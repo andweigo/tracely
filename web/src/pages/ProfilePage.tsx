@@ -664,10 +664,7 @@ export const ProfilePage: React.FC = () => {
           <div>
             <div style={{ fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
               <Shield size={14} color="var(--navy)" />
-              <span>Device Lock for Confidential Docs</span>
-            </div>
-            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
-              Require session verification before opening Confidential attachments
+              <span>Confidential File Lock</span>
             </div>
           </div>
           <span className="switch-control">
@@ -721,16 +718,12 @@ export const ProfilePage: React.FC = () => {
       <ModalDialog
         open={sessionsOpen}
         onClose={() => setSessionsOpen(false)}
-        title="Active Devices & Sessions"
-        subtitle="Active device tokens issued to your verified Tracely account"
+        title="Active Devices"
       >
         {!actor ? (
-          <p className="doc-meta">
-            Once signed in to your Tracely account, connected mobile devices and desktop
-            browsers appear here with remote session revocation.
-          </p>
+          <p className="doc-meta">Sign in to view your active devices.</p>
         ) : activeSessions.length === 0 ? (
-          <p className="doc-meta">No active remote sessions reported by the server.</p>
+          <p className="doc-meta">No active sessions.</p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {pagedSessions.pageItems.map((sess) => (

@@ -437,12 +437,7 @@ export const DocumentDetailPage: React.FC = () => {
                   }}
                 >
                   <Lock size={15} />
-                  <span>Document Locked — Scan Routing QR or Enter Code to Access</span>
-                </div>
-                <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                  Only the routing QR notice was delivered to your office. Scan the sender&apos;s
-                  routing QR code or enter the code manually to confirm receipt and unlock attached
-                  document files.
+                  <span>Scan QR or enter code to receive and unlock.</span>
                 </div>
               </div>
             ) : null}
@@ -686,14 +681,14 @@ export const DocumentDetailPage: React.FC = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <MessageSquare size={15} color="var(--navy)" />
                 <h4 className="section-title" style={{ fontSize: 15 }}>
-                  Document Notes &amp; Clarifications ({comments.length})
+                  Notes ({comments.length})
                 </h4>
               </div>
             </div>
 
             {comments.length === 0 ? (
               <p className="field-hint" style={{ margin: 0 }}>
-                Post follow-up clarifications or internal office checklist notes without returning the document.
+                No notes yet.
               </p>
             ) : (
               <>
@@ -715,13 +710,9 @@ export const DocumentDetailPage: React.FC = () => {
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                             {isInternal ? (
                               <span className="pill pill-amber" style={{ fontSize: 10 }}>
-                                <Lock size={10} /> {cmt.authorOfficeCode} Only
+                                <Lock size={10} /> {cmt.authorOfficeCode} only
                               </span>
-                            ) : (
-                              <span className="pill pill-sky" style={{ fontSize: 10 }}>
-                                Cross-Office
-                              </span>
-                            )}
+                            ) : null}
                             <span className="tabular" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                               {formatCompactDate(cmt.createdAt)} {formatClockTime(cmt.createdAt)}
                             </span>
@@ -820,18 +811,14 @@ export const DocumentDetailPage: React.FC = () => {
                   borderColor: 'var(--amber-border)',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 800, fontSize: 13, color: 'var(--amber-text)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 13, color: 'var(--amber-text)' }}>
                   <Lock size={15} />
                   <span>
                     {doc.versions.length > 0
-                      ? `${doc.versions.length} Attached File${doc.versions.length === 1 ? '' : 's'} Locked`
-                      : 'Custody Verification Required'}
+                      ? `${doc.versions.length} file${doc.versions.length === 1 ? '' : 's'} locked until received`
+                      : 'Confirm receipt to open'}
                   </span>
                 </div>
-                <p style={{ margin: 0, fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                  Scan the routing QR slip or enter the code manually to confirm receipt and unlock
-                  document viewing.
-                </p>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   <button
                     type="button"
@@ -840,7 +827,7 @@ export const DocumentDetailPage: React.FC = () => {
                     onClick={() => openSealedDocumentAction(doc)}
                   >
                     <QrCode size={14} />{' '}
-                    {doc.copyFormat === 'digital' ? 'Show Unlock QR' : 'Receive Hard Copy'}
+                    {doc.copyFormat === 'digital' ? 'Unlock QR' : 'Receive'}
                   </button>
                   <button
                     type="button"
@@ -854,8 +841,7 @@ export const DocumentDetailPage: React.FC = () => {
               </div>
             ) : doc.versions.length === 0 ? (
               <div className="card-soft" style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                No digital file uploaded yet (Hard Copy physical slip tracking only). Attach a PDF
-                or scanned copy anytime to upgrade this record to Hybrid.
+                No files attached yet.
               </div>
             ) : (
               <>

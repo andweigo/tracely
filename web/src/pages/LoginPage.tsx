@@ -191,7 +191,7 @@ export const LoginPage: React.FC = () => {
               Tracely
             </h1>
             <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--text-secondary)' }}>
-              Document Custody & QR Tracking
+              Document Tracking
             </p>
           </div>
         </div>
@@ -270,33 +270,23 @@ export const LoginPage: React.FC = () => {
         {mode === 'signin' ? (
           <form onSubmit={(e) => void handleSignIn(e)} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div className="field-group">
-              <div className="field-label-row">
-                <label className="field-label" htmlFor="login-id">
-                  Employee ID or Work Email
-                </label>
-                <span className="field-hint">
-                  {identifier.length}/{AUTH_INPUT_LIMITS.identifierMax}
-                </span>
-              </div>
+              <label className="field-label" htmlFor="login-id">
+                Employee ID or Work Email
+              </label>
               <input
                 id="login-id"
                 className="input"
                 maxLength={AUTH_INPUT_LIMITS.identifierMax}
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
-                placeholder="e.g. EMP-2026-0001 or name@tracely.app"
+                placeholder="EMP-2026-0001 or name@tracely.app"
               />
             </div>
 
             <div className="field-group">
-              <div className="field-label-row">
-                <label className="field-label" htmlFor="login-pass">
-                  Password
-                </label>
-                <span className="field-hint">
-                  {password.length}/{AUTH_INPUT_LIMITS.passwordMax}
-                </span>
-              </div>
+              <label className="field-label" htmlFor="login-pass">
+                Password
+              </label>
               <div style={{ position: 'relative' }}>
                 <input
                   id="login-pass"

@@ -80,14 +80,12 @@ export const ScannerScreen: React.FC = () => {
               </View>
               <View style={styles.targetCopy}>
                 <Text style={styles.targetTitle}>
-                  {`Unlocking sealed transfer from ${scannerTarget.fromOfficeCode}${
+                  {`From ${scannerTarget.fromOfficeCode}${
                     scannerTarget.fromUserName ? ` (${scannerTarget.fromUserName})` : ''
                   }`}
                 </Text>
                 <Text style={styles.targetSub}>
-                  {isSoftCopyTarget
-                    ? 'Open this transfer in Tracely Web to show its Unlock QR, then scan it or enter its 6-char code.'
-                    : "Scan the sender's routing QR code or enter the code from the slip to unlock access."}
+                  Scan the QR code or enter the 6-character code to unlock.
                 </Text>
               </View>
               <Pressable
@@ -126,9 +124,8 @@ export const ScannerScreen: React.FC = () => {
           <View style={styles.sectionBlock}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionHeading}>
-                Sealed Incoming ({pendingIncomingDocs.length})
+                Incoming ({pendingIncomingDocs.length})
               </Text>
-              <Text style={styles.sectionHint}>Tap QR card to focus scanner</Text>
             </View>
             {pendingIncomingDocs.slice(0, 3).map((doc) => (
               <SealedQrCard

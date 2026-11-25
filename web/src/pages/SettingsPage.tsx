@@ -121,16 +121,13 @@ export const SettingsPage: React.FC = () => {
       >
         <AppIconBadge size={48} animated interactive />
         <div style={{ flex: 1, minWidth: 200 }}>
-          <h3 style={{ margin: 0, fontSize: 19, fontWeight: 800, color: 'var(--text-primary)' }}>
+          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: 'var(--text-primary)' }}>
             Tracely
           </h3>
-          <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--text-secondary)' }}>
-            Document Tracking Workspace
+          <p style={{ margin: '2px 0 0', fontSize: 12.5, color: 'var(--text-secondary)' }}>
+            v1.0.10
           </p>
         </div>
-        <span className="pill pill-sky" style={{ fontSize: 11 }}>
-          v1.0.8
-        </span>
       </div>
 
       {/* Folder Appearance Preferences (Dashboard + Categories) */}
@@ -247,7 +244,7 @@ export const SettingsPage: React.FC = () => {
                 </div>
               </div>
               {notifPerm === 'granted' ? (
-                <span className="pill pill-emerald" style={{ fontSize: 11 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--emerald-text)' }}>
                   Allowed
                 </span>
               ) : (
@@ -289,7 +286,7 @@ export const SettingsPage: React.FC = () => {
                 </div>
               </div>
               {cameraPerm === 'granted' ? (
-                <span className="pill pill-emerald" style={{ fontSize: 11 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--emerald-text)' }}>
                   Allowed
                 </span>
               ) : (

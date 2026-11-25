@@ -8,7 +8,6 @@ import {
   FileUp,
   FolderKanban,
   GitBranch,
-  Lock,
   Pencil,
   Plus,
   Printer,
@@ -545,31 +544,18 @@ export const SendPage: React.FC = () => {
           </button>
         </div>
 
-        <p style={{ margin: 0, fontSize: 12, color: 'var(--text-secondary)' }}>
-          {copyMode === 'soft_copy'
-            ? 'Upload a digital PDF or photo for direct tracking.'
-            : 'No upload needed — generates a Tracking Code & QR slip for your paper folder.'}
-        </p>
-
         <div className="field-group">
           <div className="field-label-row">
             <label className="field-label" htmlFor="send-doc-title">
-              Document Title
+              Title
             </label>
-            {isBatchMultiMode ? (
-              <span className="field-hint">Optional default prefix for untitled files</span>
-            ) : null}
           </div>
           <input
             id="send-doc-title"
             className="input"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder={
-              isBatchMultiMode
-                ? 'Optional prefix when file titles are entered below'
-                : 'e.g. Budget Utilization Request — Q4 Supplies'
-            }
+            placeholder={isBatchMultiMode ? 'Optional title prefix' : 'Document title'}
           />
         </div>
 
@@ -614,8 +600,8 @@ export const SendPage: React.FC = () => {
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
                   {pickedFiles.length > 0
-                    ? `${formatBytes(pickedFiles.reduce((acc, item) => acc + item.file.size, 0))} total · Ready for SHA-256 verification`
-                    : 'Drop one or multiple PDFs/images here or click Browse Files'}
+                    ? `${formatBytes(pickedFiles.reduce((acc, item) => acc + item.file.size, 0))} total`
+                    : 'PDF or images'}
                 </div>
               </div>
               <input
@@ -1188,30 +1174,6 @@ export const SendPage: React.FC = () => {
           </div>
         ) : null}
 
-        {recipientUserId ? (
-          <div
-            className="card-soft"
-            style={{
-              background: 'var(--sky-soft)',
-              borderColor: 'var(--sky-border)',
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: 8,
-              padding: '10px 12px',
-              fontSize: 12,
-              color: 'var(--navy)',
-              lineHeight: 1.45,
-            }}
-          >
-            <Lock size={14} style={{ flexShrink: 0, marginTop: 2 }} />
-            <span>
-              <strong>QR-First Custody Unlock:</strong> Sending dispatches the Routing QR &amp;
-              notice only. The recipient must scan the QR slip or enter the code manually before
-              they can view or download attached files.
-            </span>
-          </div>
-        ) : null}
-
         <button
           type="submit"
           className="btn btn-primary"
@@ -1335,17 +1297,17 @@ export const SendPage: React.FC = () => {
 
         <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <h4 className="section-title" style={{ fontSize: 14 }}>
-            Dispatch Summary
+            Summary
           </h4>
           <div>
             <div className="summary-spec-row">
-              <span style={{ color: 'var(--text-muted)' }}>Origin Unit</span>
-              <strong style={{ color: 'var(--text-primary)' }}>{actor ? actor.office.code : 'Pre-Auth'}</strong>
+              <span style={{ color: 'var(--text-muted)' }}>From</span>
+              <strong style={{ color: 'var(--text-primary)' }}>{actor ? actor.office.code : '—'}</strong>
             </div>
             <div className="summary-spec-row">
-              <span style={{ color: 'var(--text-muted)' }}>Copy Medium</span>
+              <span style={{ color: 'var(--text-muted)' }}>Format</span>
               <strong style={{ color: 'var(--text-primary)' }}>
-                {copyMode === 'soft_copy' ? 'Soft Copy (Digital)' : 'Hard Copy (Physical)'}
+                {copyMode === 'soft_copy' ? 'Soft Copy' : 'Hard Copy'}
               </strong>
             </div>
             <div className="summary-spec-row">
@@ -1353,29 +1315,26 @@ export const SendPage: React.FC = () => {
               <strong style={{ color: 'var(--text-primary)' }}>{selectedCategoryName}</strong>
             </div>
             <div className="summary-spec-row">
-              <span style={{ color: 'var(--text-muted)' }}>Security Tier</span>
+              <span style={{ color: 'var(--text-muted)' }}>Access</span>
               <strong style={{ color: 'var(--text-primary)' }}>{TIER_LABEL[tier]}</strong>
             </div>
             <div className="summary-spec-row">
-              <span style={{ color: 'var(--text-muted)' }}>Destination</span>
+              <span style={{ color: 'var(--text-muted)' }}>To</span>
               <strong style={{ color: 'var(--text-primary)' }}>
                 {selectedRecipient
                   ? `${selectedRecipient.office.code} · ${selectedRecipient.fullName}`
-                  : 'Keep local in office'}
+                  : 'Keep in office'}
               </strong>
             </div>
             {copyMode === 'soft_copy' ? (
               <div className="summary-spec-row">
-                <span style={{ color: 'var(--text-muted)' }}>Files Staged</span>
+                <span style={{ color: 'var(--text-muted)' }}>Files</span>
                 <strong className="tabular" style={{ color: 'var(--text-primary)' }}>
-                  {pickedFiles.length === 0 ? 'None yet' : `${pickedFiles.length} (${multiFileMode})`}
+                  {pickedFiles.length === 0 ? 'None' : String(pickedFiles.length)}
                 </strong>
               </div>
             ) : null}
           </div>
-          <p className="field-hint" style={{ margin: '2px 0 0' }}>
-            Every dispatch issues a verifiable opaque QR token and SHA-256 checksum audit entry.
-          </p>
         </div>
       </aside>
 
@@ -1386,11 +1345,7 @@ export const SendPage: React.FC = () => {
           qrToken={qrModalDoc.qrToken}
           title={qrModalDoc.title}
           document={qrModalDoc}
-          subtitle={
-            qrModalDoc.copyFormat === 'hard_copy'
-              ? 'Print or attach this routing slip to your physical folder to track every desk handoff.'
-              : 'Print or scan this routing slip across offices.'
-          }
+          subtitle="Scan or print this routing slip."
           onClose={() => setQrModalDoc(null)}
         />
       ) : null}

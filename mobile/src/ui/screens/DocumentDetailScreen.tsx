@@ -662,7 +662,7 @@ export const DocumentDetailScreen: React.FC<DocumentDetailScreenProps> = ({ docu
                           <View style={styles.proofInline}>
                             <ShieldCheck size={13} color={SDO_COLORS.emeraldText} />
                             <Text style={styles.proofInlineText}>
-                              Signed slip: {tx.proofPhoto.fileName} (EXIF stripped)
+                              Receipt photo: {tx.proofPhoto.fileName}
                             </Text>
                           </View>
                           <Pressable
@@ -787,9 +787,7 @@ export const DocumentDetailScreen: React.FC<DocumentDetailScreenProps> = ({ docu
 
             {comments.length === 0 ? (
               <View style={styles.softCard}>
-                <Text style={styles.docOriginLine}>
-                  No notes yet. Post a clarification or internal desk note without returning the document.
-                </Text>
+                <Text style={styles.docOriginLine}>No notes yet.</Text>
               </View>
             ) : (
               comments.map((cmt) => {
@@ -803,17 +801,14 @@ export const DocumentDetailScreen: React.FC<DocumentDetailScreenProps> = ({ docu
                       <Text style={styles.commentAuthor}>
                         {`${cmt.authorName} · ${cmt.authorOfficeCode}`}
                       </Text>
-                      <View style={styles.commentBadgeRow}>
-                        {isInternal ? <Lock size={10} color={SDO_COLORS.amberText} /> : null}
-                        <Text
-                          style={[
-                            styles.commentScopeLabel,
-                            isInternal && { color: SDO_COLORS.amberText },
-                          ]}
-                        >
-                          {isInternal ? `${cmt.authorOfficeCode} Only` : 'Cross-Office'}
-                        </Text>
-                      </View>
+                      {isInternal ? (
+                        <View style={styles.commentBadgeRow}>
+                          <Lock size={10} color={SDO_COLORS.amberText} />
+                          <Text style={[styles.commentScopeLabel, { color: SDO_COLORS.amberText }]}>
+                            {cmt.authorOfficeCode} only
+                          </Text>
+                        </View>
+                      ) : null}
                     </View>
                     <Text style={styles.commentBodyText}>{cmt.body}</Text>
                     <Text style={styles.commentTime}>{formatShortTimestamp(cmt.createdAt)}</Text>
@@ -832,14 +827,10 @@ export const DocumentDetailScreen: React.FC<DocumentDetailScreenProps> = ({ docu
                   <Lock size={14} color={SDO_COLORS.amberText} />
                   <Text style={styles.lockBadgeText}>
                     {doc.versions.length > 0
-                      ? `${doc.versions.length} Attached File${doc.versions.length === 1 ? '' : 's'} Locked`
-                      : 'Custody Verification Required'}
+                      ? `${doc.versions.length} file${doc.versions.length === 1 ? '' : 's'} locked until received`
+                      : 'Confirm receipt to open'}
                   </Text>
                 </View>
-                <Text style={styles.lockGateBody}>
-                  Scan the sender&apos;s routing QR code or enter the code manually to confirm
-                  receipt before viewing or downloading document files.
-                </Text>
                 <View style={styles.hardCopyActions}>
                   <Pressable
                     onPress={() => {
@@ -862,18 +853,14 @@ export const DocumentDetailScreen: React.FC<DocumentDetailScreenProps> = ({ docu
               </View>
             ) : doc.versions.length === 0 ? (
               <View style={styles.softCard}>
-                <Text style={styles.fileTitle}>No digital scan uploaded yet</Text>
-                <Text style={styles.docOriginLine}>
-                  This record is tracked purely in physical hard copy. Custody updates, QR scans,
-                  and signed routing slip photos work without uploading a PDF.
-                </Text>
+                <Text style={styles.docOriginLine}>No files attached yet.</Text>
                 {canAttachInitialScan ? (
                   <Pressable
                     onPress={() => setShowRevisionSheet(true)}
                     style={styles.scanActionBtn}
                   >
                     <FileUp size={14} color={SDO_COLORS.navy} />
-                    <Text style={styles.scanActionText}>Attach Optional Scan (v1)</Text>
+                    <Text style={styles.scanActionText}>Attach Scan</Text>
                   </Pressable>
                 ) : null}
               </View>
@@ -889,13 +876,13 @@ export const DocumentDetailScreen: React.FC<DocumentDetailScreenProps> = ({ docu
                       style={styles.viewPill}
                     >
                       <Eye size={13} color="#FFFFFF" />
-                      <Text style={styles.viewPillText}>60s View</Text>
+                      <Text style={styles.viewPillText}>View</Text>
                     </Pressable>
                   </View>
-                  <Text style={styles.docOriginLine}>{ver.revisionNote}</Text>
-                  <Text style={styles.monoSmall}>
-                    {ver.formattedSize} · SHA-256 {ver.shortChecksum}
-                  </Text>
+                  {ver.revisionNote ? (
+                    <Text style={styles.docOriginLine}>{ver.revisionNote}</Text>
+                  ) : null}
+                  <Text style={styles.monoSmall}>{ver.formattedSize}</Text>
                 </View>
               ))
             )}
@@ -912,7 +899,7 @@ export const DocumentDetailScreen: React.FC<DocumentDetailScreenProps> = ({ docu
               </View>
               <Text style={styles.detailRow}>Category: {doc.categoryName}</Text>
               <Text style={styles.detailRow}>
-                Current Custody: {doc.currentOffice.code} ({doc.currentHolderName})
+                Held by: {doc.currentOffice.code} ({doc.currentHolderName})
               </Text>
               {doc.physicalSummary ? (
                 <Text style={styles.detailRow}>Physical Bundle: {doc.physicalSummary}</Text>

@@ -257,9 +257,7 @@ export const PendingApprovalScreen: React.FC = () => {
 
         <View style={styles.securityFooter}>
           <Lock size={12} color={SDO_COLORS.textMuted} />
-          <Text style={styles.securityFooterText}>
-            Encrypted Custody & QR Tracking · Tracely
-          </Text>
+          <Text style={styles.securityFooterText}>Tracely</Text>
         </View>
       </ScrollView>
     </View>

@@ -605,20 +605,12 @@ export const InboxPage: React.FC = () => {
                     <div
                       data-testid={`inbox-forwarded-badge-${doc.id}`}
                       style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 6,
-                        fontSize: 11.5,
-                        fontWeight: 700,
+                        fontSize: 12,
+                        fontWeight: 600,
                         color: 'var(--sky-text)',
-                        background: 'var(--sky-soft)',
-                        border: '1px solid var(--sky-border)',
-                        borderRadius: 999,
-                        padding: '3px 10px',
-                        alignSelf: 'flex-start',
                       }}
                     >
-                      Forwarded to {doc.currentOffice.code} · Awaiting Recipient QR Scan
+                      Sent to {doc.currentOffice.code} · Awaiting scan
                     </div>
                   ) : null}
 
@@ -678,9 +670,9 @@ export const InboxPage: React.FC = () => {
         <div className="card no-print" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div className="section-header-row">
             <h4 className="section-title" style={{ fontSize: 14 }}>
-              Desk Queue Overview
+              Queue
             </h4>
-            <span className="field-hint">{actor ? actor.office.code : 'Pre-Auth'}</span>
+            <span className="field-hint">{actor ? actor.office.code : ''}</span>
           </div>
           <div className="workload-grid">
             <button
@@ -693,7 +685,7 @@ export const InboxPage: React.FC = () => {
               }}
             >
               <span className="workload-value">{counts.incoming}</span>
-              <span className="workload-label">Awaiting Receipt</span>
+              <span className="workload-label">Incoming</span>
             </button>
             <button
               type="button"
@@ -729,25 +721,12 @@ export const InboxPage: React.FC = () => {
               }}
             >
               <span className="workload-value">{counts.tracked}</span>
-              <span className="workload-label">Tracked Docs</span>
+              <span className="workload-label">Tracked</span>
             </button>
           </div>
         </div>
 
         <div className="card mobile-companion-card no-print" data-testid="web-mobile-companion-card">
-          <div className="mobile-companion-head">
-            <span className="hard-copy-sync-icon">
-              <Smartphone size={16} />
-            </span>
-            <div>
-              <h4 className="section-title" style={{ fontSize: 14 }}>
-                Mobile Sync
-              </h4>
-              <p className="doc-meta" style={{ margin: 0, fontSize: 12 }}>
-                Scan QR slips on mobile to update web live.
-              </p>
-            </div>
-          </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button
               type="button"
@@ -755,7 +734,7 @@ export const InboxPage: React.FC = () => {
               style={{ flex: 1, minHeight: 36, fontSize: 12.5 }}
               onClick={() => navigate('send')}
             >
-              <Send size={13} /> Send Document
+              <Send size={13} /> Send
             </button>
             <button
               type="button"

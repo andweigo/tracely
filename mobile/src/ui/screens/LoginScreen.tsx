@@ -20,7 +20,6 @@ import {
   Eye,
   EyeOff,
   Lock,
-  Sparkles,
   X,
 } from 'lucide-react-native';
 import { OfficeSummary } from '../../domain/entities/Personnel';
@@ -162,7 +161,6 @@ export const LoginScreen: React.FC = () => {
     requireAuth,
     offices,
     goBack,
-    openOnboarding,
   } = useAppServices();
 
   const officeChoices = useMemo(
@@ -326,36 +324,24 @@ export const LoginScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
         scrollEnabled={!lanyardDragging}
       >
-        <View style={styles.topRow}>
-          {!requireAuth ? (
+        {!requireAuth ? (
+          <View style={styles.topRow}>
             <Pressable
               onPress={() => goBack()}
               accessibilityRole="button"
               style={styles.backPill}
             >
               <ArrowLeft size={15} color={SDO_COLORS.navy} />
-              <Text style={styles.backPillText}>Back to Workspace</Text>
-            </Pressable>
-          ) : (
-            <View />
-          )}
-          <View style={styles.topActions}>
-            <Pressable
-              onPress={openOnboarding}
-              accessibilityRole="button"
-              style={styles.backPill}
-            >
-              <Sparkles size={14} color={SDO_COLORS.navy} />
-              <Text style={styles.backPillText}>Intro</Text>
+              <Text style={styles.backPillText}>Back</Text>
             </Pressable>
           </View>
-        </View>
+        ) : null}
 
         <View style={styles.brandHeader}>
-          <AppIconBadge size={68} animated interactive />
+          <AppIconBadge size={56} animated={false} interactive={false} />
           <View style={styles.brandCopy}>
             <Text style={styles.brandTitle}>Tracely</Text>
-            <Text style={styles.brandSubtitle}>Document Custody & QR Tracking</Text>
+            <Text style={styles.brandSubtitle}>Document Tracking</Text>
           </View>
         </View>
 
@@ -936,9 +922,7 @@ export const LoginScreen: React.FC = () => {
 
         <View style={styles.securityFooter}>
           <Lock size={12} color={SDO_COLORS.textMuted} />
-          <Text style={styles.securityFooterText}>
-            Encrypted Custody & QR Tracking · Tracely
-          </Text>
+          <Text style={styles.securityFooterText}>Tracely</Text>
         </View>
       </ScrollView>
 

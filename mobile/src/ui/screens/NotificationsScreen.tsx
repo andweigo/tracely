@@ -1,11 +1,107 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { ArrowLeft, Bell, CheckCheck, UploadCloud } from 'lucide-react-native';
+import {
+  AlertTriangle,
+  ArrowLeft,
+  ArrowRightLeft,
+  Bell,
+  CheckCheck,
+  CheckCircle2,
+  FileText,
+  UploadCloud,
+} from 'lucide-react-native';
+import { PrivacySafeNotification } from '../../repositories/contracts/IDocumentRepository';
 import { useAppServices } from '../../state/AppServiceContext';
 import { OfflineStatusBadge } from '../components/Badges';
 import { EmptyState } from '../components/EmptyState';
 import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
-import { formatBytes, formatRelativeTime } from '../utils/formatters';
+import { formatBytes } from '../utils/formatters';
+
+type AlertFilter = 'all' | 'unread';
+
+interface NotificationDayGroup {
+  readonly key: string;
+  readonly label: string;
+  readonly items: ReadonlyArray<PrivacySafeNotification>;
+}
+
+const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
+
+function startOfDayMs(date: Date): number {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+}
+
+function formatCompactAgo(iso: string): string {
+  const ts = new Date(iso).getTime();
+  if (!Number.isFinite(ts)) return '';
+  const diffMin = Math.max(0, Math.floor((Date.now() - ts) / 60_000));
+  if (diffMin < 1) return 'Now';
+  if (diffMin < 60) return `${diffMin}m`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h`;
+  const d = new Date(ts);
+  return `${SHORT_MONTHS[d.getMonth()]} ${d.getDate()}`;
+}
+
+function groupByDay(
+  items: ReadonlyArray<PrivacySafeNotification>,
+): ReadonlyArray<NotificationDayGroup> {
+  const now = new Date();
+  const todayMs = startOfDayMs(now);
+  const yesterdayMs = todayMs - 86_400_000;
+  const weekCutoffMs = todayMs - 6 * 86_400_000;
+
+  const map = new Map<string, { label: string; items: PrivacySafeNotification[] }>();
+
+  for (const item of items) {
+    const parsed = new Date(item.receivedAt);
+    const dayMs = Number.isNaN(parsed.getTime()) ? 0 : startOfDayMs(parsed);
+
+    let key: string;
+    let label: string;
+    if (dayMs >= todayMs) {
+      key = 'today';
+      label = 'Today';
+    } else if (dayMs >= yesterdayMs) {
+      key = 'yesterday';
+      label = 'Yesterday';
+    } else if (dayMs >= weekCutoffMs) {
+      key = `day-${dayMs}`;
+      label = `${SHORT_MONTHS[parsed.getMonth()]} ${parsed.getDate()}`;
+    } else {
+      key = 'earlier';
+      label = 'Earlier';
+    }
+
+    const bucket = map.get(key) ?? { label, items: [] };
+    bucket.items.push(item);
+    map.set(key, bucket);
+  }
+
+  return Array.from(map.entries()).map(([key, value]) => ({
+    key,
+    label: value.label,
+    items: value.items,
+  }));
+}
+
+function getTone(title: string, content: string): {
+  bg: string;
+  fg: string;
+  kind: 'alert' | 'done' | 'route' | 'doc';
+} {
+  const hay = `${title} ${content}`.toLowerCase();
+  if (hay.includes('overdue') || hay.includes('stalled') || hay.includes('return') || hay.includes('declin')) {
+    return { bg: '#FFF1F2', fg: '#BE123C', kind: 'alert' };
+  }
+  if (hay.includes('approv') || hay.includes('complet') || hay.includes('receiv') || hay.includes('archiv')) {
+    return { bg: '#ECFDF5', fg: '#047857', kind: 'done' };
+  }
+  if (hay.includes('forward') || hay.includes('incoming') || hay.includes('sent') || hay.includes('route')) {
+    return { bg: '#EFF6FF', fg: '#1D4ED8', kind: 'route' };
+  }
+  return { bg: '#F1F5F9', fg: '#334155', kind: 'doc' };
+}
 
 export const NotificationsScreen: React.FC = () => {
   const {
@@ -26,7 +122,16 @@ export const NotificationsScreen: React.FC = () => {
     isOnline,
     goBack,
   } = useAppServices();
+
   const [subTab, setSubTab] = useState<'alerts' | 'offline_queue'>('alerts');
+  const [filter, setFilter] = useState<AlertFilter>('all');
+
+  const visibleAlerts = useMemo(
+    () => (filter === 'unread' ? notifications.filter((n) => !n.read) : notifications),
+    [notifications, filter],
+  );
+
+  const dayGroups = useMemo(() => groupByDay(visibleAlerts), [visibleAlerts]);
 
   const handleOpenNotification = (notifId: string, documentId: string) => {
     markNotificationRead(notifId).catch(() => {});
@@ -46,13 +151,14 @@ export const NotificationsScreen: React.FC = () => {
       <View style={styles.topHeader}>
         <Pressable
           onPress={() => goBack()}
-          accessibilityLabel="Back to inbox"
+          accessibilityLabel="Back"
           style={styles.circleBtn}
         >
           <ArrowLeft size={18} color={SDO_COLORS.navyInk} />
         </Pressable>
+
         <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>Alerts</Text>
+          <Text style={styles.headerTitle}>Notifications</Text>
           {unreadNotificationCount > 0 ? (
             <View testID="alerts-header-badge" style={styles.headerBadge}>
               <Text style={styles.headerBadgeText}>
@@ -61,13 +167,14 @@ export const NotificationsScreen: React.FC = () => {
             </View>
           ) : null}
         </View>
+
         <Pressable
           disabled={isBusy || unreadNotificationCount === 0}
           onPress={() => {
             markAllNotificationsRead().catch(() => {});
           }}
-          accessibilityLabel="Mark all notifications read"
-          style={styles.circleBtn}
+          accessibilityLabel="Mark all read"
+          style={[styles.circleBtn, unreadNotificationCount === 0 && styles.circleBtnMuted]}
         >
           <CheckCheck size={18} color={SDO_COLORS.navyInk} />
         </Pressable>
@@ -79,66 +186,139 @@ export const NotificationsScreen: React.FC = () => {
           <RefreshControl refreshing={isRefreshing} onRefresh={refreshWorkspace} />
         }
       >
-        <View style={styles.pillRow}>
-          <Pressable
-            onPress={() => setSubTab('alerts')}
-            style={[styles.pillTab, subTab === 'alerts' && styles.pillTabActive]}
-          >
-            <Text style={[styles.pillText, subTab === 'alerts' && styles.pillTextActive]}>
-              Alerts ({notifications.length})
-            </Text>
-          </Pressable>
-          <Pressable
-            onPress={() => setSubTab('offline_queue')}
-            style={[styles.pillTab, subTab === 'offline_queue' && styles.pillTabActive]}
-          >
-            <Text
-              style={[styles.pillText, subTab === 'offline_queue' && styles.pillTextActive]}
+        <View style={styles.filterBar}>
+          <View style={styles.segmented}>
+            <Pressable
+              onPress={() => {
+                setSubTab('alerts');
+                setFilter('all');
+              }}
+              style={[
+                styles.segBtn,
+                subTab === 'alerts' && filter === 'all' && styles.segBtnActive,
+              ]}
             >
-              Offline Queue ({pendingOfflineCount})
-            </Text>
-          </Pressable>
+              <Text
+                style={[
+                  styles.segText,
+                  subTab === 'alerts' && filter === 'all' && styles.segTextActive,
+                ]}
+              >
+                All
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => {
+                setSubTab('alerts');
+                setFilter('unread');
+              }}
+              style={[
+                styles.segBtn,
+                subTab === 'alerts' && filter === 'unread' && styles.segBtnActive,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.segText,
+                  subTab === 'alerts' && filter === 'unread' && styles.segTextActive,
+                ]}
+              >
+                Unread{unreadNotificationCount > 0 ? ` (${unreadNotificationCount})` : ''}
+              </Text>
+            </Pressable>
+
+            {pendingOfflineCount > 0 || offlineQueue.length > 0 ? (
+              <Pressable
+                onPress={() => setSubTab('offline_queue')}
+                style={[styles.segBtn, subTab === 'offline_queue' && styles.segBtnActive]}
+              >
+                <Text
+                  style={[
+                    styles.segText,
+                    subTab === 'offline_queue' && styles.segTextActive,
+                  ]}
+                >
+                  Offline ({pendingOfflineCount})
+                </Text>
+              </Pressable>
+            ) : null}
+          </View>
         </View>
 
         {subTab === 'alerts' ? (
-          <View style={styles.listGap}>
-            {notifications.length === 0 ? (
-              <EmptyState
-                icon={<Bell size={24} color={SDO_COLORS.textMuted} />}
-                title="No alerts yet"
-                description="Document updates and reminders appear here."
-              />
-            ) : (
-              notifications.map((item) => (
-                <Pressable
-                  key={item.id}
-                  onPress={() => handleOpenNotification(item.id, item.documentId)}
-                  style={[styles.alertCard, !item.read && styles.alertCardUnread]}
-                >
-                  <View style={styles.rowBetween}>
-                    <View style={styles.dotRow}>
-                      {!item.read ? (
-                        <>
-                          <View style={styles.unreadDot} />
-                          <Text style={styles.statusBadgeTextUnread}>Unread</Text>
-                        </>
-                      ) : null}
-                    </View>
-                    <Text style={styles.alertTime}>{formatRelativeTime(item.receivedAt)}</Text>
+          dayGroups.length === 0 ? (
+            <EmptyState
+              icon={<Bell size={22} color={SDO_COLORS.textMuted} />}
+              title={filter === 'unread' ? 'All caught up' : 'No notifications'}
+              description={filter === 'unread' ? 'No unread alerts right now.' : 'Updates appear here.'}
+            />
+          ) : (
+            <View style={styles.groupsWrap}>
+              {dayGroups.map((group) => (
+                <View key={group.key} style={styles.dayGroup}>
+                  <Text style={styles.dayLabel}>{group.label}</Text>
+
+                  <View style={styles.groupCard}>
+                    {group.items.map((item, idx) => {
+                      const title = actor ? item.title : 'Tracely Alert';
+                      const content = actor ? item.content : item.lockScreenPreview;
+                      const tone = getTone(title, content);
+                      const isLast = idx === group.items.length - 1;
+
+                      return (
+                        <Pressable
+                          key={item.id}
+                          onPress={() => handleOpenNotification(item.id, item.documentId)}
+                          style={[
+                            styles.notifRow,
+                            !item.read && styles.notifRowUnread,
+                            !isLast && styles.notifRowBorder,
+                          ]}
+                        >
+                          <View style={[styles.iconBox, { backgroundColor: tone.bg }]}>
+                            {tone.kind === 'alert' ? (
+                              <AlertTriangle size={15} color={tone.fg} />
+                            ) : tone.kind === 'done' ? (
+                              <CheckCircle2 size={15} color={tone.fg} />
+                            ) : tone.kind === 'route' ? (
+                              <ArrowRightLeft size={15} color={tone.fg} />
+                            ) : (
+                              <FileText size={15} color={tone.fg} />
+                            )}
+                          </View>
+
+                          <View style={styles.notifBody}>
+                            <Text
+                              style={[styles.notifTitle, !item.read && styles.notifTitleUnread]}
+                              numberOfLines={1}
+                            >
+                              {title}
+                            </Text>
+                            <Text style={styles.notifContent} numberOfLines={2}>
+                              {content}
+                            </Text>
+                          </View>
+
+                          <View style={styles.notifMeta}>
+                            <Text style={styles.notifTime}>{formatCompactAgo(item.receivedAt)}</Text>
+                            {!item.read ? <View style={styles.unreadDot} /> : null}
+                          </View>
+                        </Pressable>
+                      );
+                    })}
                   </View>
-                  <Text style={styles.alertTitle}>{item.title}</Text>
-                  <Text style={styles.alertContent}>{item.content}</Text>
-                </Pressable>
-              ))
-            )}
-          </View>
+                </View>
+              ))}
+            </View>
+          )
         ) : (
-          <View style={styles.listGap}>
-            <View style={styles.offlineBanner}>
-              <Text style={styles.offlineBannerText}>
+          <View style={styles.groupsWrap}>
+            <View style={styles.offlineBar}>
+              <Text style={styles.offlineText}>
                 {isOnline
-                  ? `Online · ${pendingOfflineCount} capture(s) pending sync.`
-                  : `Offline. ${pendingOfflineCount} photo(s) waiting to upload.`}
+                  ? `${pendingOfflineCount} pending sync`
+                  : `Offline · ${pendingOfflineCount} waiting`}
               </Text>
               <Pressable
                 disabled={isBusy}
@@ -146,35 +326,34 @@ export const NotificationsScreen: React.FC = () => {
                   retryOfflineQueue().catch(() => {});
                 }}
               >
-                <Text style={styles.retryLink}>{isBusy ? 'Syncing...' : 'Retry now'}</Text>
+                <Text style={styles.retryText}>{isBusy ? 'Syncing…' : 'Sync now'}</Text>
               </Pressable>
             </View>
 
             {offlineQueue.length === 0 ? (
               <EmptyState
-                icon={<UploadCloud size={24} color={SDO_COLORS.textMuted} />}
-                title="Offline queue is empty"
-                description="Photos snapped while offline queue here and sync automatically once connected."
+                icon={<UploadCloud size={22} color={SDO_COLORS.textMuted} />}
+                title="Queue empty"
+                description="Offline photos sync here automatically."
               />
             ) : (
-              offlineQueue.map((item) => (
-                <View key={item.id} style={styles.alertCard}>
-                  <View style={styles.rowBetween}>
-                    <Text style={styles.queueTitle}>{item.targetLabel}</Text>
-                    <OfflineStatusBadge status={item.status} />
+              <View style={styles.groupCard}>
+                {offlineQueue.map((item, idx) => (
+                  <View
+                    key={item.id}
+                    style={[styles.queueRow, idx < offlineQueue.length - 1 && styles.notifRowBorder]}
+                  >
+                    <View style={styles.queueTop}>
+                      <Text style={styles.notifTitleUnread}>{item.targetLabel}</Text>
+                      <OfflineStatusBadge status={item.status} />
+                    </View>
+                    <Text style={styles.notifContent}>
+                      {item.fileName} · {formatBytes(item.compressedBytes)}
+                    </Text>
+                    {item.lastError ? <Text style={styles.queueWarn}>{item.lastError}</Text> : null}
                   </View>
-                  <Text style={styles.queueMeta}>
-                    {item.fileName} · {formatBytes(item.compressedBytes)} (-
-                    {item.compressionPercent}%) · EXIF stripped
-                  </Text>
-                  {item.lastError ? (
-                    <Text style={styles.queueWarn}>{item.lastError}</Text>
-                  ) : null}
-                  <Text numberOfLines={1} style={styles.hashMono}>
-                    sha256 {item.sha256Checksum}
-                  </Text>
-                </View>
-              ))
+                ))}
+              </View>
             )}
           </View>
         )}
@@ -196,12 +375,15 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   circleBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: SDO_COLORS.surfaceSoft,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  circleBtnMuted: {
+    opacity: 0.4,
   },
   headerCenter: {
     flexDirection: 'row',
@@ -211,13 +393,13 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontFamily: SDO_FONTS.sans,
     fontSize: 16,
-    fontWeight: '800',
-    color: SDO_COLORS.textPrimary,
+    fontWeight: '700',
+    color: SDO_COLORS.navyInk,
   },
   headerBadge: {
-    minWidth: 22,
-    height: 22,
-    borderRadius: 11,
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
     paddingHorizontal: 6,
     backgroundColor: SDO_COLORS.rose,
     alignItems: 'center',
@@ -226,195 +408,165 @@ const styles = StyleSheet.create({
   headerBadgeText: {
     fontFamily: SDO_FONTS.sans,
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#FFFFFF',
   },
   container: {
     paddingHorizontal: 18,
-    paddingBottom: 24,
-    gap: 14,
+    paddingBottom: 28,
+    gap: 16,
   },
-  pillRow: {
+  filterBar: {
     flexDirection: 'row',
-    gap: 8,
-  },
-  pillTab: {
-    minHeight: 36,
-    borderRadius: 999,
-    backgroundColor: SDO_COLORS.surfaceSoft,
-    paddingHorizontal: 16,
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  pillTabActive: {
+  segmented: {
+    flexDirection: 'row',
+    backgroundColor: SDO_COLORS.surface,
+    borderWidth: 1,
+    borderColor: SDO_COLORS.border,
+    borderRadius: 10,
+    padding: 3,
+    gap: 3,
+  },
+  segBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 7,
+  },
+  segBtnActive: {
     backgroundColor: SDO_COLORS.navyInk,
   },
-  pillText: {
+  segText: {
     fontFamily: SDO_FONTS.sans,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
     color: SDO_COLORS.textSecondary,
   },
-  pillTextActive: {
+  segTextActive: {
     color: '#FFFFFF',
   },
-  tabLabelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+  groupsWrap: {
+    gap: 18,
   },
-  tabUnreadBadge: {
-    borderRadius: 999,
-    backgroundColor: SDO_COLORS.rose,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-  },
-  tabUnreadBadgeText: {
-    fontFamily: SDO_FONTS.sans,
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
-  listGap: {
-    gap: 10,
-  },
-  mintBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  dayGroup: {
     gap: 8,
-    borderRadius: 14,
-    backgroundColor: SDO_COLORS.emeraldSoft,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
   },
-  mintBannerText: {
+  dayLabel: {
     fontFamily: SDO_FONTS.sans,
-    flex: 1,
     fontSize: 11,
-    fontWeight: '600',
-    color: SDO_COLORS.emeraldText,
+    fontWeight: '700',
+    letterSpacing: 0.7,
+    textTransform: 'uppercase',
+    color: SDO_COLORS.textMuted,
+    paddingLeft: 4,
   },
-  offlineBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
+  groupCard: {
+    backgroundColor: SDO_COLORS.surface,
     borderRadius: 14,
-    backgroundColor: SDO_COLORS.amberSoft,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  offlineBannerText: {
-    fontFamily: SDO_FONTS.sans,
-    flex: 1,
-    fontSize: 12,
-    fontWeight: '600',
-    color: SDO_COLORS.amberText,
-  },
-  retryLink: {
-    fontFamily: SDO_FONTS.sans,
-    fontSize: 12,
-    fontWeight: '800',
-    color: SDO_COLORS.amberText,
-    textDecorationLine: 'underline',
-  },
-  alertCard: {
-    borderRadius: 20,
-    backgroundColor: SDO_COLORS.surfaceSoft,
-    padding: 15,
-    gap: 6,
     borderWidth: 1,
-    borderColor: 'transparent',
+    borderColor: SDO_COLORS.border,
+    overflow: 'hidden',
   },
-  alertCardUnread: {
-    backgroundColor: SDO_COLORS.skySoft,
-    borderColor: SDO_COLORS.skyBorder,
-  },
-  rowBetween: {
+  notifRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
+    alignItems: 'flex-start',
+    gap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    backgroundColor: SDO_COLORS.surface,
   },
-  dotRow: {
-    flexDirection: 'row',
+  notifRowUnread: {
+    backgroundColor: 'rgba(13, 52, 114, 0.035)',
+  },
+  notifRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: SDO_COLORS.border,
+  },
+  iconBox: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
     alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  },
+  notifBody: {
+    flex: 1,
+    gap: 2,
+  },
+  notifTitle: {
+    fontFamily: SDO_FONTS.sans,
+    fontSize: 13.5,
+    fontWeight: '600',
+    color: SDO_COLORS.navyInk,
+  },
+  notifTitleUnread: {
+    fontFamily: SDO_FONTS.sans,
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: SDO_COLORS.navyInk,
+  },
+  notifContent: {
+    fontFamily: SDO_FONTS.sans,
+    fontSize: 12.5,
+    lineHeight: 17,
+    color: SDO_COLORS.textSecondary,
+  },
+  notifMeta: {
+    alignItems: 'flex-end',
     gap: 6,
+    paddingTop: 2,
+  },
+  notifTime: {
+    fontFamily: SDO_FONTS.sans,
+    fontSize: 11,
+    fontWeight: '500',
+    color: SDO_COLORS.textMuted,
   },
   unreadDot: {
-    width: 8,
-    height: 8,
+    width: 7,
+    height: 7,
     borderRadius: 4,
-    backgroundColor: SDO_COLORS.rose,
+    backgroundColor: SDO_COLORS.navy,
   },
-  statusBadge: {
-    borderRadius: 999,
-    backgroundColor: SDO_COLORS.surface,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  statusBadgeUnread: {
-    backgroundColor: SDO_COLORS.amber,
-  },
-  statusBadgeText: {
-    fontFamily: SDO_FONTS.sans,
-    fontSize: 10,
-    fontWeight: '700',
-    color: SDO_COLORS.textMuted,
-  },
-  statusBadgeTextUnread: {
-    color: SDO_COLORS.navyInk,
-    fontWeight: '800',
-  },
-  alertTime: {
-    fontFamily: SDO_FONTS.sans,
-    fontSize: 11,
-    color: SDO_COLORS.textMuted,
-  },
-  alertTitle: {
-    fontFamily: SDO_FONTS.sans,
-    fontSize: 15,
-    fontWeight: '800',
-    color: SDO_COLORS.navyInk,
-  },
-  alertContent: {
-    fontFamily: SDO_FONTS.sans,
-    fontSize: 13,
-    lineHeight: 19,
-    fontWeight: '500',
-    color: SDO_COLORS.textPrimary,
-  },
-  lockBox: {
+  offlineBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     borderRadius: 12,
     backgroundColor: SDO_COLORS.surface,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
+    borderWidth: 1,
+    borderColor: SDO_COLORS.border,
   },
-  lockBoxText: {
+  offlineText: {
     fontFamily: SDO_FONTS.sans,
-    fontSize: 11,
+    fontSize: 12.5,
+    fontWeight: '600',
     color: SDO_COLORS.textSecondary,
   },
-  queueTitle: {
+  retryText: {
     fontFamily: SDO_FONTS.sans,
-    flex: 1,
-    fontSize: 13,
-    fontWeight: '800',
-    color: SDO_COLORS.textPrimary,
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: SDO_COLORS.navy,
   },
-  queueMeta: {
-    fontFamily: SDO_FONTS.sans,
-    fontSize: 12,
-    color: SDO_COLORS.textSecondary,
+  queueRow: {
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 4,
+  },
+  queueTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
   },
   queueWarn: {
     fontFamily: SDO_FONTS.sans,
-    fontSize: 11,
-    color: SDO_COLORS.amberText,
-  },
-  hashMono: {
-    fontSize: 10,
-    fontFamily: SDO_FONTS.mono,
-    color: SDO_COLORS.textMuted,
+    fontSize: 12,
+    color: SDO_COLORS.rose,
   },
 });

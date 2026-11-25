@@ -193,7 +193,7 @@ export const TrackPage: React.FC = () => {
         <>
           <div className="section-header-row">
             <h3 className="section-title">
-              Where {officeCode} docs are ({filtered.length})
+              Tracked ({filtered.length})
             </h3>
             {filtered.length > 0 ? (
               <div className="no-print" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>

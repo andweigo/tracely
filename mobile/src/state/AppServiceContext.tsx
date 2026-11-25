@@ -792,10 +792,15 @@ export const AppServiceProvider: React.FC<{
         setSecurityPrefs(loadedPrefs);
         setRecentScans(savedScans);
         DeviceSecurityBridge.applyScreenshotShield(loadedPrefs.screenshotShieldEnabled);
-        setShowOnboarding(!onboardingDone);
 
         const restored = await services.authService.restoreSession();
         if (!mounted) return;
+        if (!onboardingDone && !restored) {
+          setShowOnboarding(true);
+          AsyncStorage.setItem(ONBOARDING_STORAGE_KEY, 'true').catch(() => {});
+        } else {
+          setShowOnboarding(false);
+        }
         if (restored) {
           const savedColor = await readStoredAvatarColor(restored.actor.id);
           if (savedColor && restored.actor.avatarColor === '#0D3472') {

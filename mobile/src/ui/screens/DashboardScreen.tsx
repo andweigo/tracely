@@ -232,7 +232,7 @@ export const DashboardScreen: React.FC = () => {
           bucketId: params.id,
           isOverflowSheet: true,
           title: `+${overflowCount.toLocaleString()} more records`,
-          description: 'Tap to open searchable & paginated folder ledger →',
+          description: 'View all',
         });
       }
 
@@ -334,28 +334,28 @@ export const DashboardScreen: React.FC = () => {
       {
         id: 'stage-incoming',
         code: 'Incoming',
-        subtitle: 'Awaiting QR receipt or unlock at your desk',
+        subtitle: 'Awaiting receipt',
         color: '#f59e0b',
         docs: incomingDocs,
       },
       {
         id: 'stage-desk',
         code: 'On My Desk',
-        subtitle: 'Received files currently under review',
+        subtitle: 'In review',
         color: '#0ea5e9',
         docs: activeDeskDocs,
       },
       {
         id: 'stage-sent',
         code: 'Dispatched',
-        subtitle: 'Files originated or forwarded by your office',
+        subtitle: 'Sent by office',
         color: '#6366f1',
         docs: sentTransitDocs,
       },
       {
         id: 'stage-completed',
         code: 'Completed',
-        subtitle: 'Approved & released or archived records',
+        subtitle: 'Done',
         color: '#10b981',
         docs: completedDocs,
       },

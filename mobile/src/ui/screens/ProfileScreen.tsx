@@ -219,7 +219,7 @@ export const ProfileScreen: React.FC = () => {
         </View>
 
         <View style={styles.softCard}>
-          <Text style={styles.cardHeading}>Desk Workload Overview</Text>
+          <Text style={styles.cardHeading}>Overview</Text>
           <View style={styles.statsGrid}>
             {(
               [
@@ -246,7 +246,7 @@ export const ProfileScreen: React.FC = () => {
         ) : null}
 
         <View style={styles.softCard}>
-          <Text style={styles.cardHeading}>Live Availability & Return Window</Text>
+          <Text style={styles.cardHeading}>Availability</Text>
           <View style={styles.availRow}>
             {(
               [

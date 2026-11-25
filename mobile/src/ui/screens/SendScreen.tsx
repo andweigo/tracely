@@ -14,7 +14,6 @@ import {
   Clock,
   FileText,
   FileUp,
-  Lock,
   Pencil,
   Plus,
   Printer,
@@ -631,12 +630,6 @@ export const SendScreen: React.FC = () => {
             </Text>
           </Pressable>
         </View>
-
-        <Text style={styles.modeHelper}>
-          {medium === 'soft_copy'
-            ? 'Upload a PDF or image file to share digitally with custody tracking.'
-            : 'No upload needed — generates a Tracking Code & QR slip for your paper folder.'}
-        </Text>
       </View>
 
       {formError ? (
@@ -649,9 +642,8 @@ export const SendScreen: React.FC = () => {
       <View style={styles.field}>
         <View style={styles.labelRow}>
           <Text style={styles.label}>
-            {isBatchMultiMode ? 'Title (Optional Default Prefix)' : 'Title'}
+            {isBatchMultiMode ? 'Title Prefix (Optional)' : 'Title'}
           </Text>
-          <Text style={styles.counter}>{`${title.length}/140`}</Text>
         </View>
         <TextInput
           value={title}
@@ -1159,16 +1151,6 @@ export const SendScreen: React.FC = () => {
 
       {/* Primary CTA */}
       <View style={styles.ctaBlock}>
-        {recipientUserId ? (
-          <View style={styles.qrFirstNotice}>
-            <Lock size={13} color={SDO_COLORS.navy} />
-            <Text style={styles.qrFirstNoticeText}>
-              QR-First Custody Unlock: Only the routing QR &amp; notice are sent immediately. The
-              recipient must scan the QR or enter the code manually to unlock and view attached
-              files.
-            </Text>
-          </View>
-        ) : null}
         <Pressable
           onPress={handleSend}
           disabled={submitDisabled}
