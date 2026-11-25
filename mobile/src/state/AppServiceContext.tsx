@@ -16,6 +16,7 @@ import {
   isNewerAppVersion,
   MOBILE_APP_VERSION,
 } from '../config/ApiConfig';
+import { buildMobileLocalSentContributions } from '../ui/components/MobileSentContributionGraph';
 import { AuditLogEntry } from '../domain/entities/AuditLogEntry';
 import { Document } from '../domain/entities/Document';
 import { DocumentCategory } from '../domain/entities/DocumentCategory';
@@ -308,6 +309,7 @@ export interface AppContextValue {
   signOutAndWipeCache(): Promise<void>;
   refreshWorkspace(): Promise<void>;
   refreshDocument(documentId: string): Promise<void>;
+  getSentContributions(): Promise<import('../repositories/contracts/IDocumentRepository').SentContributionReport>;
   updateAvailability(
     status: AvailabilityStatus,
     delegateId?: string | null,
@@ -1592,6 +1594,16 @@ export const AppServiceProvider: React.FC<{
       if (!actor) return;
       const updated = await services.routingService.refreshDocument(actor, documentId);
       upsertDocument(updated);
+    },
+    getSentContributions: async () => {
+      if (actor && services.deps.docRepo.getSentContributions) {
+        try {
+          return await services.deps.docRepo.getSentContributions();
+        } catch {
+          // Fall back to local document records when offline
+        }
+      }
+      return buildMobileLocalSentContributions(documents, actor);
     },
     updateAvailability: async (status, delegateId, availabilityUntil) => {
       await runAsyncAction(async () => {

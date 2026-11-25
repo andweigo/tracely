@@ -16,6 +16,7 @@ use App\Models\User;
 use App\Models\UserNotification;
 use App\Services\AuditLogger;
 use App\Services\RealtimeEventHub;
+use App\Services\SentContributionService;
 use App\Services\StalledDocumentAlertService;
 use App\Services\StorageIntegrityService;
 use Illuminate\Http\JsonResponse;
@@ -41,6 +42,7 @@ class AdminPortalController extends Controller
         private readonly RealtimeEventHub $realtime,
         private readonly StalledDocumentAlertService $stalledAlerts,
         private readonly StorageIntegrityService $integrity,
+        private readonly SentContributionService $contributions,
     ) {}
 
     public function showLogin(Request $request): View|RedirectResponse
@@ -486,6 +488,8 @@ class AdminPortalController extends Controller
             $selectedDocId = (string) $documentRows->first()['model']->id;
         }
 
+        $sentContributions = $this->contributions->forAdminOverview($offices);
+
         return view('admin::studio', [
             'admin' => $admin,
             'activeSection' => $activeSection,
@@ -510,6 +514,7 @@ class AdminPortalController extends Controller
             'telemetry' => $telemetry,
             'officeMatrix' => $officeMatrix,
             'autoSweepSummary' => $autoSweepSummary,
+            'sentContributions' => $sentContributions,
         ]);
     }
 

@@ -121,6 +121,7 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/routing-templates', [RoutingTemplateController::class, 'store']);
         Route::delete('/routing-templates/{id}', [RoutingTemplateController::class, 'destroy']);
         Route::get('/analytics/turnaround', [AnalyticsController::class, 'turnaround']);
+        Route::get('/analytics/contributions', [AnalyticsController::class, 'contributions']);
 
         // Opaque QR resolution, desktop pairing & mobile sanitized captures
         Route::post('/qr/resolve-document', [QrController::class, 'resolveDocument']);

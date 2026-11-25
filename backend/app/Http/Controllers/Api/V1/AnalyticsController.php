@@ -7,6 +7,7 @@ use App\Models\Document;
 use App\Models\RoutingTransaction;
 use App\Models\User;
 use App\Services\AccessPolicyService;
+use App\Services\SentContributionService;
 use App\Services\StalledDocumentAlertService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,7 +18,19 @@ class AnalyticsController extends Controller
     public function __construct(
         private readonly AccessPolicyService $policy,
         private readonly StalledDocumentAlertService $stalledService,
+        private readonly SentContributionService $contributions,
     ) {}
+
+    public function contributions(Request $request): JsonResponse
+    {
+        /** @var User $actor */
+        $actor = $request->user();
+        $tz = is_string($request->query('tz')) ? $request->query('tz') : null;
+
+        return response()->json([
+            'data' => $this->contributions->forActor($actor, $tz),
+        ]);
+    }
 
     public function turnaround(Request $request): JsonResponse
     {

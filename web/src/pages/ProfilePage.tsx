@@ -14,11 +14,15 @@ import {
   Users,
   X,
 } from 'lucide-react';
-import { AvailabilityStatus } from '../domain/types';
+import { AvailabilityStatus, SentContributionReport } from '../domain/types';
 import { useWebApp } from '../state/WebAppContext';
 import { IdentityWalletCard } from '../components/IdentityWalletCard';
 import { ModalDialog } from '../components/Modals';
 import { paginateList, PaginationBar } from '../components/PaginationBar';
+import {
+  buildLocalSentContributions,
+  SentContributionGraph,
+} from '../components/SentContributionGraph';
 import { formatClockTime, formatCompactDate } from '../utils/formatters';
 
 const ADMIN_APPROVALS_PER_PAGE = 8;
@@ -50,6 +54,7 @@ export const ProfilePage: React.FC = () => {
     isBusy,
     updateAvailability,
     updateSecurityPrefs,
+    getSentContributions,
     loadActiveSessions,
     revokeOtherSessions,
     changePassword,
@@ -74,6 +79,32 @@ export const ProfilePage: React.FC = () => {
   const [personnelPage, setPersonnelPage] = useState(1);
   const [officesPage, setOfficesPage] = useState(1);
   const [sessionsPage, setSessionsPage] = useState(1);
+  const [serverContributions, setServerContributions] = useState<SentContributionReport | null>(
+    null,
+  );
+
+  const localContributions = useMemo(
+    () => buildLocalSentContributions(documents, actor),
+    [documents, actor],
+  );
+
+  useEffect(() => {
+    if (!actor) {
+      setServerContributions(null);
+      return;
+    }
+    let cancelled = false;
+    getSentContributions()
+      .then((report) => {
+        if (!cancelled) setServerContributions(report);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [actor?.id, documents.length, getSentContributions]);
+
+  const contributionReport = serverContributions ?? localContributions;
   const [newOfficeCode, setNewOfficeCode] = useState('');
   const [newOfficeName, setNewOfficeName] = useState('');
   const [editingOfficeId, setEditingOfficeId] = useState<string | null>(null);
@@ -661,7 +692,7 @@ export const ProfilePage: React.FC = () => {
               setSessionsOpen(true);
             }}
           >
-            <Laptop size={15} /> Active Devices & Sanctum Sessions
+            <Laptop size={15} /> Active Devices
           </button>
 
           {actor ? (
@@ -676,6 +707,16 @@ export const ProfilePage: React.FC = () => {
         </div>
       </div>
       </div>
+
+      {actor ? (
+        <div style={{ gridColumn: '1 / -1' }}>
+          <SentContributionGraph
+            report={contributionReport}
+            defaultScope="user"
+            testId="web-profile-sent-contributions"
+          />
+        </div>
+      ) : null}
 
       <ModalDialog
         open={sessionsOpen}

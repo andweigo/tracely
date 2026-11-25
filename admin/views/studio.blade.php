@@ -651,6 +651,48 @@
             <div class="pagination-bar" id="pager-attention"></div>
           </div>
         </div>
+
+        <!-- Daily Sent Contributions Heatmap (GitHub-style) -->
+        <div class="surface-card" id="admin-sent-contributions-card" data-testid="admin-sent-contributions">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title" id="admin-contrib-heading">
+                {{ number_format($sentContributions['all']['total'] ?? 0) }}
+                {{ ($sentContributions['all']['total'] ?? 0) === 1 ? 'document' : 'documents' }}
+                sent in the last year
+              </h2>
+              <p class="card-subtitle">Daily outgoing dispatches across offices</p>
+            </div>
+            <select id="admin-contrib-office" class="select" style="height: 34px; font-size: 13px; min-width: 190px;">
+              <option value="all">All Offices ({{ number_format($sentContributions['all']['total'] ?? 0) }})</option>
+              @foreach ($offices as $off)
+                @php $offTotal = $sentContributions['by_office'][$off->id]['total'] ?? 0; @endphp
+                <option value="{{ $off->id }}">{{ $off->code }} — {{ $off->name }} ({{ number_format($offTotal) }})</option>
+              @endforeach
+            </select>
+          </div>
+
+          <div style="padding: 16px 20px 14px; display: flex; flex-direction: column; gap: 10px;">
+            <div id="admin-contrib-scroll" style="overflow-x: auto; overflow-y: hidden; padding-bottom: 2px;">
+              <div id="admin-contrib-grid-root" style="display: inline-flex; flex-direction: column; min-width: max-content;"></div>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--text-muted);">
+              <div id="admin-contrib-readout">Hover or click any day to inspect daily dispatches.</div>
+              <div style="display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; user-select: none;">
+                <span>Less</span>
+                <span style="width: 11px; height: 11px; border-radius: 2.5px; background: #EBEDF0; border: 1px solid rgba(27,31,35,0.06); display: inline-block;"></span>
+                <span style="width: 11px; height: 11px; border-radius: 2.5px; background: #9BE9A8; border: 1px solid rgba(27,31,35,0.08); display: inline-block;"></span>
+                <span style="width: 11px; height: 11px; border-radius: 2.5px; background: #40C463; border: 1px solid rgba(27,31,35,0.08); display: inline-block;"></span>
+                <span style="width: 11px; height: 11px; border-radius: 2.5px; background: #30A14E; border: 1px solid rgba(27,31,35,0.09); display: inline-block;"></span>
+                <span style="width: 11px; height: 11px; border-radius: 2.5px; background: #216E39; border: 1px solid rgba(27,31,35,0.12); display: inline-block;"></span>
+                <span>More</span>
+              </div>
+            </div>
+          </div>
+
+          <script type="application/json" id="admin-contrib-data">@json($sentContributions)</script>
+        </div>
       </section>
 
       <!-- =====================================================================
@@ -4023,6 +4065,209 @@
         if (toast && toast.parentElement) toast.remove();
       }, 5000);
     }
+
+    // GitHub-style Daily Sent Contributions Heatmap
+    (function initAdminSentContributions() {
+      var dataEl = document.getElementById('admin-contrib-data');
+      var gridRoot = document.getElementById('admin-contrib-grid-root');
+      var officeSelect = document.getElementById('admin-contrib-office');
+      var headingEl = document.getElementById('admin-contrib-heading');
+      var readoutEl = document.getElementById('admin-contrib-readout');
+      var scrollWrap = document.getElementById('admin-contrib-scroll');
+      if (!dataEl || !gridRoot || !officeSelect) return;
+
+      var payload;
+      try {
+        payload = JSON.parse(dataEl.textContent || '{}');
+      } catch (e) {
+        return;
+      }
+
+      var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      var COLORS = ['#EBEDF0', '#9BE9A8', '#40C463', '#30A14E', '#216E39'];
+      var BORDERS = ['rgba(27,31,35,0.06)', 'rgba(27,31,35,0.08)', 'rgba(27,31,35,0.08)', 'rgba(27,31,35,0.09)', 'rgba(27,31,35,0.12)'];
+      var CELL = 12;
+      var GAP = 3;
+      var STEP = CELL + GAP;
+
+      function parseKey(k) {
+        var parts = String(k).split('-');
+        return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+      }
+      function toKey(d) {
+        var m = String(d.getMonth() + 1).padStart(2, '0');
+        var day = String(d.getDate()).padStart(2, '0');
+        return d.getFullYear() + '-' + m + '-' + day;
+      }
+      function fmtDate(k) {
+        var d = parseKey(k);
+        return MONTHS[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+      }
+      function levelFor(count, peak) {
+        if (count <= 0) return 0;
+        if (peak <= 4) return Math.min(4, count);
+        var ratio = count / peak;
+        if (ratio <= 0.25) return 1;
+        if (ratio <= 0.5) return 2;
+        if (ratio <= 0.75) return 3;
+        return 4;
+      }
+
+      function renderScope(scopeId) {
+        var series = scopeId === 'all' ? payload.all : (payload.by_office && payload.by_office[scopeId]) || payload.all;
+        if (!series || !payload.start_date || !payload.end_date) return;
+
+        var total = Number(series.total || 0);
+        var noun = total === 1 ? 'document' : 'documents';
+        var label = scopeId === 'all'
+          ? total.toLocaleString() + ' ' + noun + ' sent in the last year'
+          : total.toLocaleString() + ' ' + noun + ' sent by ' + (series.office_code || 'Office') + ' in the last year';
+        if (headingEl) headingEl.textContent = label;
+
+        var defaultReadout = total > 0
+          ? (series.active_days || 0) + ' active ' + ((series.active_days || 0) === 1 ? 'day' : 'days') +
+            (series.peak_count && series.peak_date ? ' · Peak ' + series.peak_count + ' on ' + fmtDate(series.peak_date) : '') +
+            (series.current_streak > 1 ? ' · ' + series.current_streak + '-day streak' : '')
+          : 'No documents sent in this period yet.';
+        if (readoutEl) readoutEl.textContent = defaultReadout;
+
+        var start = parseKey(payload.start_date);
+        var end = parseKey(payload.end_date);
+        var gridStart = new Date(start);
+        gridStart.setDate(gridStart.getDate() - gridStart.getDay());
+        var gridEnd = new Date(end);
+        gridEnd.setDate(gridEnd.getDate() + (6 - gridEnd.getDay()));
+
+        var weeks = [];
+        var monthLabels = [];
+        var cursor = new Date(gridStart);
+        var lastMonth = -1;
+        var lastLabelCol = -4;
+        var daysMap = series.days || {};
+        var peak = Number(series.peak_count || 0);
+
+        while (cursor <= gridEnd) {
+          var colIndex = weeks.length;
+          var week = [];
+          var colMonth = null;
+          for (var dow = 0; dow < 7; dow += 1) {
+            var k = toKey(cursor);
+            var inRange = k >= payload.start_date && k <= payload.end_date;
+            var cnt = inRange ? Number(daysMap[k] || 0) : 0;
+            if (inRange && colMonth === null && (cursor.getDate() <= 7 || colIndex === 0)) {
+              colMonth = cursor.getMonth();
+            }
+            week.push({ key: k, count: cnt, level: inRange ? levelFor(cnt, peak) : 0, inRange: inRange });
+            cursor.setDate(cursor.getDate() + 1);
+          }
+          if (colMonth !== null && colMonth !== lastMonth && colIndex - lastLabelCol >= 3) {
+            monthLabels.push({ colIndex: colIndex, label: MONTHS[colMonth] });
+            lastMonth = colMonth;
+            lastLabelCol = colIndex;
+          }
+          weeks.push(week);
+        }
+
+        gridRoot.innerHTML = '';
+
+        var monthRow = document.createElement('div');
+        monthRow.style.position = 'relative';
+        monthRow.style.height = '18px';
+        monthRow.style.marginLeft = '32px';
+        monthRow.style.width = (weeks.length * STEP) + 'px';
+        monthLabels.forEach(function (m) {
+          var sp = document.createElement('span');
+          sp.textContent = m.label;
+          sp.style.position = 'absolute';
+          sp.style.left = (m.colIndex * STEP) + 'px';
+          sp.style.top = '0';
+          sp.style.fontSize = '11px';
+          sp.style.fontWeight = '500';
+          sp.style.color = 'var(--text-muted)';
+          monthRow.appendChild(sp);
+        });
+        gridRoot.appendChild(monthRow);
+
+        var bodyRow = document.createElement('div');
+        bodyRow.style.display = 'flex';
+        bodyRow.style.alignItems = 'flex-start';
+        bodyRow.style.gap = '6px';
+
+        var axis = document.createElement('div');
+        axis.style.display = 'grid';
+        axis.style.gridTemplateRows = 'repeat(7, ' + CELL + 'px)';
+        axis.style.rowGap = GAP + 'px';
+        axis.style.width = '26px';
+        axis.style.flexShrink = '0';
+        axis.style.fontSize = '10.5px';
+        axis.style.color = 'var(--text-muted)';
+        ['', 'Mon', '', 'Wed', '', 'Fri', ''].forEach(function (txt) {
+          var s = document.createElement('span');
+          s.textContent = txt;
+          s.style.lineHeight = CELL + 'px';
+          axis.appendChild(s);
+        });
+        bodyRow.appendChild(axis);
+
+        var colsWrap = document.createElement('div');
+        colsWrap.style.display = 'flex';
+        colsWrap.style.gap = GAP + 'px';
+
+        weeks.forEach(function (week) {
+          var col = document.createElement('div');
+          col.style.display = 'grid';
+          col.style.gridTemplateRows = 'repeat(7, ' + CELL + 'px)';
+          col.style.rowGap = GAP + 'px';
+
+          week.forEach(function (cell) {
+            if (!cell.inRange) {
+              var empty = document.createElement('span');
+              empty.style.width = CELL + 'px';
+              empty.style.height = CELL + 'px';
+              col.appendChild(empty);
+              return;
+            }
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            var desc = (cell.count === 0 ? 'No documents' : cell.count + ' ' + (cell.count === 1 ? 'document' : 'documents')) + ' sent on ' + fmtDate(cell.key);
+            btn.title = desc;
+            btn.setAttribute('aria-label', desc);
+            btn.style.width = CELL + 'px';
+            btn.style.height = CELL + 'px';
+            btn.style.padding = '0';
+            btn.style.borderRadius = '3px';
+            btn.style.background = COLORS[cell.level];
+            btn.style.border = '1px solid ' + BORDERS[cell.level];
+            btn.style.cursor = 'pointer';
+            btn.addEventListener('mouseenter', function () {
+              if (readoutEl) readoutEl.textContent = desc;
+            });
+            btn.addEventListener('mouseleave', function () {
+              if (readoutEl) readoutEl.textContent = defaultReadout;
+            });
+            btn.addEventListener('click', function () {
+              if (readoutEl) readoutEl.textContent = desc;
+            });
+            col.appendChild(btn);
+          });
+
+          colsWrap.appendChild(col);
+        });
+
+        bodyRow.appendChild(colsWrap);
+        gridRoot.appendChild(bodyRow);
+
+        if (scrollWrap) {
+          scrollWrap.scrollLeft = scrollWrap.scrollWidth;
+        }
+      }
+
+      officeSelect.addEventListener('change', function () {
+        renderScope(officeSelect.value);
+      });
+
+      renderScope(officeSelect.value || 'all');
+    })();
   })();
 </script>
 @endsection

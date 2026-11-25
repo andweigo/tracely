@@ -189,4 +189,26 @@ export interface IDocumentRepository {
     transactionId: string,
   ): Promise<PresignedDownloadGrant>;
   pollRealtimePulse?(sinceCursor: number): Promise<RealtimePulseResponse>;
+  getSentContributions?(timezone?: string): Promise<SentContributionReport>;
+}
+
+export interface SentContributionSeries {
+  readonly officeId?: string;
+  readonly officeCode?: string;
+  readonly officeName?: string;
+  readonly total: number;
+  readonly activeDays: number;
+  readonly peakCount: number;
+  readonly peakDate: string | null;
+  readonly currentStreak: number;
+  readonly days: Readonly<Record<string, number>>;
+}
+
+export interface SentContributionReport {
+  readonly generatedAt: string;
+  readonly timezone: string;
+  readonly startDate: string;
+  readonly endDate: string;
+  readonly user: SentContributionSeries;
+  readonly office: SentContributionSeries;
 }

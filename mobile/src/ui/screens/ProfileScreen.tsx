@@ -27,6 +27,11 @@ import { AvailabilityStatus, SystemRole } from '../../domain/enums/DomainEnums';
 import { useAppServices } from '../../state/AppServiceContext';
 import { AvailabilityBadge } from '../components/Badges';
 import { MobileIdentityWalletCard } from '../components/MobileIdentityWalletCard';
+import {
+  buildMobileLocalSentContributions,
+  MobileSentContributionGraph,
+} from '../components/MobileSentContributionGraph';
+import { SentContributionReport } from '../../repositories/contracts/IDocumentRepository';
 import { AuditInspectorSheet } from '../sheets/AuditInspectorSheet';
 import {
   ActiveSessionsModal,
@@ -50,6 +55,7 @@ const ADMIN_ROLE_OPTIONS: ReadonlyArray<{ id: SystemRole; label: string }> = [
 export const ProfileScreen: React.FC = () => {
   const {
     actor,
+    documents,
     offices,
     personnelDirectory,
     sessionMetadata,
@@ -62,6 +68,7 @@ export const ProfileScreen: React.FC = () => {
     fcmConfigured,
     updateAvailability,
     updateSecurityPrefs,
+    getSentContributions,
     loadPendingUsers,
     approvePendingUser,
     rejectPendingUser,
@@ -88,6 +95,33 @@ export const ProfileScreen: React.FC = () => {
   const [editingOfficeId, setEditingOfficeId] = useState<string | null>(null);
   const [editOfficeCode, setEditOfficeCode] = useState('');
   const [editOfficeName, setEditOfficeName] = useState('');
+  const [serverContributions, setServerContributions] = useState<SentContributionReport | null>(
+    null,
+  );
+
+  const localContributions = useMemo(
+    () => buildMobileLocalSentContributions(documents, actor),
+    [documents, actor],
+  );
+
+  useEffect(() => {
+    if (!actor) {
+      setServerContributions(null);
+      return;
+    }
+    let cancelled = false;
+    getSentContributions()
+      .then((report) => {
+        if (!cancelled) setServerContributions(report);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [actor?.id, documents.length]);
+
+  const contributionReport = serverContributions ?? localContributions;
 
   useEffect(() => {
     if (actor && canApproveAccounts) {
@@ -202,6 +236,14 @@ export const ProfileScreen: React.FC = () => {
             ))}
           </View>
         </View>
+
+        {actor ? (
+          <MobileSentContributionGraph
+            report={contributionReport}
+            defaultScope="user"
+            testID="mobile-profile-sent-contributions"
+          />
+        ) : null}
 
         <View style={styles.softCard}>
           <Text style={styles.cardHeading}>Live Availability & Return Window</Text>

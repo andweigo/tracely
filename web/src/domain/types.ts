@@ -396,6 +396,27 @@ export interface TurnaroundAnalyticsReport {
   }>;
 }
 
+export interface SentContributionSeries {
+  readonly officeId?: string;
+  readonly officeCode?: string;
+  readonly officeName?: string;
+  readonly total: number;
+  readonly activeDays: number;
+  readonly peakCount: number;
+  readonly peakDate: string | null;
+  readonly currentStreak: number;
+  readonly days: Readonly<Record<string, number>>;
+}
+
+export interface SentContributionReport {
+  readonly generatedAt: string;
+  readonly timezone: string;
+  readonly startDate: string;
+  readonly endDate: string;
+  readonly user: SentContributionSeries;
+  readonly office: SentContributionSeries;
+}
+
 export interface PaginatedDocumentsResult {
   readonly data: ReadonlyArray<DocumentRecord>;
   readonly meta: {

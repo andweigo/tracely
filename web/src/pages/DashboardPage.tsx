@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ArrowUpRight,
   ChevronLeft,
@@ -15,7 +15,11 @@ import { CustodyJourneyRoad } from '../components/CustodyJourneyRoad';
 import { Folder, FolderObjectItem } from '../components/Folder';
 import { IdentityWalletCard } from '../components/IdentityWalletCard';
 import { paginateList, PaginationBar } from '../components/PaginationBar';
-import { DocumentRecord } from '../domain/types';
+import {
+  buildLocalSentContributions,
+  SentContributionGraph,
+} from '../components/SentContributionGraph';
+import { DocumentRecord, SentContributionReport } from '../domain/types';
 import { useWebApp } from '../state/WebAppContext';
 import { sortDocumentRecords } from '../utils/inboxFilter';
 import { isPendingReceiptForActor, isPendingSentByActor } from '../utils/sentFilter';
@@ -69,10 +73,46 @@ function getDocumentTimestampMs(doc: DocumentRecord): number {
 }
 
 export const DashboardPage: React.FC = () => {
-  const { actor, documents, categories, folderAppearance, openDocument, navigate } = useWebApp();
+  const {
+    actor,
+    documents,
+    categories,
+    folderAppearance,
+    getSentContributions,
+    openDocument,
+    navigate,
+  } = useWebApp();
 
   const [flowScope, setFlowScope] = useState<RoutingScopeFilter>('office');
   const [selectedJourneyDocId, setSelectedJourneyDocId] = useState<string | null>(null);
+  const [serverContributions, setServerContributions] = useState<SentContributionReport | null>(
+    null,
+  );
+
+  const localContributions = useMemo(
+    () => buildLocalSentContributions(documents, actor),
+    [documents, actor],
+  );
+
+  useEffect(() => {
+    if (!actor) {
+      setServerContributions(null);
+      return;
+    }
+    let cancelled = false;
+    getSentContributions()
+      .then((report) => {
+        if (!cancelled) setServerContributions(report);
+      })
+      .catch(() => {
+        // Keep local fallback cleanly when offline
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [actor?.id, documents.length, getSentContributions]);
+
+  const contributionReport = serverContributions ?? localContributions;
 
   const [folderGroupMode, setFolderGroupMode] = useState<FolderGroupingMode>('stage');
   const [selectedFolderDoc, setSelectedFolderDoc] = useState<DocumentRecord | null>(null);
@@ -525,6 +565,24 @@ export const DashboardPage: React.FC = () => {
         ) : (
           <CustodyJourneyRoad document={activeJourneyDoc} onOpenDocument={openDocument} />
         )}
+      </section>
+
+      {/* SECTION 1B: Daily Sent Contributions Graph (GitHub-style) */}
+      <section
+        style={{
+          paddingBottom: 32,
+          borderBottom: '1px solid var(--border)',
+        }}
+      >
+        <SentContributionGraph
+          report={contributionReport}
+          scope={flowScope}
+          onScopeChange={(next) => {
+            setFlowScope(next);
+            setSelectedJourneyDocId(null);
+          }}
+          testId="web-dashboard-sent-contributions"
+        />
       </section>
 
       {/* SECTION 2: Folders */}

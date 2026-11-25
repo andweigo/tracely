@@ -28,6 +28,7 @@ import {
   QrResolutionResult,
   RecentScanEntry,
   RoutingTemplate,
+  SentContributionReport,
   ToastAction,
   ToastMessage,
   TurnaroundAnalyticsReport,
@@ -35,6 +36,7 @@ import {
   UserSecurityPreferences,
   WebRoute,
 } from '../domain/types';
+import { buildLocalSentContributions } from '../components/SentContributionGraph';
 import {
   AUTH_REQUIRED,
   DEFAULT_API_BASE_URL,
@@ -133,6 +135,7 @@ export interface WebContextValue {
   }): Promise<RoutingTemplate>;
   deleteRoutingTemplate(templateId: string): Promise<void>;
   getTurnaroundAnalytics(): Promise<TurnaroundAnalyticsReport>;
+  getSentContributions(): Promise<SentContributionReport>;
   listDocumentsPage(params: {
     q?: string;
     status?: string;
@@ -1155,6 +1158,13 @@ export const WebAppProvider: React.FC<WebAppProviderProps> = ({
     }
   }, [activeGateway]);
 
+  const getSentContributionsStable = useCallback(async (): Promise<SentContributionReport> => {
+    if (activeGateway.getSentContributions) {
+      return activeGateway.getSentContributions();
+    }
+    return buildLocalSentContributions(documentsRef.current, actor);
+  }, [activeGateway, actor]);
+
   const getTurnaroundAnalyticsStable = useCallback(async (): Promise<TurnaroundAnalyticsReport> => {
     if (activeGateway.getTurnaroundAnalytics) {
       return activeGateway.getTurnaroundAnalytics();
@@ -1543,6 +1553,7 @@ export const WebAppProvider: React.FC<WebAppProviderProps> = ({
       }, 'Routing template removed.');
     },
     getTurnaroundAnalytics: getTurnaroundAnalyticsStable,
+    getSentContributions: getSentContributionsStable,
     listDocumentsPage: async (params) => {
       if (activeGateway.listDocumentsPage) {
         return activeGateway.listDocumentsPage(params);

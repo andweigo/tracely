@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   LayoutChangeEvent,
   NativeScrollEvent,
@@ -34,6 +34,11 @@ import { MobileCustodyJourneyRoad } from '../components/MobileCustodyJourneyRoad
 import { MobileFolder, MobileFolderSheetItem } from '../components/MobileFolder';
 import { MobileHeaderActions } from '../components/MobileHeaderActions';
 import { MobileIdentityWalletCard } from '../components/MobileIdentityWalletCard';
+import {
+  buildMobileLocalSentContributions,
+  MobileSentContributionGraph,
+} from '../components/MobileSentContributionGraph';
+import { SentContributionReport } from '../../repositories/contracts/IDocumentRepository';
 import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
 import { sortDocuments } from '../utils/inboxFilter';
 import { paginateSentItems } from '../utils/sentFilter';
@@ -85,6 +90,7 @@ export const DashboardScreen: React.FC = () => {
     documents,
     categories,
     folderAppearance,
+    getSentContributions,
     openDocument,
     setActiveTab,
     refreshWorkspace,
@@ -93,7 +99,34 @@ export const DashboardScreen: React.FC = () => {
 
   const [flowScope, setFlowScope] = useState<RoutingScopeFilter>('office');
   const [selectedJourneyDocId, setSelectedJourneyDocId] = useState<string | null>(null);
+  const [serverContributions, setServerContributions] = useState<SentContributionReport | null>(
+    null,
+  );
   const [lanyardDragging, setLanyardDragging] = useState(false);
+
+  const localContributions = useMemo(
+    () => buildMobileLocalSentContributions(documents, actor),
+    [documents, actor],
+  );
+
+  useEffect(() => {
+    if (!actor) {
+      setServerContributions(null);
+      return;
+    }
+    let cancelled = false;
+    getSentContributions()
+      .then((report) => {
+        if (!cancelled) setServerContributions(report);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [actor?.id, documents.length]);
+
+  const contributionReport = serverContributions ?? localContributions;
 
   const scrollViewRef = useRef<React.ComponentRef<typeof ScrollView> | null>(null);
   const [scrollY, setScrollY] = useState<number>(0);
@@ -588,6 +621,19 @@ export const DashboardScreen: React.FC = () => {
               }}
             />
           )}
+        </View>
+
+        {/* SECTION 1B: Daily Sent Contributions Graph */}
+        <View style={styles.sectionBlock}>
+          <MobileSentContributionGraph
+            report={contributionReport}
+            scope={flowScope}
+            onScopeChange={(next) => {
+              setFlowScope(next);
+              setSelectedJourneyDocId(null);
+            }}
+            testID="mobile-dashboard-sent-contributions"
+          />
         </View>
 
         {/* SECTION 2: Folders (Appearance configured in Settings) */}

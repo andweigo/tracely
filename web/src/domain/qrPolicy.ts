@@ -279,6 +279,7 @@ export interface WebBackendGateway {
   }): Promise<import('./types').RoutingTemplate>;
   deleteRoutingTemplate?(templateId: string): Promise<void>;
   getTurnaroundAnalytics?(): Promise<import('./types').TurnaroundAnalyticsReport>;
+  getSentContributions?(timezone?: string): Promise<import('./types').SentContributionReport>;
   listDocumentsPage?(params: {
     q?: string;
     status?: string;

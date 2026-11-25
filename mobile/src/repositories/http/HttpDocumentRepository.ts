@@ -548,4 +548,63 @@ export class HttpDocumentRepository implements IDocumentRepository {
       registeredPushDevices: Number(res.registered_push_devices ?? 0),
     };
   }
+
+  public async getSentContributions(
+    timezone?: string,
+  ): Promise<import('../contracts/IDocumentRepository').SentContributionReport> {
+    const tz = timezone || 'Asia/Manila';
+    const res = await this._api.get<{
+      data: {
+        generated_at: string;
+        timezone: string;
+        start_date: string;
+        end_date: string;
+        user: {
+          total: number;
+          active_days: number;
+          peak_count: number;
+          peak_date: string | null;
+          current_streak: number;
+          days: Record<string, number>;
+        };
+        office: {
+          office_id?: string;
+          office_code?: string;
+          office_name?: string;
+          total: number;
+          active_days: number;
+          peak_count: number;
+          peak_date: string | null;
+          current_streak: number;
+          days: Record<string, number>;
+        };
+      };
+    }>(`/analytics/contributions?tz=${encodeURIComponent(tz)}`);
+    const d = res.data;
+    return {
+      generatedAt: d.generated_at,
+      timezone: d.timezone,
+      startDate: d.start_date,
+      endDate: d.end_date,
+      user: {
+        total: d.user.total,
+        activeDays: d.user.active_days,
+        peakCount: d.user.peak_count,
+        peakDate: d.user.peak_date,
+        currentStreak: d.user.current_streak,
+        days: d.user.days ?? {},
+      },
+      office: {
+        officeId: d.office.office_id,
+        officeCode: d.office.office_code,
+        officeName: d.office.office_name,
+        total: d.office.total,
+        activeDays: d.office.active_days,
+        peakCount: d.office.peak_count,
+        peakDate: d.office.peak_date,
+        currentStreak: d.office.current_streak,
+        days: d.office.days ?? {},
+      },
+    };
+  }
 }
