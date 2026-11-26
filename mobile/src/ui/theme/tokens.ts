@@ -27,11 +27,13 @@ export const SDO_COLORS = {
   indigoText: '#3730A3',
 
   // Surfaces & Typography
+  white: '#FFFFFF',
   bg: '#FFFFFF',
   surface: '#FFFFFF',
   surfaceSoft: '#F4F6FA',
   surfaceMuted: '#F8FAFC',
   border: '#E5E7EB',
+  borderStrong: '#CBD5E1',
   textPrimary: '#0F172A',
   textSecondary: '#475569',
   textMuted: '#64748B',

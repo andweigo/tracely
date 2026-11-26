@@ -11,7 +11,6 @@ import {
 import {
   AlertTriangle,
   CheckSquare,
-  ChevronDown,
   Inbox,
   MapPin,
   Search,
@@ -22,6 +21,7 @@ import { Document } from '../../domain/entities/Document';
 import {
   AvailabilityStatus,
   ConfidentialityTier,
+  DocumentCopyFormat,
   DocumentLifecycleStatus,
   SlaState,
 } from '../../domain/enums/DomainEnums';
@@ -68,6 +68,8 @@ export const InboxScreen: React.FC = () => {
     categories,
     openDocument,
     openScannerForDocument,
+    scanQr,
+    acknowledgeReceipt,
     setActiveTab,
     refreshWorkspace,
     declineMisrouted,
@@ -579,7 +581,35 @@ export const InboxScreen: React.FC = () => {
                 <SealedQrCard
                   key={doc.id}
                   document={doc}
+                  isBusy={isBusy}
                   onScan={(target) => openScannerForDocument(target, true)}
+                  onSubmitCode={async (target, rawCode) => {
+                    const resolved = await scanQr(rawCode, target.id);
+                    if (resolved.kind === 'document_denied') {
+                      throw new Error(resolved.reason);
+                    }
+                    if (resolved.kind !== 'document_authorized') {
+                      throw new Error(
+                        target.copyFormat === DocumentCopyFormat.DIGITAL
+                          ? 'Enter the 6-char Unlock Code from Tracely Web or tracking code.'
+                          : "Enter the Tracking Code from the sender's routing slip.",
+                      );
+                    }
+                    if (resolved.document.id !== target.id) {
+                      throw new Error('This code belongs to a different sealed transfer.');
+                    }
+                    if (resolved.sentByActor) {
+                      throw new Error('Senders cannot confirm receipt of their own dispatch.');
+                    }
+                    if (!resolved.unlockedViaSync && resolved.pendingForActorOffice) {
+                      await acknowledgeReceipt(
+                        target,
+                        null,
+                        resolved.verificationCode ?? rawCode.trim(),
+                      );
+                    }
+                    openDocument(target.id);
+                  }}
                   onDecline={(target) => setDeclineTarget(target)}
                 />
               );

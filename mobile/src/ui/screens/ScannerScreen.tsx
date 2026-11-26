@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import {
-  ArrowLeft,
+  Check,
   History,
   KeyRound,
   Lock,
@@ -31,9 +31,10 @@ export const ScannerScreen: React.FC = () => {
     scannerTarget,
     clearScannerTarget,
     declineMisrouted,
+    scanQr,
+    acknowledgeReceipt,
     unlockSoftCopyWithPassword,
     setActiveTab,
-    goBack,
     scannerPaused,
     setScannerPaused,
     recentScans,
@@ -44,6 +45,9 @@ export const ScannerScreen: React.FC = () => {
   const [showTrackSheet, setShowTrackSheet] = useState(false);
   const [declineTarget, setDeclineTarget] = useState<Document | null>(null);
   const [passwordTarget, setPasswordTarget] = useState<Document | null>(null);
+  const [targetCodeInput, setTargetCodeInput] = useState('');
+  const [targetCodeError, setTargetCodeError] = useState<string | null>(null);
+  const [submittingTargetCode, setSubmittingTargetCode] = useState(false);
 
   const pendingIncomingDocs = useMemo(() => {
     if (!actor) return [];
@@ -56,6 +60,58 @@ export const ScannerScreen: React.FC = () => {
   }, [documents, scannerTarget]);
 
   const isSoftCopyTarget = scannerTarget?.copyFormat === DocumentCopyFormat.DIGITAL;
+
+  const handleTargetCodeSubmit = async () => {
+    if (!scannerTarget) return;
+    const clean = targetCodeInput.trim();
+    if (!clean || submittingTargetCode || isBusy) {
+      if (!clean) {
+        setTargetCodeError(
+          isSoftCopyTarget
+            ? 'Enter the 6-char Unlock Code from Tracely Web or tracking code.'
+            : "Enter the Tracking Code from the sender's routing slip.",
+        );
+      }
+      return;
+    }
+    setTargetCodeError(null);
+    setSubmittingTargetCode(true);
+    try {
+      const resolved = await scanQr(clean, scannerTarget.documentId);
+      if (resolved.kind === 'document_denied') {
+        throw new Error(resolved.reason);
+      }
+      if (resolved.kind !== 'document_authorized') {
+        throw new Error(
+          isSoftCopyTarget
+            ? 'Enter the 6-char Unlock Code from Tracely Web or tracking code.'
+            : "Enter the Tracking Code from the sender's routing slip.",
+        );
+      }
+      if (resolved.document.id !== scannerTarget.documentId) {
+        throw new Error('This code belongs to a different sealed transfer.');
+      }
+      if (resolved.sentByActor) {
+        throw new Error('Senders cannot confirm receipt of their own dispatch.');
+      }
+      if (!resolved.unlockedViaSync && resolved.pendingForActorOffice) {
+        await acknowledgeReceipt(
+          resolved.document,
+          null,
+          resolved.verificationCode ?? clean,
+        );
+      }
+      setTargetCodeInput('');
+      clearScannerTarget();
+      openDocument(resolved.document.id);
+    } catch (err) {
+      setTargetCodeError(
+        err instanceof Error ? err.message : 'Unable to verify unlock code.',
+      );
+    } finally {
+      setSubmittingTargetCode(false);
+    }
+  };
 
   return (
     <View style={styles.screen}>
@@ -75,17 +131,68 @@ export const ScannerScreen: React.FC = () => {
                   }`}
                 </Text>
                 <Text style={styles.targetSub}>
-                  Scan the QR code or enter the 6-character code to unlock.
+                  Scan the QR code or enter the active code below to unlock.
                 </Text>
               </View>
               <Pressable
-                onPress={clearScannerTarget}
+                onPress={() => {
+                  setTargetCodeInput('');
+                  setTargetCodeError(null);
+                  clearScannerTarget();
+                }}
                 accessibilityLabel="Clear target transfer"
                 hitSlop={8}
                 style={styles.targetCloseBtn}
               >
                 <X size={14} color={SDO_COLORS.textSecondary} />
               </Pressable>
+            </View>
+            <View style={styles.targetCodeWrap}>
+              <View style={styles.targetCodeRow}>
+                <TextInput
+                  testID="mobile-scanner-target-code-input"
+                  value={targetCodeInput}
+                  onChangeText={(val) => {
+                    setTargetCodeInput(val);
+                    if (targetCodeError) setTargetCodeError(null);
+                  }}
+                  placeholder={
+                    isSoftCopyTarget
+                      ? 'Enter 6-char code (e.g. K7P-492)'
+                      : 'Enter Tracking Code (e.g. TRC-2026-000142)'
+                  }
+                  placeholderTextColor={SDO_COLORS.textMuted}
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  returnKeyType="done"
+                  onSubmitEditing={() => {
+                    handleTargetCodeSubmit().catch(() => {});
+                  }}
+                  style={[styles.targetCodeInput, targetCodeError && styles.targetCodeInputError]}
+                />
+                <Pressable
+                  testID="mobile-scanner-target-code-submit"
+                  disabled={!targetCodeInput.trim() || submittingTargetCode || isBusy}
+                  onPress={() => {
+                    handleTargetCodeSubmit().catch(() => {});
+                  }}
+                  style={[
+                    styles.targetCodeBtn,
+                    (!targetCodeInput.trim() || submittingTargetCode || isBusy) &&
+                      styles.targetCodeBtnDisabled,
+                  ]}
+                >
+                  <Check size={14} color={SDO_COLORS.white} />
+                  <Text style={styles.targetCodeBtnText}>
+                    {submittingTargetCode ? '...' : 'Unlock'}
+                  </Text>
+                </Pressable>
+              </View>
+              {targetCodeError ? (
+                <Text testID="mobile-scanner-target-code-error" style={styles.targetCodeError}>
+                  {targetCodeError}
+                </Text>
+              ) : null}
             </View>
             {isSoftCopyTarget && targetedDoc ? (
               <Pressable
@@ -495,5 +602,57 @@ const styles = StyleSheet.create({
     fontFamily: SDO_FONTS.sans,
     fontSize: 11,
     color: SDO_COLORS.textMuted,
+  },
+  targetCodeWrap: {
+    gap: 6,
+  },
+  targetCodeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  targetCodeInput: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 38,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: SDO_COLORS.amberBorder,
+    backgroundColor: SDO_COLORS.surface,
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+    fontFamily: SDO_FONTS.mono,
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: SDO_COLORS.textPrimary,
+  },
+  targetCodeInputError: {
+    borderColor: SDO_COLORS.rose,
+  },
+  targetCodeBtn: {
+    minHeight: 38,
+    borderRadius: 12,
+    backgroundColor: SDO_COLORS.navy,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    flexShrink: 0,
+  },
+  targetCodeBtnDisabled: {
+    opacity: 0.48,
+  },
+  targetCodeBtnText: {
+    fontFamily: SDO_FONTS.sans,
+    fontSize: 12,
+    fontWeight: '800',
+    color: SDO_COLORS.white,
+  },
+  targetCodeError: {
+    fontFamily: SDO_FONTS.sans,
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: SDO_COLORS.roseText,
   },
 });

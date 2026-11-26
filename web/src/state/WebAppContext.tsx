@@ -34,12 +34,14 @@ import {
   TurnaroundAnalyticsReport,
   UserPreferences,
   UserSecurityPreferences,
+  VersionChangeType,
   WebRoute,
 } from '../domain/types';
 import { buildLocalSentContributions } from '../components/SentContributionGraph';
 import {
   AUTH_REQUIRED,
   DEFAULT_API_BASE_URL,
+  parseOpaqueQrToken,
   PRODUCTION_API_BASE_URL,
   STORAGE_KEY_API_URL,
   validateApiBaseUrl,
@@ -205,6 +207,7 @@ export interface WebContextValue {
     password?: string,
   ): Promise<DocumentRecord>;
   createUnlockChallenge(documentId: string): Promise<DocumentUnlockChallenge>;
+  unlockWithCode(documentId: string, rawCode: string): Promise<DocumentRecord>;
   unlockWithPassword(documentId: string, password: string): Promise<DocumentRecord>;
   batchAcknowledgeReceipts(
     items: ReadonlyArray<string | { readonly documentId: string; readonly verificationCode?: string }>,
@@ -237,6 +240,7 @@ export interface WebContextValue {
     fileName?: string;
     sha256Checksum: string;
     revisionNote: string;
+    changeType?: VersionChangeType;
   }): Promise<DocumentRecord>;
   issuePresignedView(documentId: string, versionNumber: number): Promise<PresignedDownloadGrant>;
   issueProofPhotoView(documentId: string, transactionId: string): Promise<PresignedDownloadGrant>;
@@ -246,6 +250,8 @@ export interface WebContextValue {
   declareCategory(name: string, code: string): Promise<DocumentCategory>;
   markNotificationRead(notificationId: string): Promise<void>;
   markAllNotificationsRead(): Promise<void>;
+  browserNotificationPermission: NotificationPermission | 'unsupported';
+  requestBrowserNotificationPermission(): Promise<NotificationPermission | 'unsupported'>;
   loadAuditLogs(documentId?: string): Promise<void>;
   updateAvailability(
     status: AvailabilityStatus,
@@ -373,7 +379,43 @@ function saveStoredUserPrefs(prefs: UserPreferences): void {
 }
 const WEB_WORKSPACE_POLL_MS = 15_000;
 const WEB_REALTIME_PULSE_MS = 3_000;
+const WEB_BACKGROUND_PULSE_MS = 10_000;
 const MAX_ANNOUNCED_NOTIFS_STORED = 200;
+
+function readBrowserNotificationPermission(): NotificationPermission | 'unsupported' {
+  if (typeof window === 'undefined' || !('Notification' in window) || !window.Notification) {
+    return 'unsupported';
+  }
+  return window.Notification.permission;
+}
+
+function playNotificationChime(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const AudioCtx =
+      window.AudioContext ||
+      (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(1174.66, ctx.currentTime + 0.09);
+    gain.gain.setValueAtTime(0.001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.08, ctx.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.22);
+    osc.onended = () => {
+      ctx.close().catch(() => {});
+    };
+  } catch {
+    // Ignore audio errors in restricted / test browser contexts
+  }
+}
 
 function isAccountApprover(user: Personnel | null): boolean {
   if (!user) return false;
@@ -605,6 +647,9 @@ export const WebAppProvider: React.FC<WebAppProviderProps> = ({
   const [batchUsbReceiveOpen, setBatchUsbReceiveOpen] = useState(false);
   const [routingTemplates, setRoutingTemplates] = useState<ReadonlyArray<RoutingTemplate>>([]);
   const [toast, setToast] = useState<ToastMessage | null>(null);
+  const [browserNotificationPermission, setBrowserNotificationPermission] = useState<
+    NotificationPermission | 'unsupported'
+  >(readBrowserNotificationPermission);
   const [securityPrefs, setSecurityPrefs] = useState<UserSecurityPreferences>({
     biometricLock: true,
     screenshotShield: true,
@@ -814,13 +859,64 @@ export const WebAppProvider: React.FC<WebAppProviderProps> = ({
     if (!actor) {
       loadedAnnouncedActorIdRef.current = null;
       announcedNotifIdsRef.current.clear();
+      unlockChallengesRef.current.clear();
       return;
     }
     if (loadedAnnouncedActorIdRef.current !== actor.id) {
       loadedAnnouncedActorIdRef.current = actor.id;
       announcedNotifIdsRef.current = loadAnnouncedNotifIds(actor.id);
+      unlockChallengesRef.current.clear();
     }
   }, [actor]);
+
+  const markNotificationReadStable = useCallback(
+    async (notificationId: string) => {
+      setNotifications((prev) => {
+        const target = prev.find((n) => n.id === notificationId);
+        if (!target || target.read) return prev;
+        return prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n));
+      });
+      if (actorIdRef.current && activeGateway.markNotificationRead) {
+        try {
+          await activeGateway.markNotificationRead(notificationId);
+        } catch {
+          // Keep optimistic UI responsive
+        }
+      }
+    },
+    [activeGateway],
+  );
+
+  const requestBrowserNotificationPermissionStable = useCallback(async () => {
+    const current = readBrowserNotificationPermission();
+    if (current === 'unsupported') {
+      setBrowserNotificationPermission('unsupported');
+      notify('info', 'This browser does not support desktop alerts. In-app inbox alerts remain active.');
+      return 'unsupported' as const;
+    }
+    try {
+      const result = await window.Notification.requestPermission();
+      setBrowserNotificationPermission(result);
+      if (result === 'granted') {
+        setUserPreferences((prev) => {
+          const next = { ...prev, desktopNotifications: true };
+          saveStoredUserPrefs(next);
+          return next;
+        });
+        notify('success', 'Web notifications enabled for incoming inbox documents.');
+      } else if (result === 'denied') {
+        notify(
+          'info',
+          'Browser notifications are blocked in browser settings. In-app inbox alerts remain active.',
+        );
+      }
+      return result;
+    } catch {
+      const nextPerm = readBrowserNotificationPermission();
+      setBrowserNotificationPermission(nextPerm);
+      return nextPerm;
+    }
+  }, [notify]);
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -843,47 +939,93 @@ export const WebAppProvider: React.FC<WebAppProviderProps> = ({
       }
     }
 
-    if (
-      !actor ||
-      !userPreferences.desktopNotifications ||
-      typeof window === 'undefined' ||
-      !window.Notification ||
-      window.Notification.permission !== 'granted'
-    ) {
+    if (!actor || unread.length === 0) {
       return;
     }
 
-    let announcedChanged = false;
-    for (const item of unread) {
-      if (announcedNotifIdsRef.current.has(item.id)) continue;
+    const freshItems = unread.filter((item) => !announcedNotifIdsRef.current.has(item.id));
+    if (freshItems.length === 0) {
+      return;
+    }
+
+    for (const item of freshItems) {
       announcedNotifIdsRef.current.add(item.id);
-      announcedChanged = true;
-      try {
-        const nativeNotif = new window.Notification(item.title, {
-          body: item.content,
-          tag: item.id,
-        });
-        nativeNotif.onclick = () => {
-          window.focus?.();
-          const matchedDoc = documentsRef.current.find((d) => d.id === item.documentId);
-          if (matchedDoc && (isPendingReceiptForActor(matchedDoc, actor) || Boolean(matchedDoc.isSealed))) {
-            openSealedDocumentAction(matchedDoc);
-          } else {
-            applyRoute('document', item.documentId);
-          }
-        };
-      } catch {
-        // Ignore Notification constructor errors in restricted browser contexts
+    }
+    saveAnnouncedNotifIds(
+      actor.id,
+      announcedNotifIdsRef.current,
+      unread.map((u) => u.id),
+    );
+
+    const openFromNotification = (item: PrivacySafeNotification) => {
+      void markNotificationReadStable(item.id);
+      const matchedDoc = documentsRef.current.find((d) => d.id === item.documentId);
+      if (matchedDoc && (isPendingReceiptForActor(matchedDoc, actor) || Boolean(matchedDoc.isSealed))) {
+        openSealedDocumentAction(matchedDoc);
+      } else if (item.documentId) {
+        applyRoute('document', item.documentId);
+      } else {
+        applyRoute('inbox', null);
+      }
+    };
+
+    const newest = freshItems[0];
+    const newestDoc = documentsRef.current.find((d) => d.id === newest.documentId);
+    const newestIsSealed = Boolean(
+      newestDoc && (isPendingReceiptForActor(newestDoc, actor) || Boolean(newestDoc.isSealed)),
+    );
+
+    // Always surface an immediate in-app live inbox alert toast (even if desktop permission isn't granted)
+    if (freshItems.length === 1) {
+      const detail = newest.authenticatedDetail || newest.content;
+      notify('info', `${newest.title}${detail ? ` — ${detail}` : ''}`, {
+        label: newestIsSealed ? 'Unlock' : 'Open',
+        onClick: () => openFromNotification(newest),
+      });
+    } else {
+      notify('info', `${freshItems.length} new inbox notifications — ${newest.title}`, {
+        label: 'View Inbox',
+        onClick: () => applyRoute('inbox', null),
+      });
+    }
+
+    if (userPreferences.notificationSound) {
+      playNotificationChime();
+    }
+
+    const canDispatchNative =
+      userPreferences.desktopNotifications &&
+      typeof window !== 'undefined' &&
+      Boolean(window.Notification) &&
+      window.Notification.permission === 'granted';
+
+    if (canDispatchNative) {
+      for (const item of freshItems) {
+        try {
+          const nativeNotif = new window.Notification(item.title, {
+            body: item.content,
+            tag: item.id,
+            icon: '/tracely-logo.png',
+          });
+          nativeNotif.onclick = () => {
+            window.focus?.();
+            openFromNotification(item);
+          };
+        } catch {
+          // Ignore Notification constructor errors in restricted browser contexts
+        }
       }
     }
-    if (announcedChanged) {
-      saveAnnouncedNotifIds(
-        actor.id,
-        announcedNotifIdsRef.current,
-        unread.map((u) => u.id),
-      );
-    }
-  }, [actor, notifications, applyRoute, openSealedDocumentAction, userPreferences.desktopNotifications]);
+  }, [
+    actor,
+    notifications,
+    applyRoute,
+    markNotificationReadStable,
+    notify,
+    openSealedDocumentAction,
+    userPreferences.desktopNotifications,
+    userPreferences.notificationSound,
+  ]);
 
   useEffect(() => {
     if (!shouldBootstrap || initialBootDoneRef.current) return;
@@ -903,6 +1045,7 @@ export const WebAppProvider: React.FC<WebAppProviderProps> = ({
     if (!actor) return;
     const hasPulse = typeof activeGateway.pollRealtimePulse === 'function';
     let alive = true;
+    let lastHiddenPulseAt = 0;
 
     const triggerLiveRefresh = () => {
       hydrateWorkspace()
@@ -913,7 +1056,12 @@ export const WebAppProvider: React.FC<WebAppProviderProps> = ({
     };
 
     const runPulse = async () => {
-      if (!alive || (typeof document !== 'undefined' && document.hidden)) return;
+      if (!alive) return;
+      if (typeof document !== 'undefined' && document.hidden) {
+        const now = Date.now();
+        if (now - lastHiddenPulseAt < WEB_BACKGROUND_PULSE_MS) return;
+        lastHiddenPulseAt = now;
+      }
       if (!activeGateway.pollRealtimePulse) return;
       try {
         const res = await activeGateway.pollRealtimePulse(realtimeCursorRef.current);
@@ -939,17 +1087,19 @@ export const WebAppProvider: React.FC<WebAppProviderProps> = ({
 
     const pulseId = hasPulse ? window.setInterval(() => void runPulse(), WEB_REALTIME_PULSE_MS) : null;
     const fallbackId = window.setInterval(() => {
-      if (typeof document !== 'undefined' && document.hidden) return;
+      if (!alive) return;
       triggerLiveRefresh();
     }, WEB_WORKSPACE_POLL_MS);
 
     const onVisibilityChange = () => {
+      setBrowserNotificationPermission(readBrowserNotificationPermission());
       if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
         triggerLiveRefresh();
         if (hasPulse) void runPulse();
       }
     };
     const onFocusOrOnline = () => {
+      setBrowserNotificationPermission(readBrowserNotificationPermission());
       if (hasPulse) {
         void runPulse();
       } else {
@@ -1254,12 +1404,20 @@ export const WebAppProvider: React.FC<WebAppProviderProps> = ({
     [activeGateway],
   );
 
+  const unlockChallengesRef = useRef<Map<string, DocumentUnlockChallenge>>(new Map());
+
   const createUnlockChallengeStable = useCallback(
     async (documentId: string): Promise<DocumentUnlockChallenge> => {
+      const cached = unlockChallengesRef.current.get(documentId);
+      if (cached && new Date(cached.expiresAt).getTime() > Date.now() + 2000) {
+        return { ...cached, reused: true };
+      }
       if (!activeGateway.createUnlockChallenge) {
         throw new Error('Unlock QR generation is not supported by this server gateway.');
       }
-      return activeGateway.createUnlockChallenge(documentId);
+      const created = await activeGateway.createUnlockChallenge(documentId);
+      unlockChallengesRef.current.set(documentId, created);
+      return created;
     },
     [activeGateway],
   );
@@ -1852,12 +2010,68 @@ export const WebAppProvider: React.FC<WebAppProviderProps> = ({
           verificationCode,
           password,
         );
+        unlockChallengesRef.current.delete(documentId);
         upsertDocument(updated);
         setSoftCopyUnlockDocId((curr) => (curr === documentId ? null : curr));
         setHardCopyReceiveDocId((curr) => (curr === documentId ? null : curr));
         return updated;
       }, proofPhoto ? 'Custody receipt confirmed with verified proof photo.' : password ? 'Password verified — document unlocked & saved in Track.' : 'Receipt verified — document unlocked & custody confirmed.'),
     createUnlockChallenge: createUnlockChallengeStable,
+    unlockWithCode: async (documentId, rawCode) =>
+      runAction(async () => {
+        const clean = rawCode.trim();
+        const parsed = parseOpaqueQrToken(clean);
+        if (parsed.kind === 'unlock_challenge') {
+          let unlocked: DocumentRecord;
+          if (activeGateway.consumeUnlockChallenge) {
+            unlocked = await activeGateway.consumeUnlockChallenge(clean, documentId);
+          } else {
+            const resolved = await activeGateway.resolveQr(clean);
+            if (resolved.kind === 'document_denied') {
+              throw new Error(resolved.reason);
+            }
+            if (resolved.kind !== 'document_authorized') {
+              throw new Error('Enter a valid 6-character unlock code or tracking code.');
+            }
+            if (resolved.document.id !== documentId) {
+              throw new Error('This unlock code belongs to a different sealed document.');
+            }
+            unlocked = resolved.document;
+          }
+          unlockChallengesRef.current.delete(documentId);
+          upsertDocument(unlocked);
+          setSoftCopyUnlockDocId((curr) => (curr === documentId ? null : curr));
+          setHardCopyReceiveDocId((curr) => (curr === documentId ? null : curr));
+          return unlocked;
+        }
+        if (parsed.kind === 'document') {
+          const resolved = await activeGateway.resolveQr(clean);
+          if (resolved.kind === 'document_denied') {
+            throw new Error(resolved.reason);
+          }
+          if (resolved.kind !== 'document_authorized') {
+            throw new Error('Enter the 6-character unlock code or routing Tracking Code.');
+          }
+          if (resolved.document.id !== documentId) {
+            throw new Error('This code belongs to a different document transfer.');
+          }
+          if (resolved.sentByActor || isPendingSentByActor(resolved.document, actor)) {
+            throw new Error('Senders cannot confirm receipt of their own transfer.');
+          }
+          const unlocked = await activeGateway.acknowledgeReceipt(
+            documentId,
+            undefined,
+            undefined,
+            resolved.verificationCode ?? clean,
+          );
+          unlockChallengesRef.current.delete(documentId);
+          upsertDocument(unlocked);
+          setSoftCopyUnlockDocId((curr) => (curr === documentId ? null : curr));
+          setHardCopyReceiveDocId((curr) => (curr === documentId ? null : curr));
+          return unlocked;
+        }
+        throw new Error('Enter the 6-character unlock code or routing Tracking Code for this document.');
+      }, 'Code verified — document unlocked & custody confirmed.'),
     unlockWithPassword: async (documentId, password) =>
       runAction(async () => {
         const updated = await activeGateway.acknowledgeReceipt(
@@ -1867,6 +2081,7 @@ export const WebAppProvider: React.FC<WebAppProviderProps> = ({
           undefined,
           password,
         );
+        unlockChallengesRef.current.delete(documentId);
         upsertDocument(updated);
         setSoftCopyUnlockDocId((curr) => (curr === documentId ? null : curr));
         setHardCopyReceiveDocId((curr) => (curr === documentId ? null : curr));
@@ -2041,25 +2256,14 @@ export const WebAppProvider: React.FC<WebAppProviderProps> = ({
         setCategories((prev) => [...prev, created]);
         return created;
       }, 'Shared category saved across all offices.'),
-    markNotificationRead: async (notificationId) => {
-      const target = notifications.find((n) => n.id === notificationId);
-      if (!target || target.read) return;
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n)),
-      );
-      if (actor && activeGateway.markNotificationRead) {
-        try {
-          await activeGateway.markNotificationRead(notificationId);
-        } catch {
-          // Keep optimistic UI responsive
-        }
-      }
-    },
+    markNotificationRead: markNotificationReadStable,
     markAllNotificationsRead: async () =>
       runAction(async () => {
         await activeGateway.markAllNotificationsRead();
         setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
       }, 'Alerts marked as read.'),
+    browserNotificationPermission,
+    requestBrowserNotificationPermission: requestBrowserNotificationPermissionStable,
     loadAuditLogs: async (documentId) =>
       runAction(async () => {
         const logs = await activeGateway.listAuditLogs(documentId ?? '');

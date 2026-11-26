@@ -45,6 +45,7 @@ import {
   buildBatchItemTitle,
   formatBytes,
   formatCompactDate,
+  formatDisplayFileName,
   normalizeUploadFileName,
 } from '../utils/formatters';
 
@@ -364,7 +365,7 @@ export const SendScreen: React.FC = () => {
       const prepared: PickedSoftFile[] = [];
       for (const file of files) {
         const sha256 = await computeSha256FromUri(file.uri);
-        const pickedName = file.name ?? 'document.pdf';
+        const pickedName = formatDisplayFileName(file.name ?? 'document.pdf', 'document.pdf');
         prepared.push({
           uri: file.uri,
           originalName: pickedName,
@@ -701,10 +702,10 @@ export const SendScreen: React.FC = () => {
                     <View style={styles.fileCardRow}>
                       <FileText size={18} color={SDO_COLORS.emeraldText} />
                       <View style={styles.fileCopy}>
-                        <Text numberOfLines={1} style={styles.fileName}>
+                        <Text numberOfLines={1} ellipsizeMode="middle" style={styles.fileName}>
                           {resolvedName}
                         </Text>
-                        <Text numberOfLines={1} style={styles.fileMeta}>
+                        <Text numberOfLines={1} ellipsizeMode="middle" style={styles.fileMeta}>
                           {`${formatBytes(file.size)} · Verified${
                             resolvedName !== file.originalName ? ` · Original: ${file.originalName}` : ''
                           }`}

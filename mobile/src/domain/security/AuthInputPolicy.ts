@@ -180,21 +180,32 @@ export class AuthInputPolicy {
     }
 
     const evaluation = AuthInputPolicy.evaluatePassword(password, excludedHints);
-    if (
-      !evaluation.hasUppercase ||
-      !evaluation.hasLowercase ||
-      !evaluation.hasDigit ||
-      !evaluation.hasSymbol
-    ) {
-      throw new DomainRuleError(
-        'WEAK_PASSWORD',
-        `${label} must include uppercase, lowercase, number, and symbol characters.`,
-      );
+    const missing: string[] = [];
+    if (!evaluation.hasUppercase) missing.push('an uppercase letter (A–Z)');
+    if (!evaluation.hasLowercase) missing.push('a lowercase letter (a–z)');
+    if (!evaluation.hasDigit) missing.push('a number (0–9)');
+    if (!evaluation.hasSymbol) missing.push('a symbol (e.g. !@#$%)');
+    if (missing.length > 0) {
+      const formatted =
+        missing.length === 1
+          ? missing[0]
+          : `${missing.slice(0, -1).join(', ')} and ${missing[missing.length - 1]}`;
+      throw new DomainRuleError('WEAK_PASSWORD', `${label} must include ${formatted}.`);
     }
     if (!evaluation.noWeakPattern) {
+      const lower = password.toLowerCase();
+      const matchedWeak = WEAK_FRAGMENTS.find((frag) => lower.includes(frag));
       throw new DomainRuleError(
         'WEAK_PASSWORD',
-        `${label} cannot contain common words or your Employee ID/email.`,
+        matchedWeak
+          ? `${label} cannot contain the common phrase "${matchedWeak}".`
+          : `${label} cannot contain your Employee ID or email.`,
+      );
+    }
+    if (!confirmPassword) {
+      throw new DomainRuleError(
+        'PASSWORD_MISMATCH',
+        `Re-enter your ${label.toLowerCase()} to confirm.`,
       );
     }
     if (password !== confirmPassword) {

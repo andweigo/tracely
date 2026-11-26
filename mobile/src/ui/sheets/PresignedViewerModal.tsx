@@ -31,7 +31,7 @@ import type { PresignedDownloadGrant } from '../../repositories/contracts/IDocum
 import { useAppServices } from '../../state/AppServiceContext';
 import { ModalSheet } from '../components/ModalSheet';
 import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
-import { formatBytes } from '../utils/formatters';
+import { formatBytes, formatDisplayFileName } from '../utils/formatters';
 
 interface PresignedViewerModalProps {
   grant: PresignedDownloadGrant | null;
@@ -223,8 +223,8 @@ export const PresignedViewerModal: React.FC<PresignedViewerModalProps> = ({
       <View style={styles.previewCard}>
         <View style={styles.fileHeader}>
           <FileCheck2 size={18} color={SDO_COLORS.navy} />
-          <Text numberOfLines={2} style={styles.fileTitle}>
-            {grant.version.fileName} (v{grant.version.versionNumber})
+          <Text numberOfLines={2} ellipsizeMode="middle" style={styles.fileTitle}>
+            {formatDisplayFileName(grant.version.fileName)} (v{grant.version.versionNumber})
           </Text>
         </View>
         <Text style={styles.note}>

@@ -1,7 +1,7 @@
 import { AuditLogEntry } from '../entities/AuditLogEntry';
 import { Document, ExternalMilestone } from '../entities/Document';
 import { DocumentCategory } from '../entities/DocumentCategory';
-import { DocumentVersion } from '../entities/DocumentVersion';
+import { DocumentVersion, VersionChangeType } from '../entities/DocumentVersion';
 import {
   DEFAULT_USER_WORKFLOW_PREFERENCES,
   LandingTabPreference,
@@ -75,12 +75,15 @@ export interface SchoolDto {
 export interface DocumentVersionDto {
   id: string;
   version_number: number;
+  change_type?: VersionChangeType;
   file_name: string;
   mime_type: string;
   size_bytes: number;
   sha256_checksum: string;
   uploaded_by_id: string;
   uploaded_by_name: string;
+  uploaded_by_office_code?: string;
+  uploaded_by_office_name?: string;
   uploaded_at: string;
   revision_note?: string;
   storage_key: string;
@@ -331,12 +334,15 @@ export class DocumentMapper {
         new DocumentVersion({
           id: v.id,
           versionNumber: v.version_number,
+          changeType: v.change_type,
           fileName: v.file_name,
           mimeType: v.mime_type,
           sizeBytes: v.size_bytes,
           sha256Checksum: v.sha256_checksum,
           uploadedById: v.uploaded_by_id,
           uploadedByName: v.uploaded_by_name,
+          uploadedByOfficeCode: v.uploaded_by_office_code,
+          uploadedByOfficeName: v.uploaded_by_office_name,
           uploadedAt: v.uploaded_at,
           revisionNote: v.revision_note,
           storageKey: v.storage_key,

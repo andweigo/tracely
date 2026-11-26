@@ -21,12 +21,17 @@ export class QrResolutionService {
     this._policy = policy;
   }
 
-  public async resolveRawQr(actor: Personnel, rawQrValue: string): Promise<QrResolutionResult> {
+  public async resolveRawQr(
+    actor: Personnel,
+    rawQrValue: string,
+    expectedDocumentId?: string | null,
+  ): Promise<QrResolutionResult> {
     const payload = QrPayloadParser.parse(rawQrValue);
     return payload.execute({
       actor,
       policy: this._policy,
       backend: this._docRepo,
+      expectedDocumentId,
     });
   }
 }

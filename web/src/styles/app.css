@@ -4740,3 +4740,178 @@ body,
   font-weight: 500;
   transition: fill 0.2s ease;
 }
+
+/* ---------- Password visibility toggle & clear inline field errors ---------- */
+.password-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.password-toggle-btn:hover {
+  color: var(--navy);
+  background: var(--surface-soft);
+}
+
+.input-error {
+  border-color: var(--rose) !important;
+  box-shadow: 0 0 0 2px rgba(225, 29, 72, 0.12);
+}
+
+.field-error {
+  margin: 4px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--rose-text);
+}
+
+.field-ok {
+  margin: 4px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--emerald-text);
+}
+
+.rule-chip-err {
+  background: var(--rose-soft);
+  border-color: var(--rose-border);
+  color: var(--rose-text);
+}
+
+/* ---------- Clickable Unlock QR + Attached Code Input + Duration ---------- */
+.unlock-qr-frame-btn {
+  cursor: pointer;
+  transition: border-color 160ms ease, transform 160ms ease, opacity 160ms ease;
+}
+
+.unlock-qr-frame-btn:hover,
+.unlock-qr-frame-btn:focus-visible {
+  border-color: var(--navy);
+  outline: none;
+}
+
+.unlock-duration-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--navy);
+  font-variant-numeric: tabular-nums;
+}
+
+.unlock-code-attach-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.unlock-code-attach-highlight {
+  border-color: var(--amber);
+  box-shadow: 0 0 0 3px rgba(243, 179, 42, 0.24);
+}
+
+.unlock-code-inline-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.unlock-code-inline-row .input {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ---------- Inbox Web Notifications Banner & Bottom Nav Badge ---------- */
+.inbox-notif-banner {
+  background: var(--sky-soft);
+  border-color: var(--sky-border);
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.inbox-notif-banner-copy {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.inbox-notif-banner-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--sky-border);
+  color: var(--navy);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.bottom-nav-icon-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bottom-nav-badge {
+  position: absolute;
+  top: -5px;
+  right: -10px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--rose);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 16px;
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .unlock-qr-frame-btn,
+  .unlock-code-attach-form {
+    transition: none;
+  }
+}

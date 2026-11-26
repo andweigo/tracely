@@ -178,6 +178,7 @@ export interface WebBackendGateway {
   ): Promise<import('./types').DocumentUnlockChallenge>;
   consumeUnlockChallenge?(
     codeOrToken: string,
+    documentId?: string,
   ): Promise<import('./types').DocumentRecord>;
   completeDocument?(
     documentId: string,
@@ -214,6 +215,7 @@ export interface WebBackendGateway {
     fileName?: string;
     sha256Checksum: string;
     revisionNote: string;
+    changeType?: import('./types').VersionChangeType;
   }): Promise<import('./types').DocumentRecord>;
   issuePresignedView(
     documentId: string,

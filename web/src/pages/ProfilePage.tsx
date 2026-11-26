@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   Building2,
   Check,
+  Eye,
+  EyeOff,
   KeyRound,
   Laptop,
   LogOut,
@@ -14,6 +16,7 @@ import {
   Users,
   X,
 } from 'lucide-react';
+import { AUTH_INPUT_LIMITS, AuthInputPolicy } from '../domain/authPolicy';
 import { AvailabilityStatus, SentContributionReport } from '../domain/types';
 import { useWebApp } from '../state/WebAppContext';
 import { IdentityWalletCard } from '../components/IdentityWalletCard';
@@ -73,6 +76,9 @@ export const ProfilePage: React.FC = () => {
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [currPass, setCurrPass] = useState('');
   const [newPass, setNewPass] = useState('');
+  const [showCurrPass, setShowCurrPass] = useState(false);
+  const [showNewPass, setShowNewPass] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
   const [adminTab, setAdminTab] = useState<'approvals' | 'personnel' | 'offices'>('approvals');
   const [userSearch, setUserSearch] = useState('');
   const [approvalsPage, setApprovalsPage] = useState(1);
@@ -88,8 +94,9 @@ export const ProfilePage: React.FC = () => {
     [documents, actor],
   );
 
+  const actorId = actor?.id ?? null;
   useEffect(() => {
-    if (!actor) {
+    if (!actorId) {
       setServerContributions(null);
       return;
     }
@@ -102,7 +109,7 @@ export const ProfilePage: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [actor?.id, documents.length, getSentContributions]);
+  }, [actorId, documents.length, getSentContributions]);
 
   const contributionReport = serverContributions ?? localContributions;
   const [newOfficeCode, setNewOfficeCode] = useState('');
@@ -759,39 +766,108 @@ export const ProfilePage: React.FC = () => {
 
       <ModalDialog
         open={passwordOpen}
-        onClose={() => setPasswordOpen(false)}
+        onClose={() => {
+          setPasswordOpen(false);
+          setPasswordError(null);
+          setShowCurrPass(false);
+          setShowNewPass(false);
+        }}
         title="Change Account Password"
         subtitle="Applies across all Tracely Mobile and Web sessions"
       >
         <form
           onSubmit={async (e) => {
             e.preventDefault();
-            await changePassword(currPass, newPass);
-            setCurrPass('');
-            setNewPass('');
-            setPasswordOpen(false);
+            setPasswordError(null);
+            if (!currPass) {
+              setPasswordError('Enter your current password.');
+              return;
+            }
+            const err = AuthInputPolicy.getPasswordError(
+              newPass,
+              'New password',
+              actor ? [actor.employeeId, actor.email.split('@')[0] ?? ''] : [],
+            );
+            if (err) {
+              setPasswordError(err);
+              return;
+            }
+            try {
+              await changePassword(currPass, newPass);
+              setCurrPass('');
+              setNewPass('');
+              setShowCurrPass(false);
+              setShowNewPass(false);
+              setPasswordError(null);
+              setPasswordOpen(false);
+            } catch (submitErr) {
+              setPasswordError(
+                submitErr instanceof Error ? submitErr.message : 'Unable to update password.',
+              );
+            }
           }}
           style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
         >
-          <input
-            type="password"
-            className="input"
-            value={currPass}
-            onChange={(e) => setCurrPass(e.target.value)}
-            placeholder="Current password"
-          />
-          <input
-            type="password"
-            className="input"
-            value={newPass}
-            onChange={(e) => setNewPass(e.target.value)}
-            placeholder="New password (8–32 chars)"
-          />
+          <div className="password-input-wrap">
+            <input
+              type={showCurrPass ? 'text' : 'password'}
+              className="input"
+              value={currPass}
+              onChange={(e) => {
+                setCurrPass(e.target.value);
+                if (passwordError) setPasswordError(null);
+              }}
+              placeholder="Current password"
+              style={{ paddingRight: 42 }}
+            />
+            <button
+              type="button"
+              className="password-toggle-btn"
+              aria-label={showCurrPass ? 'Hide current password' : 'Show current password'}
+              onClick={() => setShowCurrPass((v) => !v)}
+            >
+              {showCurrPass ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
+          <div className="password-input-wrap">
+            <input
+              type={showNewPass ? 'text' : 'password'}
+              className={`input ${passwordError ? 'input-error' : ''}`}
+              maxLength={AUTH_INPUT_LIMITS.passwordMax}
+              value={newPass}
+              onChange={(e) => {
+                setNewPass(e.target.value);
+                if (passwordError) setPasswordError(null);
+              }}
+              placeholder="New password (8–32 chars)"
+              style={{ paddingRight: 42 }}
+            />
+            <button
+              type="button"
+              className="password-toggle-btn"
+              aria-label={showNewPass ? 'Hide new password' : 'Show new password'}
+              onClick={() => setShowNewPass((v) => !v)}
+            >
+              {showNewPass ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
+          {passwordError ? (
+            <p role="alert" className="field-error">
+              {passwordError}
+            </p>
+          ) : null}
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-            <button type="button" className="btn btn-outline" onClick={() => setPasswordOpen(false)}>
+            <button
+              type="button"
+              className="btn btn-outline"
+              onClick={() => {
+                setPasswordOpen(false);
+                setPasswordError(null);
+              }}
+            >
               Cancel
             </button>
-            <button type="submit" className="btn btn-primary" disabled={!currPass || newPass.length < 8}>
+            <button type="submit" className="btn btn-primary" disabled={!currPass || !newPass}>
               Update Password
             </button>
           </div>

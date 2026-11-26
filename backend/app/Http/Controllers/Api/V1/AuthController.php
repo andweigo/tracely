@@ -995,18 +995,55 @@ class AuthController extends Controller
 
     private function assertStrongPassword(string $password): void
     {
-        if (
-            strlen($password) < 8
-            || strlen($password) > 32
-            || ! preg_match('/[A-Z]/', $password)
-            || ! preg_match('/[a-z]/', $password)
-            || ! preg_match('/[0-9]/', $password)
-            || ! preg_match('/[^A-Za-z0-9\s]/', $password)
-            || trim($password) !== $password
-        ) {
+        $length = strlen($password);
+        if ($length === 0) {
+            throw new ApiDomainException('WEAK_PASSWORD', 'Password is required.');
+        }
+        if ($length < 8) {
             throw new ApiDomainException(
                 'WEAK_PASSWORD',
-                'Password must be 8–32 chars with uppercase, lowercase, number, and symbol.',
+                "Password is too short — use at least 8 characters (currently {$length}).",
+            );
+        }
+        if ($length > 32) {
+            throw new ApiDomainException(
+                'WEAK_PASSWORD',
+                "Password is too long — use at most 32 characters (currently {$length}).",
+            );
+        }
+        if (trim($password) !== $password) {
+            throw new ApiDomainException(
+                'WEAK_PASSWORD',
+                'Password cannot start or end with spaces.',
+            );
+        }
+        if (preg_match('/[\x00-\x1F\x7F]/', $password)) {
+            throw new ApiDomainException(
+                'WEAK_PASSWORD',
+                'Password contains unsupported control characters.',
+            );
+        }
+
+        $missing = [];
+        if (! preg_match('/[A-Z]/', $password)) {
+            $missing[] = 'an uppercase letter (A–Z)';
+        }
+        if (! preg_match('/[a-z]/', $password)) {
+            $missing[] = 'a lowercase letter (a–z)';
+        }
+        if (! preg_match('/[0-9]/', $password)) {
+            $missing[] = 'a number (0–9)';
+        }
+        if (! preg_match('/[^A-Za-z0-9\s]/', $password)) {
+            $missing[] = 'a symbol (e.g. !@#$%)';
+        }
+        if ($missing !== []) {
+            $list = count($missing) === 1
+                ? $missing[0]
+                : implode(', ', array_slice($missing, 0, -1)).' and '.end($missing);
+            throw new ApiDomainException(
+                'WEAK_PASSWORD',
+                "Password must include {$list}.",
             );
         }
 
@@ -1015,7 +1052,7 @@ class AuthController extends Controller
             if (str_contains($lower, $weak)) {
                 throw new ApiDomainException(
                     'WEAK_PASSWORD',
-                    'Password contains a commonly guessed phrase.',
+                    "Password cannot contain the commonly guessed phrase \"{$weak}\".",
                 );
             }
         }

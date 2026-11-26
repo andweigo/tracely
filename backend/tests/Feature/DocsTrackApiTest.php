@@ -1773,4 +1773,128 @@ class DocsTrackApiTest extends TestCase
         }
         $this->assertTrue($throttled, 'Expected 429 rate-limit response on repeated unlock code attempts.');
     }
+
+    public function test_unlock_challenge_persists_until_expiry_validates_document_id_clear_password_errors_and_default_filename_normalization(): void
+    {
+        $budgetToken = $this->loginAs('budget@tracely.app');
+        $opsToken = $this->loginAs('ops@tracely.app');
+        $opsWebToken = $this->loginAs('ops@tracely.app');
+
+        // 1. Upload with URI-encoded & Android provider-prefixed default filename -> cleaned cleanly
+        $encodedPdf = UploadedFile::fake()->createWithContent(
+            'raw.pdf',
+            '%PDF-1.4 default filename normalization test',
+        );
+        $sha = hash_file('sha256', $encodedPdf->getRealPath());
+        $doc1 = $this->asToken($budgetToken)
+            ->post('/api/v1/documents', [
+                'title' => 'Persistent Unlock Duration Test',
+                'category_id' => 'cat-1',
+                'confidentiality_tier' => 'standard_internal',
+                'recipient_user_id' => 'usr-sgod-1',
+                'file_name' => 'primary%3ADownload%2FMemo%20Order%20%2312.pdf',
+                'sha256_checksum' => $sha,
+                'file' => $encodedPdf,
+            ])
+            ->assertCreated()
+            ->json('data');
+
+        $this->assertSame('Memo Order #12.pdf', $doc1['versions'][0]['file_name']);
+
+        // Second sealed doc to test document_id mismatch protection
+        $pdfOther = UploadedFile::fake()->createWithContent('other.pdf', '%PDF-1.4 other doc');
+        $doc2 = $this->asToken($budgetToken)
+            ->post('/api/v1/documents', [
+                'title' => 'Other Sealed Doc',
+                'category_id' => 'cat-1',
+                'confidentiality_tier' => 'standard_internal',
+                'recipient_user_id' => 'usr-sgod-1',
+                'sha256_checksum' => hash_file('sha256', $pdfOther->getRealPath()),
+                'file' => $pdfOther,
+            ])
+            ->assertCreated()
+            ->json('data');
+
+        // 2. First unlock-challenge request creates a 5-minute code (201); reopening reuses EXACT same code (200)
+        $first = $this->asToken($opsToken)
+            ->postJson("/api/v1/documents/{$doc1['id']}/unlock-challenge")
+            ->assertCreated()
+            ->assertJsonPath('reused', false)
+            ->json();
+
+        $reopened = $this->asToken($opsToken)
+            ->postJson("/api/v1/documents/{$doc1['id']}/unlock-challenge")
+            ->assertOk()
+            ->assertJsonPath('reused', true)
+            ->json();
+
+        $this->assertSame($first['challenge_id'], $reopened['challenge_id']);
+        $this->assertSame($first['short_code'], $reopened['short_code']);
+        $this->assertSame($first['token'], $reopened['token']);
+        $this->assertSame($first['expires_at'], $reopened['expires_at']);
+        $this->assertGreaterThan(0, $reopened['ttl_seconds']);
+
+        // 3. Submitting doc1's code against doc2's document_id is rejected WITHOUT consuming doc1's challenge
+        $this->asToken($opsWebToken)
+            ->postJson('/api/v1/qr/consume-unlock', [
+                'code' => $first['short_code'],
+                'document_id' => $doc2['id'],
+            ])
+            ->assertStatus(422)
+            ->assertJsonPath('code', 'UNLOCK_CHALLENGE_DOCUMENT_MISMATCH');
+
+        // Submitting doc1's code with doc1's document_id still succeeds!
+        $this->asToken($opsWebToken)
+            ->postJson('/api/v1/qr/consume-unlock', [
+                'code' => $first['short_code'],
+                'document_id' => $doc1['id'],
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.id', $doc1['id'])
+            ->assertJsonPath('data.is_sealed', false);
+
+        // 4. Once an active challenge expires, a new request rotates to a fresh 5-minute challenge (201)
+        $doc2First = $this->asToken($opsToken)
+            ->postJson("/api/v1/documents/{$doc2['id']}/unlock-challenge")
+            ->assertCreated()
+            ->json();
+
+        \App\Models\DocumentUnlockChallenge::query()
+            ->where('id', $doc2First['challenge_id'])
+            ->update(['expires_at' => now()->subSeconds(5)]);
+
+        $doc2Fresh = $this->asToken($opsToken)
+            ->postJson("/api/v1/documents/{$doc2['id']}/unlock-challenge")
+            ->assertCreated()
+            ->assertJsonPath('reused', false)
+            ->json();
+
+        $this->assertNotSame($doc2First['challenge_id'], $doc2Fresh['challenge_id']);
+        $this->assertNotSame($doc2First['token'], $doc2Fresh['token']);
+
+        // 5. Registration returns crystal-clear specific password error messages
+        $this->postJson('/api/v1/auth/register', [
+            'full_name' => 'Clear Error Test',
+            'employee_id' => 'TRC-9911',
+            'email' => 'clear.error@tracely.app',
+            'position' => 'Staff',
+            'office_code' => 'RECORDS',
+            'password' => 'lowercase123!',
+        ])
+            ->assertStatus(422)
+            ->assertJsonPath('code', 'WEAK_PASSWORD')
+            ->assertJsonFragment(['message' => 'Password must include an uppercase letter (A–Z).']);
+
+        $this->postJson('/api/v1/auth/register', [
+            'full_name' => 'Clear Error Test',
+            'employee_id' => 'TRC-9912',
+            'email' => 'clear.weak@tracely.app',
+            'position' => 'Staff',
+            'office_code' => 'RECORDS',
+            'password' => 'MyPassword1!',
+        ])
+            ->assertStatus(422)
+            ->assertJsonPath('code', 'WEAK_PASSWORD')
+            ->assertJsonFragment(['message' => 'Password cannot contain the commonly guessed phrase "password".']);
+    }
 }

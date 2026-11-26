@@ -369,7 +369,7 @@ export interface AppContextValue {
   issuePresignedView(document: Document, versionNumber: number): Promise<PresignedDownloadGrant>;
   issueProofPhotoView(documentId: string, transactionId: string): Promise<PresignedDownloadGrant>;
   trackDocumentByCode(trackingCode: string): Promise<DocumentTrackingSnapshot>;
-  scanQr(rawValue: string): Promise<QrResolutionResult>;
+  scanQr(rawValue: string, expectedDocumentId?: string | null): Promise<QrResolutionResult>;
   sanitizeCapturedPhoto(input: {
     uri: string;
     fileName?: string | null;
@@ -831,7 +831,7 @@ export const AppServiceProvider: React.FC<{
     return () => {
       mounted = false;
     };
-  }, [services, hydrateWorkspace]);
+  }, [dependencies, services, hydrateWorkspace]);
 
   useEffect(() => {
     if (services.deps.disableNetInfoListener) return;
@@ -2056,7 +2056,7 @@ export const AppServiceProvider: React.FC<{
     },
     trackDocumentByCode: async (trackingCode) =>
       runAsyncAction(() => services.routingService.trackDocumentByCode(trackingCode)),
-    scanQr: async (rawValue) => {
+    scanQr: async (rawValue, expectedDocumentId) => {
       if (!actor) {
         const parsed = QrPayloadParser.parse(rawValue);
         if (parsed.scenario === 'transmittal_verify') {
@@ -2078,7 +2078,11 @@ export const AppServiceProvider: React.FC<{
         throw new Error(message);
       }
       return runAsyncAction(async () => {
-        const resolved = await services.qrService.resolveRawQr(actor, rawValue);
+        const resolved = await services.qrService.resolveRawQr(
+          actor,
+          rawValue,
+          expectedDocumentId,
+        );
         if (resolved.kind === 'document_authorized') {
           if (!resolved.pendingForActorOffice) {
             upsertDocument(resolved.document);

@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import {
   AlertTriangle,
+  Bell,
   CheckSquare,
   Download,
   Inbox,
@@ -12,6 +13,7 @@ import {
   SlidersHorizontal,
   Smartphone,
   Square,
+  X,
 } from 'lucide-react';
 import { ConfidentialityTier, DocumentRecord, SlaState } from '../domain/types';
 import { useWebApp } from '../state/WebAppContext';
@@ -54,10 +56,19 @@ export const InboxPage: React.FC = () => {
     declineMisrouted,
     forwardDocument,
     batchForwardDocuments,
+    browserNotificationPermission,
+    requestBrowserNotificationPermission,
     isBusy,
   } = useWebApp();
 
   const [queueTab, setQueueTab] = useState<QueueTab>('all');
+  const [notifPromptDismissed, setNotifPromptDismissed] = useState<boolean>(() => {
+    try {
+      return window.sessionStorage.getItem('@tracely/inbox_notif_banner_dismissed') === '1';
+    } catch {
+      return false;
+    }
+  });
   const [chip, setChip] = useState<FilterChip>('all');
   const [formatFilter, setFormatFilter] = useState<InboxFormatFilter>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -313,6 +324,54 @@ export const InboxPage: React.FC = () => {
                   ))}
                 </select>
               ) : null}
+            </div>
+          </div>
+        ) : null}
+
+        {actor && browserNotificationPermission === 'default' && !notifPromptDismissed ? (
+          <div
+            className="card-soft inbox-notif-banner no-print"
+            data-testid="web-inbox-notif-banner"
+          >
+            <div className="inbox-notif-banner-copy">
+              <span className="inbox-notif-banner-icon" aria-hidden="true">
+                <Bell size={15} />
+              </span>
+              <div>
+                <div style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--navy-ink)' }}>
+                  Enable Web Notifications for Inbox
+                </div>
+                <div style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>
+                  Get instant alerts when sealed documents arrive—even in another tab.
+                </div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+              <button
+                type="button"
+                className="btn btn-primary"
+                data-testid="web-inbox-enable-notif-btn"
+                style={{ minHeight: 32, padding: '4px 12px', fontSize: 11.5 }}
+                onClick={() => void requestBrowserNotificationPermission()}
+              >
+                Enable Alerts
+              </button>
+              <button
+                type="button"
+                className="icon-circle-btn"
+                aria-label="Dismiss inbox notification prompt"
+                style={{ width: 28, height: 28 }}
+                onClick={() => {
+                  setNotifPromptDismissed(true);
+                  try {
+                    window.sessionStorage.setItem('@tracely/inbox_notif_banner_dismissed', '1');
+                  } catch {
+                    // Ignore storage restriction
+                  }
+                }}
+              >
+                <X size={13} />
+              </button>
             </div>
           </div>
         ) : null}

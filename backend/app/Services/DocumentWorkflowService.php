@@ -143,15 +143,27 @@ class DocumentWorkflowService
             $participantIds = array_values(array_unique(array_filter([$actor->id, $recipient?->id])));
             $doc->participants()->sync($participantIds);
 
+            $initialChangeType = in_array(
+                (string) ($input['change_type'] ?? ''),
+                ['initial', 'signed', 'revised', 'endorsed', 'supporting_attachment'],
+                true,
+            )
+                ? (string) $input['change_type']
+                : 'initial';
+
             DocumentVersion::query()->create([
                 'id' => 'ver-'.Str::uuid()->toString(),
                 'document_id' => $doc->id,
                 'version_number' => 1,
+                'change_type' => $initialChangeType,
                 'file_name' => $resolvedFileName,
                 'mime_type' => $file->getMimeType() ?: 'application/octet-stream',
                 'size_bytes' => (int) ($file->getSize() ?: ($input['size_bytes'] ?? 0)),
                 'sha256_checksum' => $sha256,
                 'uploaded_by_id' => $actor->id,
+                'uploaded_by_office_id' => $actor->office_id,
+                'uploaded_by_office_code' => $actor->office?->code ?? 'UNIT',
+                'uploaded_by_office_name' => $actor->office?->name ?? 'Office Unit',
                 'uploaded_at' => $now,
                 'revision_note' => trim((string) ($input['remarks'] ?? '')) ?: 'Initial digital document upload',
                 'storage_key' => $storageKey,
@@ -439,11 +451,27 @@ class DocumentWorkflowService
             );
         }
 
-        // Expire previous unused challenges for this user + document so only the latest QR/code is active
+        // Reuse the active, unexpired unlock challenge for this user + document so closing
+        // and reopening the QR modal does not rotate the code before its duration ends.
+        /** @var DocumentUnlockChallenge|null $existing */
+        $existing = DocumentUnlockChallenge::query()
+            ->where('document_id', $doc->id)
+            ->where('user_id', $actor->id)
+            ->whereNull('consumed_at')
+            ->where('expires_at', '>', now())
+            ->orderByDesc('created_at')
+            ->first();
+
+        if ($existing) {
+            return $existing;
+        }
+
+        // Remove expired unconsumed challenges before generating a fresh 5-minute code
         DocumentUnlockChallenge::query()
             ->where('document_id', $doc->id)
             ->where('user_id', $actor->id)
             ->whereNull('consumed_at')
+            ->where('expires_at', '<=', now())
             ->delete();
 
         $alphabet = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
@@ -467,6 +495,7 @@ class DocumentWorkflowService
         User $actor,
         string $rawCodeOrToken,
         string $deviceLabel = 'Tracely Mobile',
+        ?string $expectedDocumentId = null,
     ): Document {
         $clean = trim($rawCodeOrToken);
         foreach (['TRC-QR:UNLOCK:', 'SDO-QR:UNLOCK:'] as $prefix) {
@@ -478,7 +507,7 @@ class DocumentWorkflowService
         if ($clean === '') {
             throw new ApiDomainException(
                 'UNLOCK_CHALLENGE_NOT_FOUND',
-                'Enter a valid unlock QR or 6-character code shown on Tracely Web.',
+                'Enter a valid unlock QR or 6-character code.',
                 422,
             );
         }
@@ -514,7 +543,7 @@ class DocumentWorkflowService
         if (! $challenge) {
             throw new ApiDomainException(
                 'UNLOCK_CHALLENGE_NOT_FOUND',
-                'Unlock QR or code was not found. Refresh the QR on Tracely Web and try again.',
+                'Unlock QR or code was not found. Check the active code and try again.',
                 404,
             );
         }
@@ -524,6 +553,15 @@ class DocumentWorkflowService
                 'UNLOCK_CHALLENGE_USER_MISMATCH',
                 'This unlock QR belongs to a different Tracely account.',
                 403,
+            );
+        }
+
+        $targetDocumentId = trim((string) ($expectedDocumentId ?? ''));
+        if ($targetDocumentId !== '' && $challenge->document_id !== $targetDocumentId) {
+            throw new ApiDomainException(
+                'UNLOCK_CHALLENGE_DOCUMENT_MISMATCH',
+                'This unlock code belongs to a different sealed document.',
+                422,
             );
         }
 
@@ -538,7 +576,7 @@ class DocumentWorkflowService
         if ($challenge->expires_at->isPast()) {
             throw new ApiDomainException(
                 'UNLOCK_CHALLENGE_EXPIRED',
-                'This unlock QR has expired. Refresh it on Tracely Web and scan again.',
+                'This unlock QR has expired. Generate a fresh code and try again.',
                 422,
             );
         }
@@ -548,8 +586,9 @@ class DocumentWorkflowService
             ->findOrFail($challenge->document_id);
 
         $viaShortCode = strlen($normalizedShort) === 6 && strtoupper($challenge->short_code) === $normalizedShort && $challenge->token !== $clean;
+        $isWebClient = str_contains(strtolower($deviceLabel), 'web');
         $methodNote = $viaShortCode
-            ? 'verified via Mobile ↔ Web unlock code'
+            ? ($isWebClient ? 'verified via Web unlock code' : 'verified via Mobile ↔ Web unlock code')
             : 'verified via Mobile ↔ Web QR sync';
 
         $challenge->update([
@@ -935,15 +974,44 @@ class DocumentWorkflowService
         string $revisionNote,
         string $deviceLabel,
         ?string $customFileName = null,
+        ?string $changeType = null,
     ): Document {
-        $doc->loadMissing(['versions', 'transactions', 'participants', 'originOffice']);
+        $doc->loadMissing(['versions', 'transactions', 'participants', 'originOffice', 'currentOffice']);
         $this->policy->enforceFullCustody($actor, $doc);
 
+        if ($this->policy->isSealedForActor($actor, $doc)) {
+            throw new ApiDomainException(
+                'RECEIPT_REQUIRED_BEFORE_ACCESS',
+                'Unlock and confirm receipt of this document before attaching a signed or updated file.',
+                403,
+            );
+        }
+
+        if (in_array($doc->lifecycle_status, ['approved', 'archived'], true)) {
+            throw new ApiDomainException(
+                'DOCUMENT_ALREADY_FINALIZED',
+                'Cannot attach a new file version to a document that has already been approved or archived.',
+                422,
+            );
+        }
+
+        $latest = $doc->latestTransaction();
+        if ($latest && $latest->receipt_status === 'pending') {
+            throw new ApiDomainException(
+                'DOCUMENT_IN_TRANSIT',
+                'This document is currently in transit awaiting recipient receipt. Recall the transfer or wait until received before attaching a new version.',
+                422,
+            );
+        }
+
         $hasExistingVersions = $doc->versions->isNotEmpty();
+        $isHoldingCustody = $actor->id === $doc->current_holder_id
+            || $actor->office_id === $doc->current_office_id;
+        $isOriginRevision = $doc->lifecycle_status === 'returned_for_revision'
+            && $actor->office_id === $doc->origin_office_id;
+
         if (! $hasExistingVersions) {
-            $canAttachInitial = $actor->id === $doc->current_holder_id
-                || $actor->office_id === $doc->current_office_id
-                || $actor->office_id === $doc->origin_office_id;
+            $canAttachInitial = $isHoldingCustody || $actor->office_id === $doc->origin_office_id;
             if (! $canAttachInitial) {
                 throw new ApiDomainException(
                     'INITIAL_SCAN_NOT_ALLOWED',
@@ -951,23 +1019,31 @@ class DocumentWorkflowService
                     403,
                 );
             }
-        } else {
-            if ($actor->office_id !== $doc->origin_office_id) {
-                throw new ApiDomainException(
-                    'ORIGIN_OFFICE_ONLY',
-                    "Only the originating office ({$doc->originOffice->code}) can upload a revision.",
-                    403,
-                );
-            }
-
-            $isOriginPreDispatch = $doc->transactions->isEmpty() && $doc->lifecycle_status === 'in_review';
-            if (! $isOriginPreDispatch && $doc->lifecycle_status !== 'returned_for_revision') {
-                throw new ApiDomainException(
-                    'REVISION_NOT_ALLOWED',
-                    'A new version can only be uploaded when the document has been returned for revision.',
-                );
-            }
+        } elseif (! $isHoldingCustody && ! $isOriginRevision) {
+            $holderCode = $doc->currentOffice?->code ?? 'holding office';
+            throw new ApiDomainException(
+                'CUSTODY_REQUIRED',
+                "Only the office currently holding custody ({$holderCode}) can attach a signed copy or updated version.",
+                403,
+            );
         }
+
+        $allowedChangeTypes = ['initial', 'signed', 'revised', 'endorsed', 'supporting_attachment'];
+        $resolvedChangeType = in_array((string) ($changeType ?? ''), $allowedChangeTypes, true)
+            ? (string) $changeType
+            : (! $hasExistingVersions
+                ? 'initial'
+                : ($doc->lifecycle_status === 'returned_for_revision'
+                    ? 'revised'
+                    : ($actor->office_id !== $doc->origin_office_id ? 'signed' : 'revised')));
+
+        $changeLabel = match ($resolvedChangeType) {
+            'signed' => 'Signed Copy',
+            'revised' => 'Revised Copy',
+            'endorsed' => 'Endorsed Copy',
+            'supporting_attachment' => 'Supporting File',
+            default => $hasExistingVersions ? 'Updated Copy' : 'Initial Scan',
+        };
 
         $sha256 = $this->verifyUploadedFileChecksum($file, $declaredSha256);
         $nextVersionNumber = ((int) $doc->versions->max('version_number')) + 1;
@@ -976,22 +1052,32 @@ class DocumentWorkflowService
         $storageKey = "docs/{$doc->id}/v{$nextVersionNumber}.{$ext}";
         Storage::disk('local')->putFileAs("docs/{$doc->id}", $file, "v{$nextVersionNumber}.{$ext}");
 
-        return DB::transaction(function () use ($actor, $doc, $file, $sha256, $nextVersionNumber, $storageKey, $resolvedFileName, $revisionNote, $hasExistingVersions, $deviceLabel): Document {
+        return DB::transaction(function () use ($actor, $doc, $file, $sha256, $nextVersionNumber, $storageKey, $resolvedFileName, $revisionNote, $hasExistingVersions, $resolvedChangeType, $changeLabel, $deviceLabel): Document {
+            $actor->loadMissing('office');
             $now = now();
+            $cleanNote = trim($revisionNote) ?: ($hasExistingVersions
+                ? "{$changeLabel} attached by {$actor->office->code}"
+                : 'Initial digital scan attached');
 
             DocumentVersion::query()->create([
                 'id' => 'ver-'.Str::uuid()->toString(),
                 'document_id' => $doc->id,
                 'version_number' => $nextVersionNumber,
+                'change_type' => $resolvedChangeType,
                 'file_name' => $resolvedFileName,
                 'mime_type' => $file->getMimeType() ?: 'application/octet-stream',
                 'size_bytes' => (int) ($file->getSize() ?: 0),
                 'sha256_checksum' => $sha256,
                 'uploaded_by_id' => $actor->id,
+                'uploaded_by_office_id' => $actor->office_id,
+                'uploaded_by_office_code' => $actor->office?->code ?? 'UNIT',
+                'uploaded_by_office_name' => $actor->office?->name ?? 'Office Unit',
                 'uploaded_at' => $now,
-                'revision_note' => trim($revisionNote) ?: ($hasExistingVersions ? "Version {$nextVersionNumber}" : 'Initial digital scan attached'),
+                'revision_note' => $cleanNote,
                 'storage_key' => $storageKey,
             ]);
+
+            $doc->participants()->syncWithoutDetaching([$actor->id]);
 
             if (! $hasExistingVersions && $doc->copy_format === 'hard_copy') {
                 $doc->update(['copy_format' => 'hybrid']);
@@ -999,12 +1085,33 @@ class DocumentWorkflowService
                 $doc->update(['lifecycle_status' => 'in_review']);
             }
 
+            ExternalMilestone::query()->create([
+                'id' => 'ms-'.Str::uuid()->toString(),
+                'document_id' => $doc->id,
+                'stage_label' => "{$changeLabel} (v{$nextVersionNumber}) by {$actor->office->code}",
+                'office_name' => $actor->office->name,
+                'occurred_at' => $now,
+            ]);
+
+            if ($doc->origin_user_id && $doc->origin_user_id !== $actor->id) {
+                $this->notifyRecipient(
+                    $doc->origin_user_id,
+                    $doc->origin_office_id,
+                    $doc->id,
+                    "{$changeLabel} Attached · {$doc->tracking_code}",
+                    "{$actor->office->code} ({$actor->full_name}) attached v{$nextVersionNumber} ({$resolvedFileName}) on {$doc->title}: {$cleanNote}",
+                    "New document version attached by {$actor->office->code}.",
+                    "{$doc->tracking_code} · {$changeLabel} v{$nextVersionNumber} by {$actor->office->code}",
+                    $now,
+                );
+            }
+
             $this->audit->record(
                 $actor,
                 'version_uploaded',
                 $doc->id,
                 $doc->tracking_code,
-                "Uploaded version v{$nextVersionNumber} for {$doc->tracking_code}",
+                "Attached {$changeLabel} v{$nextVersionNumber} ({$resolvedFileName}) by {$actor->office->code}: {$cleanNote}",
                 $deviceLabel,
             );
 
@@ -1257,8 +1364,27 @@ class DocumentWorkflowService
             $rawCandidate = $originalName;
         }
 
-        // Strip directory segments, control chars, and invalid filesystem punctuation
-        $base = basename(str_replace('\\', '/', $rawCandidate));
+        // Strip URL query/fragment before decoding so encoded `#` (%23) inside filenames is preserved
+        $decoded = preg_match('/^[a-z][a-z0-9+.-]*:\/\//i', $rawCandidate)
+            ? (preg_replace('/[?#].*$/', '', $rawCandidate) ?? $rawCandidate)
+            : $rawCandidate;
+
+        // Safely decode URI-encoded filenames (e.g. %20 or Android content:// primary%3ADocuments%2F...)
+        for ($pass = 0; $pass < 2; $pass++) {
+            $next = rawurldecode($decoded);
+            if ($next === $decoded || ! mb_check_encoding($next, 'UTF-8')) {
+                break;
+            }
+            $decoded = $next;
+        }
+
+        // Strip directory segments and Android provider prefixes (primary:, raw:, msf:)
+        $normalizedSlashes = str_replace('\\', '/', $decoded);
+        $base = basename($normalizedSlashes);
+        $base = preg_replace('/^(?:primary|home|raw|document|msf|downloads):/i', '', $base) ?? $base;
+        $base = basename(str_replace('\\', '/', $base));
+
+        // Strip control chars and invalid filesystem punctuation
         $clean = preg_replace('/[\x00-\x1F\x7F:*?"<>|\/\\\\]+/', ' ', $base) ?? '';
         $clean = trim(preg_replace('/\s+/', ' ', $clean) ?? '', ". \t\n\r\0\x0B");
         if ($clean === '') {

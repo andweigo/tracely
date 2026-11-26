@@ -55,6 +55,9 @@ export const LoginPage: React.FC = () => {
   const [resetCode, setResetCode] = useState('');
   const [resetNewPass, setResetNewPass] = useState('');
   const [resetConfirmPass, setResetConfirmPass] = useState('');
+  const [showResetNewPass, setShowResetNewPass] = useState(false);
+  const [showResetConfirmPass, setShowResetConfirmPass] = useState(false);
+  const [resetAttempted, setResetAttempted] = useState(false);
 
   const [fullName, setFullName] = useState('');
   const [employeeId, setEmployeeId] = useState('');
@@ -65,6 +68,11 @@ export const LoginPage: React.FC = () => {
   const [customOfficeName, setCustomOfficeName] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showRegPass, setShowRegPass] = useState(false);
+  const [showConfirmPass, setShowConfirmPass] = useState(false);
+  const [regPassTouched, setRegPassTouched] = useState(false);
+  const [confirmPassTouched, setConfirmPassTouched] = useState(false);
+  const [registerAttempted, setRegisterAttempted] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [infoBanner, setInfoBanner] = useState<string | null>(null);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -72,10 +80,58 @@ export const LoginPage: React.FC = () => {
 
   const availableOffices = offices.length > 0 ? offices : DEFAULT_OFFICES;
   const isCustomOffice = selectedOfficeCode === CUSTOM_OFFICE_KEY;
-  const passwordRules = useMemo(
-    () => AuthInputPolicy.evaluatePasswordRules(regPassword),
-    [regPassword],
+  const regPasswordHints = useMemo(
+    () => [employeeId.trim(), (email.split('@')[0] ?? '').trim()].filter(Boolean),
+    [employeeId, email],
   );
+  const passwordRules = useMemo(
+    () => AuthInputPolicy.evaluatePasswordRules(regPassword, regPasswordHints),
+    [regPassword, regPasswordHints],
+  );
+  const regPasswordError = useMemo(
+    () => AuthInputPolicy.getPasswordError(regPassword, 'Password', regPasswordHints),
+    [regPassword, regPasswordHints],
+  );
+  const hasImmediateRegPasswordIssue =
+    regPassword.length > 0 &&
+    (!passwordRules.noEdgeWhitespace ||
+      !passwordRules.noUnsafeChars ||
+      !passwordRules.noWeakPattern ||
+      regPassword.length > AUTH_INPUT_LIMITS.passwordMax);
+  const visibleRegPasswordError =
+    regPassTouched || registerAttempted || hasImmediateRegPasswordIssue ? regPasswordError : null;
+  const regConfirmError = useMemo(
+    () => AuthInputPolicy.getConfirmPasswordError(regPassword, confirmPassword, 'Password'),
+    [regPassword, confirmPassword],
+  );
+  const visibleRegConfirmError =
+    confirmPassword.length > 0 || confirmPassTouched || registerAttempted ? regConfirmError : null;
+  const regPasswordsMatched =
+    confirmPassword.length > 0 && regPassword === confirmPassword && passwordRules.allSatisfied;
+
+  const resetPasswordRules = useMemo(
+    () => AuthInputPolicy.evaluatePasswordRules(resetNewPass),
+    [resetNewPass],
+  );
+  const resetPasswordError = useMemo(
+    () => AuthInputPolicy.getPasswordError(resetNewPass, 'New password'),
+    [resetNewPass],
+  );
+  const resetConfirmError = useMemo(
+    () => AuthInputPolicy.getConfirmPasswordError(resetNewPass, resetConfirmPass, 'New password'),
+    [resetNewPass, resetConfirmPass],
+  );
+  const visibleResetPasswordError =
+    resetAttempted ||
+    (resetNewPass.length > 0 &&
+      (!resetPasswordRules.noEdgeWhitespace ||
+        !resetPasswordRules.noUnsafeChars ||
+        !resetPasswordRules.noWeakPattern ||
+        resetNewPass.length > AUTH_INPUT_LIMITS.passwordMax))
+      ? resetPasswordError
+      : null;
+  const visibleResetConfirmError =
+    resetConfirmPass.length > 0 || resetAttempted ? resetConfirmError : null;
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,16 +169,25 @@ export const LoginPage: React.FC = () => {
     e.preventDefault();
     setFormError(null);
     setInfoBanner(null);
+    setResetAttempted(true);
     if (!resetCode.trim()) {
       setFormError('Enter the 6-character reset code.');
       return;
     }
-    if (!AuthInputPolicy.evaluatePasswordRules(resetNewPass).allSatisfied) {
-      setFormError('New password must be 8–32 characters with upper, lower, number, and symbol.');
+    const newPassErr = AuthInputPolicy.getPasswordError(resetNewPass, 'New password');
+    if (newPassErr) {
+      setFormError(newPassErr);
+      document.getElementById('reset-new-pass-input')?.focus();
       return;
     }
-    if (resetNewPass !== resetConfirmPass) {
-      setFormError('Password confirmation does not match.');
+    const confirmErr = AuthInputPolicy.getConfirmPasswordError(
+      resetNewPass,
+      resetConfirmPass,
+      'New password',
+    );
+    if (confirmErr) {
+      setFormError(confirmErr);
+      document.getElementById('reset-confirm-pass-input')?.focus();
       return;
     }
     try {
@@ -133,6 +198,9 @@ export const LoginPage: React.FC = () => {
       setResetCode('');
       setResetNewPass('');
       setResetConfirmPass('');
+      setResetAttempted(false);
+      setShowResetNewPass(false);
+      setShowResetConfirmPass(false);
       setResetStep('request');
       setMode('signin');
     } catch (err) {
@@ -144,6 +212,7 @@ export const LoginPage: React.FC = () => {
     e.preventDefault();
     setFormError(null);
     setInfoBanner(null);
+    setRegisterAttempted(true);
     if (!acceptedTerms) {
       setFormError('Please agree to the Terms and Conditions and Privacy Policy to continue.');
       return;
@@ -164,9 +233,20 @@ export const LoginPage: React.FC = () => {
         setPassword('');
         setRegPassword('');
         setConfirmPassword('');
+        setRegPassTouched(false);
+        setConfirmPassTouched(false);
+        setRegisterAttempted(false);
+        setShowRegPass(false);
+        setShowConfirmPass(false);
       }
     } catch (err) {
-      setFormError(normalizeWebErrorMessage(err, 'Unable to submit registration.'));
+      const msg = normalizeWebErrorMessage(err, 'Unable to submit registration.');
+      setFormError(msg);
+      if (regPasswordError) {
+        document.getElementById('reg-pass')?.focus();
+      } else if (regConfirmError) {
+        document.getElementById('reg-pass-confirm')?.focus();
+      }
     }
   };
 
@@ -261,8 +341,14 @@ export const LoginPage: React.FC = () => {
           </div>
         ) : null}
 
-        {formError ? (
-          <div className="pill pill-rose" style={{ padding: '10px 12px', borderRadius: 12 }}>
+        {formError &&
+        mode !== 'register' &&
+        !(
+          mode === 'forgot' &&
+          resetStep === 'confirm' &&
+          (formError === visibleResetPasswordError || formError === visibleResetConfirmError)
+        ) ? (
+          <div role="alert" className="pill pill-rose" style={{ padding: '10px 12px', borderRadius: 12 }}>
             {formError}
           </div>
         ) : null}
@@ -411,30 +497,129 @@ export const LoginPage: React.FC = () => {
                 />
               </div>
               <div className="field-group">
-                <label className="field-label" htmlFor="reset-new-pass-input">
-                  New Password
-                </label>
-                <input
-                  id="reset-new-pass-input"
-                  type="password"
-                  className="input"
-                  value={resetNewPass}
-                  onChange={(e) => setResetNewPass(e.target.value)}
-                  placeholder="8–32 chars with upper, lower, number, symbol"
-                />
+                <div className="field-label-row">
+                  <label className="field-label" htmlFor="reset-new-pass-input">
+                    New Password
+                  </label>
+                  <span className="field-hint">
+                    {resetNewPass.length}/{AUTH_INPUT_LIMITS.passwordMax}
+                  </span>
+                </div>
+                <div className="password-input-wrap">
+                  <input
+                    id="reset-new-pass-input"
+                    type={showResetNewPass ? 'text' : 'password'}
+                    className={`input ${visibleResetPasswordError ? 'input-error' : ''}`}
+                    maxLength={AUTH_INPUT_LIMITS.passwordMax}
+                    value={resetNewPass}
+                    onChange={(e) => {
+                      setResetNewPass(e.target.value);
+                      if (formError) setFormError(null);
+                    }}
+                    placeholder="8–32 chars with upper, lower, number, symbol"
+                    aria-invalid={Boolean(visibleResetPasswordError)}
+                    style={{ paddingRight: 42 }}
+                  />
+                  <button
+                    type="button"
+                    className="password-toggle-btn"
+                    data-testid="web-reset-toggle-password"
+                    aria-label={showResetNewPass ? 'Hide new password' : 'Show new password'}
+                    onClick={() => setShowResetNewPass((v) => !v)}
+                  >
+                    {showResetNewPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+                {resetNewPass.length > 0 ? (
+                  <div className="rule-chip-wrap">
+                    <span
+                      className={`rule-chip ${
+                        resetPasswordRules.lengthValid
+                          ? 'rule-chip-ok'
+                          : resetAttempted
+                            ? 'rule-chip-err'
+                            : ''
+                      }`}
+                    >
+                      8–32 chars
+                    </span>
+                    <span
+                      className={`rule-chip ${
+                        resetPasswordRules.hasUppercase && resetPasswordRules.hasLowercase
+                          ? 'rule-chip-ok'
+                          : resetAttempted
+                            ? 'rule-chip-err'
+                            : ''
+                      }`}
+                    >
+                      Upper & lower
+                    </span>
+                    <span
+                      className={`rule-chip ${
+                        resetPasswordRules.hasDigit
+                          ? 'rule-chip-ok'
+                          : resetAttempted
+                            ? 'rule-chip-err'
+                            : ''
+                      }`}
+                    >
+                      Number
+                    </span>
+                    <span
+                      className={`rule-chip ${
+                        resetPasswordRules.hasSymbol
+                          ? 'rule-chip-ok'
+                          : resetAttempted
+                            ? 'rule-chip-err'
+                            : ''
+                      }`}
+                    >
+                      Symbol
+                    </span>
+                  </div>
+                ) : null}
+                {visibleResetPasswordError ? (
+                  <p role="alert" className="field-error">
+                    {visibleResetPasswordError}
+                  </p>
+                ) : null}
               </div>
               <div className="field-group">
                 <label className="field-label" htmlFor="reset-confirm-pass-input">
                   Confirm New Password
                 </label>
-                <input
-                  id="reset-confirm-pass-input"
-                  type="password"
-                  className="input"
-                  value={resetConfirmPass}
-                  onChange={(e) => setResetConfirmPass(e.target.value)}
-                  placeholder="Re-enter new password"
-                />
+                <div className="password-input-wrap">
+                  <input
+                    id="reset-confirm-pass-input"
+                    type={showResetConfirmPass ? 'text' : 'password'}
+                    className={`input ${visibleResetConfirmError ? 'input-error' : ''}`}
+                    maxLength={AUTH_INPUT_LIMITS.passwordMax}
+                    value={resetConfirmPass}
+                    onChange={(e) => {
+                      setResetConfirmPass(e.target.value);
+                      if (formError) setFormError(null);
+                    }}
+                    placeholder="Re-enter new password"
+                    aria-invalid={Boolean(visibleResetConfirmError)}
+                    style={{ paddingRight: 42 }}
+                  />
+                  <button
+                    type="button"
+                    className="password-toggle-btn"
+                    data-testid="web-reset-toggle-confirm-password"
+                    aria-label={
+                      showResetConfirmPass ? 'Hide confirm password' : 'Show confirm password'
+                    }
+                    onClick={() => setShowResetConfirmPass((v) => !v)}
+                  >
+                    {showResetConfirmPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+                {visibleResetConfirmError ? (
+                  <p role="alert" className="field-error">
+                    {visibleResetConfirmError}
+                  </p>
+                ) : null}
               </div>
               <button
                 type="submit"
@@ -606,33 +791,89 @@ export const LoginPage: React.FC = () => {
                   {regPassword.length}/{AUTH_INPUT_LIMITS.passwordMax}
                 </span>
               </div>
-              <input
-                id="reg-pass"
-                type="password"
-                className="input"
-                maxLength={AUTH_INPUT_LIMITS.passwordMax}
-                value={regPassword}
-                onChange={(e) => setRegPassword(e.target.value)}
-                placeholder="At least 8 characters"
-              />
+              <div className="password-input-wrap">
+                <input
+                  id="reg-pass"
+                  type={showRegPass ? 'text' : 'password'}
+                  className={`input ${visibleRegPasswordError ? 'input-error' : ''}`}
+                  maxLength={AUTH_INPUT_LIMITS.passwordMax}
+                  value={regPassword}
+                  onChange={(e) => {
+                    setRegPassword(e.target.value);
+                    if (formError) setFormError(null);
+                  }}
+                  onBlur={() => setRegPassTouched(true)}
+                  placeholder="At least 8 characters"
+                  aria-invalid={Boolean(visibleRegPasswordError)}
+                  aria-describedby={visibleRegPasswordError ? 'reg-pass-error' : undefined}
+                  style={{ paddingRight: 42 }}
+                />
+                <button
+                  type="button"
+                  className="password-toggle-btn"
+                  data-testid="web-register-toggle-password"
+                  aria-label={showRegPass ? 'Hide password' : 'Show password'}
+                  onClick={() => setShowRegPass((v) => !v)}
+                >
+                  {showRegPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+              {visibleRegPasswordError ? (
+                <p
+                  id="reg-pass-error"
+                  role="alert"
+                  data-testid="web-register-password-error"
+                  className="field-error"
+                >
+                  {visibleRegPasswordError}
+                </p>
+              ) : null}
             </div>
 
             {regPassword.length > 0 ? (
               <div className="rule-chip-wrap">
-                <span className={`rule-chip ${passwordRules.lengthValid ? 'rule-chip-ok' : ''}`}>
+                <span
+                  className={`rule-chip ${
+                    passwordRules.lengthValid
+                      ? 'rule-chip-ok'
+                      : regPassTouched || registerAttempted
+                        ? 'rule-chip-err'
+                        : ''
+                  }`}
+                >
                   8–32 chars
                 </span>
                 <span
                   className={`rule-chip ${
-                    passwordRules.hasUppercase && passwordRules.hasLowercase ? 'rule-chip-ok' : ''
+                    passwordRules.hasUppercase && passwordRules.hasLowercase
+                      ? 'rule-chip-ok'
+                      : regPassTouched || registerAttempted
+                        ? 'rule-chip-err'
+                        : ''
                   }`}
                 >
                   Upper & lower
                 </span>
-                <span className={`rule-chip ${passwordRules.hasDigit ? 'rule-chip-ok' : ''}`}>
+                <span
+                  className={`rule-chip ${
+                    passwordRules.hasDigit
+                      ? 'rule-chip-ok'
+                      : regPassTouched || registerAttempted
+                        ? 'rule-chip-err'
+                        : ''
+                  }`}
+                >
                   Number
                 </span>
-                <span className={`rule-chip ${passwordRules.hasSymbol ? 'rule-chip-ok' : ''}`}>
+                <span
+                  className={`rule-chip ${
+                    passwordRules.hasSymbol
+                      ? 'rule-chip-ok'
+                      : regPassTouched || registerAttempted
+                        ? 'rule-chip-err'
+                        : ''
+                  }`}
+                >
                   Symbol
                 </span>
               </div>
@@ -642,16 +883,56 @@ export const LoginPage: React.FC = () => {
               <label className="field-label" htmlFor="reg-pass-confirm">
                 Confirm Password
               </label>
-              <input
-                id="reg-pass-confirm"
-                type="password"
-                className="input"
-                maxLength={AUTH_INPUT_LIMITS.passwordMax}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Re-enter password"
-              />
+              <div className="password-input-wrap">
+                <input
+                  id="reg-pass-confirm"
+                  type={showConfirmPass ? 'text' : 'password'}
+                  className={`input ${visibleRegConfirmError ? 'input-error' : ''}`}
+                  maxLength={AUTH_INPUT_LIMITS.passwordMax}
+                  value={confirmPassword}
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value);
+                    if (formError) setFormError(null);
+                  }}
+                  onBlur={() => setConfirmPassTouched(true)}
+                  placeholder="Re-enter password"
+                  aria-invalid={Boolean(visibleRegConfirmError)}
+                  aria-describedby={visibleRegConfirmError ? 'reg-pass-confirm-error' : undefined}
+                  style={{ paddingRight: 42 }}
+                />
+                <button
+                  type="button"
+                  className="password-toggle-btn"
+                  data-testid="web-register-toggle-confirm-password"
+                  aria-label={showConfirmPass ? 'Hide confirm password' : 'Show confirm password'}
+                  onClick={() => setShowConfirmPass((v) => !v)}
+                >
+                  {showConfirmPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+              {visibleRegConfirmError ? (
+                <p
+                  id="reg-pass-confirm-error"
+                  role="alert"
+                  data-testid="web-register-confirm-password-error"
+                  className="field-error"
+                >
+                  {visibleRegConfirmError}
+                </p>
+              ) : regPasswordsMatched ? (
+                <p data-testid="web-register-password-match" className="field-ok">
+                  Passwords match.
+                </p>
+              ) : null}
             </div>
+
+            {formError &&
+            formError !== visibleRegPasswordError &&
+            formError !== visibleRegConfirmError ? (
+              <div role="alert" className="pill pill-rose" style={{ padding: '10px 12px', borderRadius: 12 }}>
+                {formError}
+              </div>
+            ) : null}
 
             <p style={{ margin: 0, fontSize: 12, lineHeight: 1.5, color: 'var(--text-muted)' }}>
               Permissions for notifications, camera, and sync can be managed anytime in Settings.

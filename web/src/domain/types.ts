@@ -196,14 +196,24 @@ export const DISPOSITION_REMARK_PRESETS: ReadonlyArray<string> = [
   'Complied / Revised',
 ];
 
+export type VersionChangeType =
+  | 'initial'
+  | 'signed'
+  | 'revised'
+  | 'endorsed'
+  | 'supporting_attachment';
+
 export interface DocumentVersion {
   readonly versionNumber: number;
+  readonly changeType?: VersionChangeType;
   readonly fileName: string;
   readonly mimeType: string;
   readonly sizeBytes: number;
   readonly sha256Checksum: string;
   readonly uploadedAt: string;
   readonly uploadedByName: string;
+  readonly uploadedByOfficeCode?: string;
+  readonly uploadedByOfficeName?: string;
   readonly note: string;
 }
 
@@ -335,6 +345,8 @@ export interface DocumentUnlockChallenge {
   readonly qrPayload: string;
   readonly shortCode: string;
   readonly expiresAt: string;
+  readonly ttlSeconds?: number;
+  readonly reused?: boolean;
 }
 
 export interface RoutingTemplateStep {

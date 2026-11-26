@@ -2295,4 +2295,46 @@ describe('DocsTracker React Native App', () => {
     expect(families.has('JetBrains Mono')).toBe(true);
     expect(families.has('monospace')).toBe(false);
   });
+
+  test('unlocks sealed transfer directly via code input attached to sent QR card and normalizes default uploaded filenames', async () => {
+    const { formatDisplayFileName, normalizeUploadFileName } =
+      require('../src/ui/utils/formatters') as typeof import('../src/ui/utils/formatters');
+
+    expect(formatDisplayFileName('primary%3ADownload%2FScan%20Memo%20%238.pdf')).toBe(
+      'Scan Memo #8.pdf',
+    );
+    expect(
+      normalizeUploadFileName('', 'content://com.android/document/primary%3AIMG_20261126.jpg'),
+    ).toBe('IMG_20261126.jpg');
+
+    const { deps, docRepo } = createTestAppDependencies({ authenticatedUserId: 'usr-budget-1' });
+    docRepo.seedUnlockChallenge({
+      documentId: 'doc-142',
+      userId: 'usr-budget-1',
+      token: 'webunlockinline998877',
+      shortCode: 'N4K-829',
+    });
+
+    const renderer = await mountApp(<App dependencies={deps} requireAuth firstVisitSkeletonMs={0} />);
+
+    const inlineInput = renderer.root.findByProps({
+      testID: 'mobile-sealed-qr-code-input-doc-142',
+    });
+    const inlineSubmit = renderer.root.findByProps({
+      testID: 'mobile-sealed-qr-code-submit-doc-142',
+    });
+
+    await ReactTestRenderer.act(async () => {
+      inlineInput.props.onChangeText('n4k-829');
+    });
+    await ReactTestRenderer.act(async () => {
+      await inlineSubmit.props.onPress();
+    });
+
+    // Unlocks and immediately opens the document without leaving the sealed card for a separate modal
+    expect(renderer.root.findAllByProps({ testID: 'mobile-qr-lock-gate' })).toHaveLength(0);
+    expect(extractRenderedText(renderer.toJSON())).toContain(
+      'Q4 School DRRM Minor Repair Funding Request',
+    );
+  });
 });

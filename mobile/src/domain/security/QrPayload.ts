@@ -19,7 +19,7 @@ export interface DesktopPairingSession {
 export interface QrResolutionBackend {
   resolveDocumentQr(opaqueToken: string): Promise<Document>;
   resolveDesktopPairingQr(opaqueToken: string): Promise<DesktopPairingSession>;
-  consumeUnlockChallenge?(codeOrToken: string): Promise<Document>;
+  consumeUnlockChallenge?(codeOrToken: string, documentId?: string): Promise<Document>;
   verifyTransmittalQr(opaqueToken: string): Promise<{
     readonly trackingCode: string;
     readonly lifecycleStatus: string;
@@ -33,6 +33,7 @@ export interface QrResolutionContext {
   readonly actor: Personnel;
   readonly policy: DocumentAccessPolicy;
   readonly backend: QrResolutionBackend;
+  readonly expectedDocumentId?: string | null;
 }
 
 export type QrResolutionResult =
@@ -178,7 +179,10 @@ export class UnlockChallengeQrPayload extends QrPayload {
         'Paired Web-to-Mobile unlock is unavailable on this server.',
       );
     }
-    const document = await context.backend.consumeUnlockChallenge(this.opaqueToken);
+    const document = await context.backend.consumeUnlockChallenge(
+      this.opaqueToken,
+      context.expectedDocumentId ?? undefined,
+    );
     return {
       kind: 'document_authorized',
       document,

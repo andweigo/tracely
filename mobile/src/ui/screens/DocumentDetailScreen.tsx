@@ -28,6 +28,7 @@ import {
   DocumentCopyFormat,
   DocumentLifecycleStatus,
 } from '../../domain/enums/DomainEnums';
+import type { VersionChangeType } from '../../domain/entities/DocumentVersion';
 import type {
   CommentVisibility,
   DocumentComment,
@@ -54,7 +55,11 @@ import { PresignedViewerModal } from '../sheets/PresignedViewerModal';
 import { QrTokenEntryModal } from '../sheets/QrTokenEntryModal';
 import { RevisionUploadSheet } from '../sheets/RevisionUploadSheet';
 import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
-import { formatRelativeTime, formatShortTimestamp } from '../utils/formatters';
+import {
+  formatDisplayFileName,
+  formatRelativeTime,
+  formatShortTimestamp,
+} from '../utils/formatters';
 
 interface DocumentDetailScreenProps {
   documentId: string;
@@ -68,6 +73,17 @@ const FINALIZE_PRESETS = [
   'Filed for Reference',
   'Archived / Completed',
 ] as const;
+
+const MOBILE_VERSION_CHANGE_META: Record<
+  VersionChangeType,
+  { readonly label: string; readonly bg: string; readonly color: string }
+> = {
+  initial: { label: 'Initial Upload', bg: SDO_COLORS.surfaceSoft, color: SDO_COLORS.textSecondary },
+  signed: { label: 'Signed / Countersigned', bg: SDO_COLORS.emeraldSoft, color: SDO_COLORS.emeraldText },
+  revised: { label: 'Revised', bg: SDO_COLORS.amberSoft, color: SDO_COLORS.amberText },
+  endorsed: { label: 'Endorsed / Stamped', bg: SDO_COLORS.skySoft, color: SDO_COLORS.skyText },
+  supporting_attachment: { label: 'Supporting File', bg: SDO_COLORS.surfaceSoft, color: SDO_COLORS.textSecondary },
+};
 
 export const DocumentDetailScreen: React.FC<DocumentDetailScreenProps> = ({ documentId }) => {
   const {
@@ -106,6 +122,9 @@ export const DocumentDetailScreen: React.FC<DocumentDetailScreenProps> = ({ docu
   const [showAckSheet, setShowAckSheet] = useState(false);
   const [showManualUnlockModal, setShowManualUnlockModal] = useState(false);
   const [showPasswordUnlockModal, setShowPasswordUnlockModal] = useState(false);
+  const [inlineUnlockCode, setInlineUnlockCode] = useState('');
+  const [inlineUnlockError, setInlineUnlockError] = useState<string | null>(null);
+  const [submittingInlineCode, setSubmittingInlineCode] = useState(false);
   const [showForwardSheet, setShowForwardSheet] = useState(false);
   const [showCompleteSheet, setShowCompleteSheet] = useState(false);
   const [completeTarget, setCompleteTarget] = useState<'approved' | 'archived'>('approved');
@@ -222,11 +241,15 @@ export const DocumentDetailScreen: React.FC<DocumentDetailScreenProps> = ({ docu
   const canRecall = Boolean(latestTx?.canBeRecalledBy(actor.id));
   const isInMyCustody =
     doc.currentOffice.id === actor.office.id && !isPendingForMyOffice && !pendingSentByMe;
+  const isFinalized =
+    doc.lifecycleStatus === DocumentLifecycleStatus.APPROVED ||
+    doc.lifecycleStatus === DocumentLifecycleStatus.ARCHIVED;
   const canUploadRevision =
     doc.lifecycleStatus === DocumentLifecycleStatus.RETURNED_FOR_REVISION &&
     doc.originOffice.id === actor.office.id;
   const canAttachInitialScan =
     !doc.hasDigitalFile && (isInMyCustody || doc.originOffice.id === actor.office.id);
+  const canAttachNewVersion = (isInMyCustody || canUploadRevision) && !isFinalized;
   const nextVersionNumber = (latestVersion?.versionNumber ?? 0) + 1;
 
   if (isPendingForMyOffice) {
@@ -296,6 +319,88 @@ export const DocumentDetailScreen: React.FC<DocumentDetailScreenProps> = ({ docu
               ) : null}
             </View>
 
+            <View style={styles.lockInlineCodeBox}>
+              <View style={styles.lockInlineCodeRow}>
+                <TextInput
+                  testID="mobile-detail-inline-code-input"
+                  value={inlineUnlockCode}
+                  onChangeText={(val) => {
+                    setInlineUnlockCode(val);
+                    if (inlineUnlockError) setInlineUnlockError(null);
+                  }}
+                  placeholder={
+                    isSoftCopy
+                      ? 'Enter 6-char code (e.g. K7P-492)'
+                      : 'Enter Tracking Code (e.g. TRC-2026-000142)'
+                  }
+                  placeholderTextColor={SDO_COLORS.textMuted}
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  returnKeyType="done"
+                  style={[
+                    styles.lockInlineCodeInput,
+                    inlineUnlockError && styles.lockInlineCodeInputError,
+                  ]}
+                />
+                <Pressable
+                  testID="mobile-detail-inline-code-submit"
+                  disabled={!inlineUnlockCode.trim() || submittingInlineCode || isBusy}
+                  onPress={async () => {
+                    const clean = inlineUnlockCode.trim();
+                    if (!clean || submittingInlineCode || isBusy) return;
+                    setInlineUnlockError(null);
+                    setSubmittingInlineCode(true);
+                    try {
+                      const resolved = await scanQr(clean, doc.id);
+                      if (resolved.kind === 'document_denied') {
+                        throw new Error(resolved.reason);
+                      }
+                      if (resolved.kind !== 'document_authorized') {
+                        throw new Error(
+                          isSoftCopy
+                            ? 'Enter the 6-char Unlock Code from Tracely Web or the document tracking code.'
+                            : "Enter the Document Tracking Code or QR token from the sender's routing slip.",
+                        );
+                      }
+                      if (resolved.document.id !== doc.id) {
+                        throw new Error(
+                          'Entered code belongs to a different document than this sealed transfer.',
+                        );
+                      }
+                      if (resolved.sentByActor) {
+                        throw new Error('Senders cannot confirm receipt of their own dispatch.');
+                      }
+                      if (!resolved.unlockedViaSync && resolved.pendingForActorOffice) {
+                        await acknowledgeReceipt(doc, null, resolved.verificationCode ?? clean);
+                      }
+                      setInlineUnlockCode('');
+                    } catch (err) {
+                      setInlineUnlockError(
+                        err instanceof Error ? err.message : 'Unable to verify unlock code.',
+                      );
+                    } finally {
+                      setSubmittingInlineCode(false);
+                    }
+                  }}
+                  style={[
+                    styles.lockInlineCodeBtn,
+                    (!inlineUnlockCode.trim() || submittingInlineCode || isBusy) &&
+                      styles.lockInlineCodeBtnDisabled,
+                  ]}
+                >
+                  <Check size={14} color={SDO_COLORS.white} />
+                  <Text style={styles.lockInlineCodeBtnText}>
+                    {submittingInlineCode ? '...' : 'Unlock'}
+                  </Text>
+                </Pressable>
+              </View>
+              {inlineUnlockError ? (
+                <Text testID="mobile-detail-inline-code-error" style={styles.lockInlineCodeError}>
+                  {inlineUnlockError}
+                </Text>
+              ) : null}
+            </View>
+
             <Pressable
               onPress={() => setShowManualUnlockModal(true)}
               style={styles.lockManualBtn}
@@ -344,7 +449,7 @@ export const DocumentDetailScreen: React.FC<DocumentDetailScreenProps> = ({ docu
           onOpenScanner={() => openScannerForDocument(doc, true)}
           onClose={() => setShowManualUnlockModal(false)}
           onSubmitToken={async (raw) => {
-            const resolved = await scanQr(raw);
+            const resolved = await scanQr(raw, doc.id);
             if (resolved.kind === 'document_denied') {
               throw new Error(resolved.reason);
             }
@@ -856,6 +961,7 @@ export const DocumentDetailScreen: React.FC<DocumentDetailScreenProps> = ({ docu
                 <Text style={styles.docOriginLine}>No files attached yet.</Text>
                 {canAttachInitialScan ? (
                   <Pressable
+                    testID="mobile-doc-attach-file-btn"
                     onPress={() => setShowRevisionSheet(true)}
                     style={styles.scanActionBtn}
                   >
@@ -865,26 +971,88 @@ export const DocumentDetailScreen: React.FC<DocumentDetailScreenProps> = ({ docu
                 ) : null}
               </View>
             ) : (
-              [...doc.versions].reverse().map((ver) => (
-                <View key={ver.id} style={styles.softCard}>
-                  <View style={styles.rowBetween}>
-                    <Text style={styles.fileTitle}>
-                      v{ver.versionNumber} · {ver.fileName}
+              <>
+                {canAttachNewVersion ? (
+                  <Pressable
+                    testID="mobile-doc-attach-file-btn"
+                    onPress={() => setShowRevisionSheet(true)}
+                    style={styles.attachNewVersionBtn}
+                  >
+                    <FileUp size={15} color={SDO_COLORS.navyInk} />
+                    <Text style={styles.attachNewVersionText}>
+                      Attach Signed / Updated File (v{nextVersionNumber})
                     </Text>
-                    <Pressable
-                      onPress={() => handleOpenPresigned(ver.versionNumber)}
-                      style={styles.viewPill}
-                    >
-                      <Eye size={13} color="#FFFFFF" />
-                      <Text style={styles.viewPillText}>View</Text>
-                    </Pressable>
-                  </View>
-                  {ver.revisionNote ? (
-                    <Text style={styles.docOriginLine}>{ver.revisionNote}</Text>
-                  ) : null}
-                  <Text style={styles.monoSmall}>{ver.formattedSize}</Text>
+                  </Pressable>
+                ) : null}
+                <View style={styles.changeHistoryHeader}>
+                  <Text style={styles.changeHistoryTitle}>
+                    Document Change History ({doc.versions.length})
+                  </Text>
+                  <Text style={styles.changeHistorySub}>
+                    Earlier versions stay read-only so every office signature or revision is traceable.
+                  </Text>
                 </View>
-              ))
+                {[...doc.versions].reverse().map((ver, idx) => {
+                  const isLatest = idx === 0;
+                  const meta =
+                    MOBILE_VERSION_CHANGE_META[ver.changeType] ??
+                    MOBILE_VERSION_CHANGE_META.revised;
+                  const officeCode =
+                    ver.uploadedByOfficeCode ??
+                    (ver.versionNumber === 1 ? doc.originOffice.code : doc.currentOffice.code);
+                  const officeName =
+                    ver.uploadedByOfficeName ??
+                    (ver.versionNumber === 1 ? doc.originOffice.name : '');
+                  return (
+                    <View
+                      key={ver.id}
+                      testID={`mobile-change-history-v${ver.versionNumber}`}
+                      style={styles.softCard}
+                    >
+                      <View style={styles.rowBetween}>
+                        <Text numberOfLines={2} ellipsizeMode="middle" style={styles.fileTitle}>
+                          v{ver.versionNumber} · {formatDisplayFileName(ver.fileName)}
+                        </Text>
+                        <Pressable
+                          onPress={() => handleOpenPresigned(ver.versionNumber)}
+                          style={styles.viewPill}
+                        >
+                          <Eye size={13} color="#FFFFFF" />
+                          <Text style={styles.viewPillText}>View</Text>
+                        </Pressable>
+                      </View>
+                      <View style={styles.versionMetaPillRow}>
+                        <View style={[styles.changeTypePill, { backgroundColor: meta.bg }]}>
+                          <Text style={[styles.changeTypePillText, { color: meta.color }]}>
+                            {meta.label}
+                          </Text>
+                        </View>
+                        {isLatest ? (
+                          <View style={[styles.changeTypePill, { backgroundColor: SDO_COLORS.skySoft }]}>
+                            <Text style={[styles.changeTypePillText, { color: SDO_COLORS.skyText }]}>
+                              Latest
+                            </Text>
+                          </View>
+                        ) : ver.versionNumber === 1 ? (
+                          <View style={[styles.changeTypePill, { backgroundColor: SDO_COLORS.surface }]}>
+                            <Text style={[styles.changeTypePillText, { color: SDO_COLORS.textMuted }]}>
+                              Original
+                            </Text>
+                          </View>
+                        ) : null}
+                        <Text style={styles.versionOfficeCode}>{officeCode}</Text>
+                      </View>
+                      <Text style={styles.versionActorLine}>
+                        {`${officeName ? `${officeName} · ` : ''}${ver.uploadedByName} · ${formatShortTimestamp(ver.uploadedAt)}`}
+                      </Text>
+                      {ver.revisionNote ? (
+                        <Text style={styles.docOriginLine}>{ver.revisionNote}</Text>
+                      ) : null}
+                      <Text style={styles.monoSmall}>{ver.formattedSize}</Text>
+                    </View>
+                  );
+                })}
+              </>
             )}
           </View>
         ) : null}
@@ -974,6 +1142,24 @@ export const DocumentDetailScreen: React.FC<DocumentDetailScreenProps> = ({ docu
         title="Document Actions"
         subtitle={doc.trackingCode}
       >
+        {canAttachNewVersion ? (
+          <Pressable
+            testID="mobile-more-attach-file-btn"
+            onPress={() => {
+              setShowMoreActions(false);
+              setShowRevisionSheet(true);
+            }}
+            style={styles.menuRow}
+          >
+            <FileUp size={18} color={SDO_COLORS.navy} />
+            <Text style={styles.menuText}>
+              {doc.hasDigitalFile
+                ? `Attach Signed / Updated File (v${nextVersionNumber})`
+                : 'Attach Scanned Copy (v1)'}
+            </Text>
+          </Pressable>
+        ) : null}
+
         <Pressable
           onPress={() => {
             setShowMoreActions(false);
@@ -1671,6 +1857,7 @@ const styles = StyleSheet.create({
   fileTitle: {
     fontFamily: SDO_FONTS.sans,
     flex: 1,
+    minWidth: 0,
     fontSize: 13,
     fontWeight: '700',
     color: SDO_COLORS.textPrimary,
@@ -1683,6 +1870,7 @@ const styles = StyleSheet.create({
     backgroundColor: SDO_COLORS.navy,
     paddingHorizontal: 11,
     paddingVertical: 6,
+    flexShrink: 0,
   },
   viewPillText: {
     fontFamily: SDO_FONTS.sans,
@@ -1996,5 +2184,120 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: SDO_COLORS.border,
     padding: 14,
+  },
+  lockInlineCodeBox: {
+    width: '100%',
+    gap: 6,
+    marginTop: 4,
+  },
+  lockInlineCodeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  lockInlineCodeInput: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 40,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: SDO_COLORS.borderStrong,
+    backgroundColor: SDO_COLORS.surface,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontFamily: SDO_FONTS.mono,
+    fontSize: 13,
+    fontWeight: '700',
+    color: SDO_COLORS.textPrimary,
+  },
+  lockInlineCodeInputError: {
+    borderColor: SDO_COLORS.rose,
+  },
+  lockInlineCodeBtn: {
+    minHeight: 40,
+    borderRadius: 12,
+    backgroundColor: SDO_COLORS.navy,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    flexShrink: 0,
+  },
+  lockInlineCodeBtnDisabled: {
+    opacity: 0.48,
+  },
+  lockInlineCodeBtnText: {
+    fontFamily: SDO_FONTS.sans,
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: SDO_COLORS.white,
+  },
+  lockInlineCodeError: {
+    fontFamily: SDO_FONTS.sans,
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: SDO_COLORS.roseText,
+    textAlign: 'left',
+  },
+  attachNewVersionBtn: {
+    minHeight: 42,
+    borderRadius: 14,
+    backgroundColor: SDO_COLORS.amber,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  attachNewVersionText: {
+    fontFamily: SDO_FONTS.sans,
+    fontSize: 13,
+    fontWeight: '800',
+    color: SDO_COLORS.navyInk,
+  },
+  changeHistoryHeader: {
+    gap: 2,
+    paddingHorizontal: 2,
+  },
+  changeHistoryTitle: {
+    fontFamily: SDO_FONTS.sans,
+    fontSize: 13.5,
+    fontWeight: '800',
+    color: SDO_COLORS.textPrimary,
+  },
+  changeHistorySub: {
+    fontFamily: SDO_FONTS.sans,
+    fontSize: 11.5,
+    lineHeight: 16,
+    color: SDO_COLORS.textSecondary,
+  },
+  versionMetaPillRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  changeTypePill: {
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  changeTypePillText: {
+    fontFamily: SDO_FONTS.sans,
+    fontSize: 10.5,
+    fontWeight: '700',
+  },
+  versionOfficeCode: {
+    fontFamily: SDO_FONTS.mono,
+    fontSize: 11,
+    fontWeight: '800',
+    color: SDO_COLORS.navy,
+  },
+  versionActorLine: {
+    fontFamily: SDO_FONTS.sans,
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: SDO_COLORS.textSecondary,
   },
 });

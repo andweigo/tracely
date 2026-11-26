@@ -212,6 +212,9 @@ export class HttpDocumentRepository implements IDocumentRepository {
     const form = new FormData();
     form.append('revision_note', payload.revisionNote);
     form.append('file_name', payload.fileName);
+    if (payload.changeType) {
+      form.append('change_type', payload.changeType);
+    }
     form.append('sha256_checksum', payload.sha256Checksum);
     form.append('size_bytes', String(payload.sizeBytes));
     form.append('file', {
@@ -261,12 +264,15 @@ export class HttpDocumentRepository implements IDocumentRepository {
       version: new DocumentVersion({
         id: res.version.id,
         versionNumber: res.version.version_number,
+        changeType: res.version.change_type,
         fileName: res.version.file_name,
         mimeType: res.version.mime_type,
         sizeBytes: res.version.size_bytes,
         sha256Checksum: res.version.sha256_checksum,
         uploadedById: res.version.uploaded_by_id,
         uploadedByName: res.version.uploaded_by_name,
+        uploadedByOfficeCode: res.version.uploaded_by_office_code,
+        uploadedByOfficeName: res.version.uploaded_by_office_name,
         uploadedAt: res.version.uploaded_at,
         revisionNote: res.version.revision_note,
         storageKey: res.version.storage_key,
@@ -281,9 +287,13 @@ export class HttpDocumentRepository implements IDocumentRepository {
     return DocumentMapper.toDocument(res.data);
   }
 
-  public async consumeUnlockChallenge(codeOrToken: string): Promise<Document> {
+  public async consumeUnlockChallenge(
+    codeOrToken: string,
+    documentId?: string,
+  ): Promise<Document> {
     const res = await this._api.post<{ data: DocumentDto }>('/qr/consume-unlock', {
       code: codeOrToken,
+      ...(documentId ? { document_id: documentId } : {}),
     });
     return DocumentMapper.toDocument(res.data);
   }

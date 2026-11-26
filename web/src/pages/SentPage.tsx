@@ -18,7 +18,12 @@ import FuseButton from '../components/FuseButton';
 import { BatchTransmittalModal, EditDocumentModal, OpaqueQrModal } from '../components/Modals';
 import { PaginationBar } from '../components/PaginationBar';
 import { buildSentCsv, downloadCsvFile } from '../utils/exportCsv';
-import { formatClockTime, formatCompactDate, formatRelativeTime } from '../utils/formatters';
+import {
+  formatClockTime,
+  formatCompactDate,
+  formatDisplayFileName,
+  formatRelativeTime,
+} from '../utils/formatters';
 import {
   filterAndSortSentDocuments,
   paginateSentItems,
@@ -323,17 +328,29 @@ export const SentPage: React.FC = () => {
                 {latestVersion ? (
                   <div
                     style={{
-                      display: 'inline-flex',
+                      display: 'flex',
                       alignItems: 'center',
                       gap: 6,
                       fontSize: 12,
                       color: 'var(--text-secondary)',
+                      minWidth: 0,
+                      maxWidth: '100%',
                     }}
                   >
-                    <FileText size={13} color="var(--navy)" />
-                    <span>{latestVersion.fileName}</span>
+                    <FileText size={13} color="var(--navy)" style={{ flexShrink: 0 }} />
+                    <span
+                      title={formatDisplayFileName(latestVersion.fileName)}
+                      style={{
+                        minWidth: 0,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {formatDisplayFileName(latestVersion.fileName)}
+                    </span>
                     {doc.versions.length > 1 ? (
-                      <span className="pill pill-slate" style={{ fontSize: 10 }}>
+                      <span className="pill pill-slate" style={{ fontSize: 10, flexShrink: 0 }}>
                         {doc.versions.length} versions
                       </span>
                     ) : null}

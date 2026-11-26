@@ -322,7 +322,14 @@ export const WebShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
           className={`bottom-nav-tab ${route === 'inbox' ? 'bottom-nav-tab-active' : ''}`}
           onClick={() => handleNav('inbox')}
         >
-          <Inbox size={19} />
+          <span className="bottom-nav-icon-wrap">
+            <Inbox size={19} />
+            {pendingReceiptCount > 0 ? (
+              <span className="bottom-nav-badge" aria-label={`${pendingReceiptCount} incoming`}>
+                {pendingReceiptCount > 99 ? '99+' : pendingReceiptCount}
+              </span>
+            ) : null}
+          </span>
           <span>Inbox</span>
         </button>
         <button

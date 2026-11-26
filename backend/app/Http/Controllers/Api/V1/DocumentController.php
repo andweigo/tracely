@@ -219,6 +219,7 @@ class DocumentController extends Controller
             'category_id' => ['required', 'string', 'max:64'],
             'confidentiality_tier' => ['required', 'in:standard_internal,restricted,confidential'],
             'file_name' => ['nullable', 'string', 'min:1', 'max:180'],
+            'change_type' => ['nullable', 'in:initial,signed,revised,endorsed,supporting_attachment'],
             'sha256_checksum' => ['nullable', 'string', 'size:64', 'regex:/^[0-9a-fA-F]{64}$/'],
             'size_bytes' => ['nullable', 'integer', 'min:1'],
             'recipient_user_id' => ['nullable', 'string', 'max:64'],
@@ -305,6 +306,8 @@ class DocumentController extends Controller
         $actor = $request->user();
         $doc = Document::query()->findOrFail($id);
         $challenge = $this->workflow->createUnlockChallenge($actor, $doc);
+        $reused = ! $challenge->wasRecentlyCreated;
+        $ttlSeconds = max(0, (int) now()->diffInSeconds($challenge->expires_at, false));
 
         return response()->json([
             'challenge_id' => $challenge->id,
@@ -313,7 +316,9 @@ class DocumentController extends Controller
             'qr_payload' => "TRC-QR:UNLOCK:{$challenge->token}",
             'short_code' => $challenge->formattedShortCode(),
             'expires_at' => $challenge->expires_at->toIso8601String(),
-        ], 201);
+            'ttl_seconds' => $ttlSeconds,
+            'reused' => $reused,
+        ], $reused ? 200 : 201);
     }
 
     public function forward(string $id, Request $request): JsonResponse
@@ -400,6 +405,7 @@ class DocumentController extends Controller
         $validated = $request->validate([
             'revision_note' => ['nullable', 'string', 'max:500'],
             'file_name' => ['nullable', 'string', 'min:1', 'max:180'],
+            'change_type' => ['nullable', 'in:initial,signed,revised,endorsed,supporting_attachment'],
             'sha256_checksum' => ['nullable', 'string', 'size:64', 'regex:/^[0-9a-fA-F]{64}$/'],
             'file' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:25600'],
         ]);
@@ -416,9 +422,10 @@ class DocumentController extends Controller
             (string) ($validated['revision_note'] ?? ''),
             $actor->currentAccessToken()?->name ?? 'Tracely Client',
             $validated['file_name'] ?? null,
+            $validated['change_type'] ?? null,
         );
 
-        return response()->json(['data' => DtoSerializer::document($updated)]);
+        return response()->json(['data' => DtoSerializer::document($updated, $actor, $this->policy)]);
     }
 
     public function presignedUrl(string $id, int $versionNumber, Request $request): JsonResponse

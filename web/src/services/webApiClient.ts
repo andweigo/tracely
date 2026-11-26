@@ -72,12 +72,15 @@ interface ApiPersonnelDto {
 
 interface ApiVersionDto {
   version_number: number;
+  change_type?: import('../domain/types').VersionChangeType;
   file_name: string;
   mime_type: string;
   size_bytes: number;
   sha256_checksum: string;
   uploaded_at: string;
   uploaded_by_name?: string;
+  uploaded_by_office_code?: string;
+  uploaded_by_office_name?: string;
   revision_note?: string;
 }
 
@@ -240,12 +243,15 @@ export function mapApiPersonnel(dto: ApiPersonnelDto): Personnel {
 function mapApiVersion(dto: ApiVersionDto): DocumentVersion {
   return {
     versionNumber: dto.version_number,
+    changeType: dto.change_type ?? (dto.version_number <= 1 ? 'initial' : 'revised'),
     fileName: dto.file_name,
     mimeType: dto.mime_type,
     sizeBytes: dto.size_bytes,
     sha256Checksum: dto.sha256_checksum,
     uploadedAt: dto.uploaded_at,
     uploadedByName: dto.uploaded_by_name ?? 'Team Member',
+    uploadedByOfficeCode: dto.uploaded_by_office_code,
+    uploadedByOfficeName: dto.uploaded_by_office_name,
     note: dto.revision_note ?? '',
   };
 }
@@ -900,6 +906,8 @@ export class LaravelSanctumGateway implements WebBackendGateway {
       qr_payload: string;
       short_code: string;
       expires_at: string;
+      ttl_seconds?: number;
+      reused?: boolean;
     }>(`/documents/${encodeURIComponent(documentId)}/unlock-challenge`, {
       method: 'POST',
     });
@@ -910,13 +918,21 @@ export class LaravelSanctumGateway implements WebBackendGateway {
       qrPayload: res.qr_payload,
       shortCode: res.short_code,
       expiresAt: res.expires_at,
+      ttlSeconds: res.ttl_seconds,
+      reused: res.reused,
     };
   }
 
-  public async consumeUnlockChallenge(codeOrToken: string): Promise<DocumentRecord> {
+  public async consumeUnlockChallenge(
+    codeOrToken: string,
+    documentId?: string,
+  ): Promise<DocumentRecord> {
     const res = await this.request<{ data: ApiDocumentDto }>('/qr/consume-unlock', {
       method: 'POST',
-      body: JSON.stringify({ code: codeOrToken }),
+      body: JSON.stringify({
+        code: codeOrToken,
+        ...(documentId ? { document_id: documentId } : {}),
+      }),
     });
     return mapApiDocument(res.data);
   }
@@ -1091,6 +1107,7 @@ export class LaravelSanctumGateway implements WebBackendGateway {
     fileName?: string;
     sha256Checksum: string;
     revisionNote: string;
+    changeType?: import('../domain/types').VersionChangeType;
   }): Promise<DocumentRecord> {
     const resolvedFileName = normalizeUploadFileName(
       payload.fileName ?? payload.file.name,
@@ -1101,6 +1118,9 @@ export class LaravelSanctumGateway implements WebBackendGateway {
     form.append('file_name', resolvedFileName);
     form.append('sha256_checksum', payload.sha256Checksum);
     form.append('revision_note', payload.revisionNote);
+    if (payload.changeType) {
+      form.append('change_type', payload.changeType);
+    }
     const res = await this.request<{ data: ApiDocumentDto }>(
       `/documents/${encodeURIComponent(payload.documentId)}/versions`,
       { method: 'POST', body: form },

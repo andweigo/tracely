@@ -94,8 +94,9 @@ export const DashboardPage: React.FC = () => {
     [documents, actor],
   );
 
+  const actorId = actor?.id ?? null;
   useEffect(() => {
-    if (!actor) {
+    if (!actorId) {
       setServerContributions(null);
       return;
     }
@@ -110,7 +111,7 @@ export const DashboardPage: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [actor?.id, documents.length, getSentContributions]);
+  }, [actorId, documents.length, getSentContributions]);
 
   const contributionReport = serverContributions ?? localContributions;
 

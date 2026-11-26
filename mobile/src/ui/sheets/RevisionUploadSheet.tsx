@@ -1,12 +1,25 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { errorCodes, isErrorWithCode, pick, types } from '@react-native-documents/picker';
 import { FileText, FileUp, Pencil } from 'lucide-react-native';
 import { Document } from '../../domain/entities/Document';
+import { VersionChangeType } from '../../domain/entities/DocumentVersion';
+import { DocumentLifecycleStatus } from '../../domain/enums/DomainEnums';
 import { useAppServices } from '../../state/AppServiceContext';
 import { ModalSheet } from '../components/ModalSheet';
 import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
-import { formatBytes, normalizeUploadFileName } from '../utils/formatters';
+import { formatBytes, formatDisplayFileName, normalizeUploadFileName } from '../utils/formatters';
+
+const CHANGE_TYPE_OPTIONS: ReadonlyArray<{
+  readonly id: VersionChangeType;
+  readonly label: string;
+  readonly defaultNote: string;
+}> = [
+  { id: 'signed', label: 'Signed / Countersigned', defaultNote: 'Countersigned and attached updated copy' },
+  { id: 'revised', label: 'Revised Copy', defaultNote: 'Revised document content per remarks' },
+  { id: 'endorsed', label: 'Endorsed / Stamped', defaultNote: 'Endorsed and stamped by office' },
+  { id: 'supporting_attachment', label: 'Supporting File', defaultNote: 'Attached supporting document' },
+];
 
 interface RevisionUploadSheetProps {
   open: boolean;
@@ -31,7 +44,21 @@ export const RevisionUploadSheet: React.FC<RevisionUploadSheetProps> = ({
     sha256: string;
   } | null>(null);
   const [hashing, setHashing] = useState(false);
+  const [changeType, setChangeType] = useState<VersionChangeType>('signed');
   const [revisionNote, setRevisionNote] = useState('');
+
+  const isInitialScan = nextVersionNumber === 1;
+
+  useEffect(() => {
+    if (!open) return;
+    if (isInitialScan) {
+      setChangeType('initial');
+    } else if (document.lifecycleStatus === DocumentLifecycleStatus.RETURNED_FOR_REVISION) {
+      setChangeType('revised');
+    } else {
+      setChangeType('signed');
+    }
+  }, [open, isInitialScan, document.lifecycleStatus]);
 
   const handleChooseDocument = async () => {
     setHashing(true);
@@ -41,7 +68,10 @@ export const RevisionUploadSheet: React.FC<RevisionUploadSheetProps> = ({
         mode: 'import',
       });
       const sha256 = await computeSha256FromUri(file.uri);
-      const pickedName = file.name ?? `revision_v${nextVersionNumber}.pdf`;
+      const pickedName = formatDisplayFileName(
+        file.name ?? `revision_v${nextVersionNumber}.pdf`,
+        `revision_v${nextVersionNumber}.pdf`,
+      );
       setSelectedFile({
         uri: file.uri,
         originalName: pickedName,
@@ -72,6 +102,7 @@ export const RevisionUploadSheet: React.FC<RevisionUploadSheetProps> = ({
         sizeBytes: selectedFile.size,
         sha256Checksum: selectedFile.sha256,
         revisionNote,
+        changeType: isInitialScan ? 'initial' : changeType,
       });
       setSelectedFile(null);
       setRevisionNote('');
@@ -83,8 +114,6 @@ export const RevisionUploadSheet: React.FC<RevisionUploadSheetProps> = ({
 
   const disabled = !selectedFile || !revisionNote.trim() || hashing || isBusy;
 
-  const isInitialScan = nextVersionNumber === 1;
-
   return (
     <ModalSheet
       open={open}
@@ -92,19 +121,47 @@ export const RevisionUploadSheet: React.FC<RevisionUploadSheetProps> = ({
       title={
         isInitialScan
           ? 'Attach Scanned Copy (v1)'
-          : `Upload Non-Destructive v${nextVersionNumber}`
+          : `Attach Signed / Updated File (v${nextVersionNumber})`
       }
       subtitle={
         isInitialScan
           ? `${document.trackingCode} · Converts Hard Copy to Hard Copy + Scan`
-          : `${document.trackingCode} · Prior versions remain preserved read-only`
+          : `${document.trackingCode} · Prior versions stay preserved read-only in Change History`
       }
     >
+      {!isInitialScan ? (
+        <View style={styles.block}>
+          <Text style={styles.label}>What changed in this file?</Text>
+          <View style={styles.chipWrap}>
+            {CHANGE_TYPE_OPTIONS.map((opt) => {
+              const active = changeType === opt.id;
+              return (
+                <Pressable
+                  key={opt.id}
+                  testID={`mobile-version-change-type-${opt.id}`}
+                  onPress={() => {
+                    setChangeType(opt.id);
+                    if (!revisionNote.trim()) {
+                      setRevisionNote(opt.defaultNote);
+                    }
+                  }}
+                  style={[styles.changeChip, active && styles.changeChipActive]}
+                >
+                  <Text style={[styles.changeChipText, active && styles.changeChipTextActive]}>
+                    {opt.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      ) : null}
+
       <View style={styles.block}>
         <Text style={styles.label}>
           {isInitialScan
             ? 'Scanned Document File (PDF or Image)'
-            : 'Corrected Document File (PDF or Image)'}
+            : 'Signed / Updated Document File (PDF or Image)'}
         </Text>
         <Pressable
           disabled={hashing}
@@ -119,7 +176,7 @@ export const RevisionUploadSheet: React.FC<RevisionUploadSheetProps> = ({
 
         {selectedFile ? (
           <View style={styles.fileCard}>
-            <Text style={styles.fileName}>
+            <Text numberOfLines={2} ellipsizeMode="middle" style={styles.fileName}>
               {`${normalizeUploadFileName(selectedFile.name, selectedFile.originalName)} (${formatBytes(selectedFile.size)})`}
             </Text>
             <View style={styles.renameRow}>
@@ -145,13 +202,13 @@ export const RevisionUploadSheet: React.FC<RevisionUploadSheetProps> = ({
       </View>
 
       <View style={styles.block}>
-        <Text style={styles.label}>Revision Summary Note</Text>
+        <Text style={styles.label}>Change Summary / Version Note</Text>
         <TextInput
           multiline
           numberOfLines={3}
           value={revisionNote}
           onChangeText={setRevisionNote}
-          placeholder="Describe corrections made for this revision..."
+          placeholder="e.g. Countersigned by Budget Officer; added endorsement stamp"
           placeholderTextColor={SDO_COLORS.textMuted}
           style={styles.textarea}
         />
@@ -163,7 +220,11 @@ export const RevisionUploadSheet: React.FC<RevisionUploadSheetProps> = ({
         style={[styles.submitBtn, disabled && styles.disabled]}
       >
         <FileUp size={18} color={SDO_COLORS.navyInk} />
-        <Text style={styles.submitText}>Publish v{nextVersionNumber} with SHA-256</Text>
+        <Text style={styles.submitText}>
+          {isInitialScan
+            ? 'Attach Scan (v1) with SHA-256'
+            : `Attach File (v${nextVersionNumber}) with SHA-256`}
+        </Text>
       </Pressable>
     </ModalSheet>
   );
@@ -264,5 +325,31 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '800',
     color: SDO_COLORS.navyInk,
+  },
+  chipWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  changeChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: SDO_COLORS.border,
+    backgroundColor: SDO_COLORS.surfaceSoft,
+  },
+  changeChipActive: {
+    borderColor: SDO_COLORS.navy,
+    backgroundColor: SDO_COLORS.navy,
+  },
+  changeChipText: {
+    fontFamily: SDO_FONTS.sans,
+    fontSize: 12,
+    fontWeight: '700',
+    color: SDO_COLORS.textSecondary,
+  },
+  changeChipTextActive: {
+    color: SDO_COLORS.white,
   },
 });

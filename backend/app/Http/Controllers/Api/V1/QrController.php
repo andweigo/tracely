@@ -282,6 +282,7 @@ class QrController extends Controller
         $validated = $request->validate([
             'code' => ['nullable', 'string', 'max:180'],
             'token' => ['nullable', 'string', 'max:180'],
+            'document_id' => ['nullable', 'string', 'max:64'],
         ]);
 
         $raw = (string) ($validated['code'] ?? $validated['token'] ?? '');
@@ -289,7 +290,12 @@ class QrController extends Controller
         $actor = $request->user();
         $deviceLabel = $actor->currentAccessToken()?->name ?? 'Tracely Mobile';
 
-        $unlocked = $this->workflow->consumeUnlockChallenge($actor, $raw, $deviceLabel);
+        $unlocked = $this->workflow->consumeUnlockChallenge(
+            $actor,
+            $raw,
+            $deviceLabel,
+            $validated['document_id'] ?? null,
+        );
 
         return response()->json([
             'data' => DtoSerializer::document($unlocked, $actor, $this->policy),

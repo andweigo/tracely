@@ -23,7 +23,10 @@ export interface PasswordRuleEvaluation {
   readonly hasDigit: boolean;
   readonly hasSymbol: boolean;
   readonly noEdgeWhitespace: boolean;
+  readonly noUnsafeChars: boolean;
   readonly noWeakPattern: boolean;
+  readonly matchedWeakPhrase: string | null;
+  readonly leaksPersonalHint: boolean;
   readonly allSatisfied: boolean;
 }
 
@@ -46,12 +49,31 @@ export interface RegistrationValidationInput {
   readonly confirmPassword: string;
 }
 
+function formatMissingList(items: ReadonlyArray<string>): string {
+  if (items.length === 0) return '';
+  if (items.length === 1) return items[0];
+  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
+}
+
 export class AuthInputPolicy {
   public static sanitizeSingleLine(raw: string): string {
     return raw.replace(/[\r\n\t]+/g, ' ').replace(/\s+/g, ' ').trim();
   }
 
-  public static evaluatePasswordRules(password: string): PasswordRuleEvaluation {
+  public static containsUnsafeControlOrMarkup(value: string): boolean {
+    for (let i = 0; i < value.length; i += 1) {
+      const code = value.charCodeAt(i);
+      if (code < 32 || code === 127 || code === 60 || code === 62 || code === 96) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  public static evaluatePasswordRules(
+    password: string,
+    excludedHints: ReadonlyArray<string> = [],
+  ): PasswordRuleEvaluation {
     const lengthValid =
       password.length >= AUTH_INPUT_LIMITS.passwordMin &&
       password.length <= AUTH_INPUT_LIMITS.passwordMax;
@@ -60,8 +82,14 @@ export class AuthInputPolicy {
     const hasDigit = /\d/.test(password);
     const hasSymbol = /[^A-Za-z0-9\s]/.test(password);
     const noEdgeWhitespace = password === password.trim() && password.length > 0;
+    const noUnsafeChars = !AuthInputPolicy.containsUnsafeControlOrMarkup(password);
     const lower = password.toLowerCase();
-    const noWeakPattern = !WEAK_FRAGMENTS.some((frag) => lower.includes(frag));
+    const matchedWeakPhrase = WEAK_FRAGMENTS.find((frag) => lower.includes(frag)) ?? null;
+    const leaksPersonalHint = excludedHints.some((hint) => {
+      const cleanHint = hint.trim().toLowerCase();
+      return cleanHint.length >= 4 && lower.includes(cleanHint);
+    });
+    const noWeakPattern = !matchedWeakPhrase && !leaksPersonalHint;
 
     return {
       lengthValid,
@@ -70,7 +98,10 @@ export class AuthInputPolicy {
       hasDigit,
       hasSymbol,
       noEdgeWhitespace,
+      noUnsafeChars,
       noWeakPattern,
+      matchedWeakPhrase,
+      leaksPersonalHint,
       allSatisfied:
         lengthValid &&
         hasUppercase &&
@@ -78,8 +109,63 @@ export class AuthInputPolicy {
         hasDigit &&
         hasSymbol &&
         noEdgeWhitespace &&
+        noUnsafeChars &&
         noWeakPattern,
     };
+  }
+
+  public static getPasswordError(
+    password: string,
+    label = 'Password',
+    excludedHints: ReadonlyArray<string> = [],
+  ): string | null {
+    if (!password) {
+      return `${label} is required.`;
+    }
+    if (password !== password.trim()) {
+      return `${label} cannot start or end with spaces.`;
+    }
+    if (AuthInputPolicy.containsUnsafeControlOrMarkup(password)) {
+      return `${label} cannot contain control characters or < > \` symbols.`;
+    }
+    if (password.length < AUTH_INPUT_LIMITS.passwordMin) {
+      return `${label} is too short — use at least ${AUTH_INPUT_LIMITS.passwordMin} characters (currently ${password.length}).`;
+    }
+    if (password.length > AUTH_INPUT_LIMITS.passwordMax) {
+      return `${label} is too long — use at most ${AUTH_INPUT_LIMITS.passwordMax} characters (currently ${password.length}).`;
+    }
+
+    const rules = AuthInputPolicy.evaluatePasswordRules(password, excludedHints);
+    const missing: string[] = [];
+    if (!rules.hasUppercase) missing.push('an uppercase letter (A–Z)');
+    if (!rules.hasLowercase) missing.push('a lowercase letter (a–z)');
+    if (!rules.hasDigit) missing.push('a number (0–9)');
+    if (!rules.hasSymbol) missing.push('a symbol (e.g. !@#$%)');
+    if (missing.length > 0) {
+      return `${label} must include ${formatMissingList(missing)}.`;
+    }
+
+    if (rules.matchedWeakPhrase) {
+      return `${label} cannot contain the common phrase "${rules.matchedWeakPhrase}".`;
+    }
+    if (rules.leaksPersonalHint) {
+      return `${label} cannot contain your Employee ID or email.`;
+    }
+    return null;
+  }
+
+  public static getConfirmPasswordError(
+    password: string,
+    confirmPassword: string,
+    label = 'Password',
+  ): string | null {
+    if (!confirmPassword) {
+      return `Re-enter your ${label.toLowerCase()} to confirm.`;
+    }
+    if (password !== confirmPassword) {
+      return `${label} confirmation does not match.`;
+    }
+    return null;
   }
 
   public static validateLogin(rawIdentifier: string, password: string): {
@@ -150,14 +236,21 @@ export class AuthInputPolicy {
       throw new Error('Provide the full name of your unlisted office / unit.');
     }
 
-    const rules = AuthInputPolicy.evaluatePasswordRules(input.password);
-    if (!rules.allSatisfied) {
-      throw new Error(
-        'Password must be 8–32 chars with uppercase, lowercase, number, and symbol.',
-      );
+    const emailLocalPart = email.split('@')[0] ?? '';
+    const passwordError = AuthInputPolicy.getPasswordError(input.password, 'Password', [
+      employeeId,
+      emailLocalPart,
+    ]);
+    if (passwordError) {
+      throw new Error(passwordError);
     }
-    if (input.password !== input.confirmPassword) {
-      throw new Error('Password confirmation does not match.');
+    const confirmError = AuthInputPolicy.getConfirmPasswordError(
+      input.password,
+      input.confirmPassword,
+      'Password',
+    );
+    if (confirmError) {
+      throw new Error(confirmError);
     }
 
     return {

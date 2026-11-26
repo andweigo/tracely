@@ -192,17 +192,26 @@ class DtoSerializer
 
     public static function version(DocumentVersion $version): array
     {
-        $version->loadMissing('uploadedBy');
+        $version->loadMissing('uploadedBy.office');
+
+        $changeType = trim((string) ($version->change_type ?? ''));
+        if ($changeType === '') {
+            $changeType = ((int) $version->version_number) <= 1 ? 'initial' : 'revised';
+        }
 
         return [
             'id' => $version->id,
             'version_number' => (int) $version->version_number,
+            'change_type' => $changeType,
             'file_name' => $version->file_name,
             'mime_type' => $version->mime_type,
             'size_bytes' => (int) $version->size_bytes,
             'sha256_checksum' => $version->sha256_checksum,
             'uploaded_by_id' => $version->uploaded_by_id,
             'uploaded_by_name' => $version->uploadedBy?->full_name ?? 'Team Member',
+            'uploaded_by_office_id' => $version->uploaded_by_office_id ?? $version->uploadedBy?->office_id,
+            'uploaded_by_office_code' => $version->uploaded_by_office_code ?? $version->uploadedBy?->office?->code ?? 'UNIT',
+            'uploaded_by_office_name' => $version->uploaded_by_office_name ?? $version->uploadedBy?->office?->name ?? 'Office Unit',
             'uploaded_at' => $version->uploaded_at->toIso8601String(),
             'revision_note' => $version->revision_note ?? '',
             'storage_key' => $version->storage_key,
@@ -237,7 +246,7 @@ class DtoSerializer
             'currentHolder',
             'submittedSchool',
             'participants',
-            'versions.uploadedBy',
+            'versions.uploadedBy.office',
             'transactions.fromUser',
             'transactions.toUser',
             'transactions.fromOffice',

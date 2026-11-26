@@ -40,6 +40,7 @@ import {
   buildBatchItemTitle,
   computeFileSha256,
   formatBytes,
+  formatDisplayFileName,
   normalizeUploadFileName,
 } from '../utils/formatters';
 
@@ -285,7 +286,7 @@ export const SendPage: React.FC = () => {
             additions.push({
               id,
               file,
-              customFileName: file.name,
+              customFileName: formatDisplayFileName(file.name),
               customTitle: '',
               previewUrl: createSafePreviewUrl(file),
             });
@@ -621,8 +622,22 @@ export const SendPage: React.FC = () => {
                 stageChosenFiles(Array.from(e.dataTransfer?.files ?? []));
               }}
             >
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>
+              <div style={{ minWidth: 0, flex: 1, overflow: 'hidden' }}>
+                <div
+                  title={
+                    pickedFiles.length === 1
+                      ? normalizeUploadFileName(pickedFiles[0].customFileName, pickedFiles[0].file.name)
+                      : undefined
+                  }
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: 'var(--text-primary)',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
                   {isDragging
                     ? 'Drop PDF or image files here'
                     : pickedFiles.length === 1
@@ -647,7 +662,7 @@ export const SendPage: React.FC = () => {
                   e.target.value = '';
                 }}
               />
-              <span className="btn btn-outline" style={{ pointerEvents: 'none' }}>
+              <span className="btn btn-outline" style={{ pointerEvents: 'none', flexShrink: 0 }}>
                 {pickedFiles.length > 0 ? 'Add Files' : 'Browse Files'}
               </span>
             </label>
@@ -655,6 +670,7 @@ export const SendPage: React.FC = () => {
             {pickedFiles.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {pickedFiles.map((item, idx) => {
+                  const originalDisplayName = formatDisplayFileName(item.file.name);
                   const resolvedName = normalizeUploadFileName(item.customFileName, item.file.name);
                   return (
                     <div
@@ -675,38 +691,57 @@ export const SendPage: React.FC = () => {
                           gap: 10,
                         }}
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
                           {item.previewUrl ? (
                             <img
                               src={item.previewUrl}
                               alt={`Preview of ${resolvedName}`}
                               className="staged-file-thumb"
+                              style={{ flexShrink: 0 }}
                             />
                           ) : (
-                            <span className="staged-file-pdf-badge" aria-hidden="true">
+                            <span className="staged-file-pdf-badge" aria-hidden="true" style={{ flexShrink: 0 }}>
                               <FileText size={16} />
                             </span>
                           )}
-                          <div style={{ minWidth: 0 }}>
+                          <div style={{ minWidth: 0, flex: 1 }}>
                             <div
+                              title={resolvedName}
                               style={{
                                 fontSize: 12,
                                 fontWeight: 700,
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
                               }}
                             >
                               {resolvedName}
                             </div>
-                            <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+                            <div
+                              title={
+                                resolvedName !== originalDisplayName
+                                  ? `${formatBytes(item.file.size)} · Original: ${originalDisplayName}`
+                                  : undefined
+                              }
+                              style={{
+                                fontSize: 11,
+                                color: 'var(--text-secondary)',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
                               {formatBytes(item.file.size)}
-                              {resolvedName !== item.file.name ? ` · Original: ${item.file.name}` : ''}
+                              {resolvedName !== originalDisplayName
+                                ? ` · Original: ${originalDisplayName}`
+                                : ''}
                             </div>
                           </div>
                         </div>
                         <button
                           type="button"
                           className="icon-circle-btn"
+                          style={{ flexShrink: 0 }}
                           aria-label={`Remove ${item.file.name}`}
                           onClick={() => {
                             revokeSafePreviewUrl(item.previewUrl);

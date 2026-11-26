@@ -1,6 +1,6 @@
 import { Document } from '../../domain/entities/Document';
 import { DocumentCategory } from '../../domain/entities/DocumentCategory';
-import { DocumentVersion } from '../../domain/entities/DocumentVersion';
+import { DocumentVersion, VersionChangeType } from '../../domain/entities/DocumentVersion';
 import { ConfidentialityTier } from '../../domain/enums/DomainEnums';
 import { OfficeSummary, Personnel } from '../../domain/entities/Personnel';
 import type { DocumentTrackingSnapshot } from '../../domain/security/AccessPolicy';
@@ -88,6 +88,7 @@ export interface UploadRevisionPayload {
   readonly sizeBytes: number;
   readonly sha256Checksum: string;
   readonly revisionNote: string;
+  readonly changeType?: VersionChangeType;
 }
 
 export interface RegisterHardCopyPayload {
@@ -144,7 +145,7 @@ export interface IDocumentRepository {
   issuePresignedViewGrant(documentId: string, versionNumber: number): Promise<PresignedDownloadGrant>;
   resolveDocumentQr(opaqueToken: string): Promise<Document>;
   resolveDesktopPairingQr(opaqueToken: string): Promise<DesktopPairingSession>;
-  consumeUnlockChallenge?(codeOrToken: string): Promise<Document>;
+  consumeUnlockChallenge?(codeOrToken: string, documentId?: string): Promise<Document>;
   verifyTransmittalQr(opaqueToken: string): Promise<{
     readonly trackingCode: string;
     readonly lifecycleStatus: string;

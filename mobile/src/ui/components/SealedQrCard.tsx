@@ -1,7 +1,7 @@
-import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
-import { ChevronRight, Lock, QrCode } from 'lucide-react-native';
+import { Check, ChevronRight, Lock, QrCode } from 'lucide-react-native';
 import { Document } from '../../domain/entities/Document';
 import { ConfidentialityTier, DocumentCopyFormat } from '../../domain/enums/DomainEnums';
 import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
@@ -11,7 +11,9 @@ import { SlaBadge } from './Badges';
 interface SealedQrCardProps {
   document: Document;
   compact?: boolean;
+  isBusy?: boolean;
   onScan: (doc: Document) => void;
+  onSubmitCode?: (doc: Document, rawCode: string) => Promise<void>;
   onDecline?: (doc: Document) => void;
 }
 
@@ -86,9 +88,15 @@ export const SealedQrGlyph: React.FC<{ size?: number }> = ({ size = 60 }) => (
 export const SealedQrCard: React.FC<SealedQrCardProps> = ({
   document: doc,
   compact = false,
+  isBusy = false,
   onScan,
+  onSubmitCode,
   onDecline,
 }) => {
+  const [inlineCode, setInlineCode] = useState('');
+  const [inlineError, setInlineError] = useState<string | null>(null);
+  const [submittingCode, setSubmittingCode] = useState(false);
+
   const latest = doc.latestTransaction;
   const fromOffice = latest?.fromOffice ?? doc.originOffice;
   const fromUser = latest?.fromUserName;
@@ -99,6 +107,33 @@ export const SealedQrCard: React.FC<SealedQrCardProps> = ({
   const isSoftCopy = doc.copyFormat === DocumentCopyFormat.DIGITAL;
   const actionLabel = isSoftCopy ? 'Scan QR in Tracely Web' : 'Scan QR';
   const compactHint = isSoftCopy ? 'Tap to scan QR in Tracely Web' : 'Tap to target scanner';
+
+  const handleInlineUnlock = async () => {
+    if (!onSubmitCode) return;
+    const clean = inlineCode.trim();
+    if (!clean || submittingCode || isBusy) {
+      if (!clean) {
+        setInlineError(
+          isSoftCopy
+            ? 'Enter the 6-char unlock code or tracking code.'
+            : 'Enter the routing tracking code.',
+        );
+      }
+      return;
+    }
+    setInlineError(null);
+    setSubmittingCode(true);
+    try {
+      await onSubmitCode(doc, clean);
+      setInlineCode('');
+    } catch (err) {
+      setInlineError(
+        err instanceof Error ? err.message : 'Unable to verify unlock code.',
+      );
+    } finally {
+      setSubmittingCode(false);
+    }
+  };
 
   const metaLine = [
     `From ${fromOffice.code}${fromUser ? ` · ${fromUser}` : ''}`,
@@ -150,6 +185,58 @@ export const SealedQrCard: React.FC<SealedQrCardProps> = ({
           </Text>
         </View>
       </View>
+
+      {!compact && onSubmitCode ? (
+        <View style={styles.inlineCodeBlock}>
+          <View style={styles.inlineCodeRow}>
+            <TextInput
+              testID={`mobile-sealed-qr-code-input-${doc.id}`}
+              value={inlineCode}
+              onChangeText={(val) => {
+                setInlineCode(val);
+                if (inlineError) setInlineError(null);
+              }}
+              placeholder={
+                isSoftCopy
+                  ? 'Enter 6-char code (e.g. K7P-492)'
+                  : 'Enter tracking code (e.g. TRC-2026-000142)'
+              }
+              placeholderTextColor={SDO_COLORS.textMuted}
+              autoCapitalize="characters"
+              autoCorrect={false}
+              returnKeyType="done"
+              onSubmitEditing={() => {
+                handleInlineUnlock().catch(() => {});
+              }}
+              style={[styles.inlineCodeInput, inlineError && styles.inlineCodeInputError]}
+            />
+            <Pressable
+              testID={`mobile-sealed-qr-code-submit-${doc.id}`}
+              disabled={!inlineCode.trim() || submittingCode || isBusy}
+              onPress={() => {
+                handleInlineUnlock().catch(() => {});
+              }}
+              style={[
+                styles.inlineCodeSubmitBtn,
+                (!inlineCode.trim() || submittingCode || isBusy) && styles.inlineCodeSubmitDisabled,
+              ]}
+            >
+              <Check size={14} color={SDO_COLORS.white} />
+              <Text style={styles.inlineCodeSubmitText}>
+                {submittingCode ? '...' : 'Unlock'}
+              </Text>
+            </Pressable>
+          </View>
+          {inlineError ? (
+            <Text
+              testID={`mobile-sealed-qr-code-error-${doc.id}`}
+              style={styles.inlineCodeErrorText}
+            >
+              {inlineError}
+            </Text>
+          ) : null}
+        </View>
+      ) : null}
 
       {!compact ? (
         <View style={styles.footer}>
@@ -317,5 +404,57 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     fontWeight: '700',
     color: SDO_COLORS.textSecondary,
+  },
+  inlineCodeBlock: {
+    gap: 6,
+  },
+  inlineCodeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  inlineCodeInput: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 38,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: SDO_COLORS.borderStrong,
+    backgroundColor: SDO_COLORS.surface,
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+    fontFamily: SDO_FONTS.mono,
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: SDO_COLORS.textPrimary,
+  },
+  inlineCodeInputError: {
+    borderColor: SDO_COLORS.rose,
+  },
+  inlineCodeSubmitBtn: {
+    minHeight: 38,
+    borderRadius: 12,
+    backgroundColor: SDO_COLORS.navy,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    flexShrink: 0,
+  },
+  inlineCodeSubmitDisabled: {
+    opacity: 0.48,
+  },
+  inlineCodeSubmitText: {
+    fontFamily: SDO_FONTS.sans,
+    fontSize: 12,
+    fontWeight: '800',
+    color: SDO_COLORS.white,
+  },
+  inlineCodeErrorText: {
+    fontFamily: SDO_FONTS.sans,
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: SDO_COLORS.roseText,
   },
 });

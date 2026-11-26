@@ -3,6 +3,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testi
 import App from '../src/App';
 import FuseButton from '../src/components/FuseButton';
 import { parseOpaqueQrToken, WebBackendGateway } from '../src/domain/qrPolicy';
+import { formatDisplayFileName, normalizeUploadFileName } from '../src/utils/formatters';
 import { getWebDevFallbackBaseUrls, LaravelSanctumGateway } from '../src/services/webApiClient';
 import {
   DocumentCategory,
@@ -3314,5 +3315,267 @@ describe('DocsTracker Web App', () => {
     await waitFor(() => {
       expect(qsModal.textContent).toContain('Annual Procurement Plan FY 2026');
     });
+  });
+
+  it('supports register password visibility & clear inline errors, persistent QR unlock duration + web auto code input, default filename normalization, and inbox web notifications', async () => {
+    // Part 1: Default uploaded filename normalization (URI-encoded & Android/OS prefixes)
+    expect(formatDisplayFileName('primary%3ADownload%2FMemo%20Order%20%2312.pdf')).toBe(
+      'Memo Order #12.pdf',
+    );
+    expect(formatDisplayFileName('C:\\fakepath\\Quarterly%20Report.pdf')).toBe(
+      'Quarterly Report.pdf',
+    );
+    expect(
+      normalizeUploadFileName('   ', 'content://com.android/document/primary%3AIMG_2026.jpg'),
+    ).toBe('IMG_2026.jpg');
+
+    // Part 2: Web Register password visibility toggles + clear inline password error handling
+    const regGw = createMockGateway();
+    const { unmount: unmountReg } = render(
+      <App gateway={regGw} requireAuth={true} firstVisitSkeletonMs={0} />,
+    );
+    fireEvent.click(screen.getByRole('tab', { name: /Create Account/i }));
+
+    const regPassInput = screen.getByLabelText('Create Password') as HTMLInputElement;
+    const regConfirmInput = screen.getByLabelText('Confirm Password') as HTMLInputElement;
+    expect(regPassInput.type).toBe('password');
+    expect(regConfirmInput.type).toBe('password');
+
+    fireEvent.click(screen.getByTestId('web-register-toggle-password'));
+    expect(regPassInput.type).toBe('text');
+    fireEvent.click(screen.getByTestId('web-register-toggle-confirm-password'));
+    expect(regConfirmInput.type).toBe('text');
+
+    // Missing uppercase reports exact missing requirement on blur
+    fireEvent.change(regPassInput, { target: { value: 'lowercase123!' } });
+    fireEvent.blur(regPassInput);
+    expect(screen.getByTestId('web-register-password-error').textContent).toContain(
+      'uppercase letter',
+    );
+
+    // Common weak phrase reports exact reason immediately (even when all 4 chips pass)
+    fireEvent.change(regPassInput, { target: { value: 'MyPassword1!' } });
+    expect(screen.getByTestId('web-register-password-error').textContent).toContain('"password"');
+
+    // Strong password + mismatched confirm shows clear mismatch inline error, then match indicator
+    fireEvent.change(regPassInput, { target: { value: 'Tracely#2026!' } });
+    expect(screen.queryByTestId('web-register-password-error')).toBeNull();
+    fireEvent.change(regConfirmInput, { target: { value: 'Tracely#2026?' } });
+    expect(screen.getByTestId('web-register-confirm-password-error').textContent).toContain(
+      'does not match',
+    );
+    fireEvent.change(regConfirmInput, { target: { value: 'Tracely#2026!' } });
+    expect(screen.queryByTestId('web-register-confirm-password-error')).toBeNull();
+    expect(screen.getByTestId('web-register-password-match')).toBeTruthy();
+    unmountReg();
+
+    // Part 3: Persistent QR unlock duration (no rotation on close/reopen) + clicking QR focuses attached code input + Web Inbox notifications
+    const requestPermissionMock = vi.fn(async () => 'granted' as NotificationPermission);
+    const dispatchedNativeNotifs: Array<{ title: string; body?: string }> = [];
+    class MockDefaultNotification {
+      public static permission: NotificationPermission = 'default';
+      public static requestPermission = async () => {
+        const res = await requestPermissionMock();
+        MockDefaultNotification.permission = res;
+        return res;
+      };
+      public onclick: (() => void) | null = null;
+      constructor(title: string, options?: NotificationOptions) {
+        dispatchedNativeNotifs.push({ title, body: options?.body });
+      }
+    }
+    const prevNotification = window.Notification;
+    Object.defineProperty(window, 'Notification', {
+      configurable: true,
+      writable: true,
+      value: MockDefaultNotification,
+    });
+
+    try {
+      const actor: Personnel = {
+        id: 'usr-ops-1',
+        fullName: 'Elena Santos',
+        employeeId: 'TRC-0301',
+        email: 'ops@tracely.app',
+        position: 'Operations Officer',
+        role: 'staff',
+        roleLabel: 'Staff',
+        office: { id: 'off-ops', code: 'OPS', name: 'Operations Unit' },
+        availability: 'available',
+        initials: 'ES',
+      };
+      const senderOffice = { id: 'off-budget', code: 'BUDGET', name: 'Budget Unit' };
+      const sealedDoc: DocumentRecord = {
+        id: 'doc-soft-persist',
+        isSealed: true,
+        attachmentCount: 1,
+        trackingCode: 'TRC-2026-••••••',
+        qrToken: '',
+        title: 'Sealed Incoming Document',
+        categoryId: 'cat-1',
+        categoryName: 'Sealed Transfer',
+        confidentialityTier: 'standard_internal',
+        copyFormat: 'digital',
+        lifecycleStatus: 'in_transit',
+        slaState: 'on_track',
+        slaDueAt: new Date(Date.now() + 86_400_000).toISOString(),
+        originOffice: senderOffice,
+        currentOffice: actor.office,
+        submittedSchoolName: null,
+        submittedSchoolId: null,
+        physicalReference: null,
+        physicalPageCount: null,
+        versions: [],
+        transactions: [
+          {
+            id: 'tx-persist-1',
+            fromUserId: 'usr-budget-1',
+            fromUserName: 'Marco Villanueva',
+            fromOffice: senderOffice,
+            toUserId: actor.id,
+            toOffice: actor.office,
+            recipientName: actor.fullName,
+            scope: 'inter_office',
+            status: 'pending',
+            remarks: 'For web unlock without mobile',
+            sentAt: new Date().toISOString(),
+            receivedAt: null,
+            receivedByName: null,
+          },
+        ],
+        createdAt: new Date().toISOString(),
+      };
+      const unlockedDoc: DocumentRecord = {
+        ...sealedDoc,
+        isSealed: false,
+        trackingCode: 'TRC-2026-000512',
+        qrToken: 'tok-512',
+        title: 'Q4 Facility Operations Memo',
+        lifecycleStatus: 'in_review',
+        transactions: [
+          {
+            ...sealedDoc.transactions[0],
+            status: 'acknowledged',
+            receivedAt: new Date().toISOString(),
+            receivedByName: actor.fullName,
+          },
+        ],
+      };
+
+      const createChallengeSpy = vi.fn(async () => ({
+        challengeId: 'ulk-persist-1',
+        documentId: sealedDoc.id,
+        token: 'tok-unlock-persist-1',
+        qrPayload: 'TRC-QR:UNLOCK:tok-unlock-persist-1',
+        shortCode: 'M8R-347',
+        expiresAt: new Date(Date.now() + 300_000).toISOString(),
+        ttlSeconds: 300,
+        reused: false,
+      }));
+      const consumeUnlockSpy = vi.fn(async (code: string, documentId?: string) => {
+        if (code.replace(/-/g, '').toUpperCase() !== 'M8R347' || documentId !== sealedDoc.id) {
+          throw new Error('Invalid code');
+        }
+        return unlockedDoc;
+      });
+      const liveNotifications: Array<{
+        id: string;
+        documentId: string;
+        title: string;
+        content: string;
+        lockScreenPreview: string;
+        authenticatedDetail: string;
+        receivedAt: string;
+        read: boolean;
+      }> = [];
+
+      const gw = createMockGateway({
+        login: async () => ({ bearerToken: 'tok-ops-1', user: actor }),
+        listWorkspace: async () => ({
+          offices: [actor.office, senderOffice],
+          personnel: [actor],
+          documents: [sealedDoc],
+          trackedSnapshots: [],
+          categories: [],
+          notifications: [...liveNotifications],
+        }),
+        createUnlockChallenge: createChallengeSpy,
+        consumeUnlockChallenge: consumeUnlockSpy,
+      });
+
+      window.location.hash = '#/inbox';
+      render(<App gateway={gw} requireAuth={true} firstVisitSkeletonMs={0} />);
+      fireEvent.change(screen.getByLabelText('Employee ID or Work Email'), {
+        target: { value: 'ops@tracely.app' },
+      });
+      fireEvent.change(screen.getByLabelText('Password'), {
+        target: { value: 'Tracely@2026!' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: /Sign In/i }));
+
+      // Inbox web notification enable banner appears when permission is 'default'
+      expect(await screen.findByTestId('web-inbox-notif-banner')).toBeTruthy();
+      fireEvent.click(screen.getByTestId('web-inbox-enable-notif-btn'));
+      await waitFor(() => {
+        expect(requestPermissionMock).toHaveBeenCalledTimes(1);
+      });
+      expect(screen.queryByTestId('web-inbox-notif-banner')).toBeNull();
+
+      // New incoming notification fires both live in-app toast & native browser notification on sync
+      liveNotifications.push({
+        id: 'notif-inbox-live-99',
+        documentId: sealedDoc.id,
+        title: 'Sealed QR Incoming · From BUDGET',
+        content: 'Budget sent a sealed document transfer.',
+        lockScreenPreview: 'New sealed QR transfer.',
+        authenticatedDetail: 'Sealed transfer from BUDGET',
+        receivedAt: new Date().toISOString(),
+        read: false,
+      });
+      fireEvent.click(screen.getByRole('button', { name: /^Sync$/i }));
+      await waitFor(() => {
+        expect(dispatchedNativeNotifs).toHaveLength(1);
+      });
+      expect(dispatchedNativeNotifs[0].title).toBe('Sealed QR Incoming · From BUDGET');
+
+      // Open sealed QR -> persistent code M8R-347 + duration pill + auto code input
+      fireEvent.click(await screen.findByTestId(`sealed-qr-trigger-${sealedDoc.id}`));
+      expect(await screen.findByTestId('web-soft-copy-unlock-modal')).toBeTruthy();
+      expect(screen.getByTestId('web-unlock-short-code').textContent).toContain('M8R-347');
+      expect(screen.getByTestId('web-unlock-duration').textContent).toContain('Valid for');
+      expect(createChallengeSpy).toHaveBeenCalledTimes(1);
+
+      // Closing and reopening modal keeps EXACT same code without rotating
+      fireEvent.click(screen.getByRole('button', { name: /Close Scan QR or Enter Unlock Code/i }));
+      expect(screen.queryByTestId('web-soft-copy-unlock-modal')).toBeNull();
+
+      fireEvent.click(screen.getByTestId(`sealed-qr-trigger-${sealedDoc.id}`));
+      expect(await screen.findByTestId('web-soft-copy-unlock-modal')).toBeTruthy();
+      expect(screen.getByTestId('web-unlock-short-code').textContent).toContain('M8R-347');
+      expect(createChallengeSpy).toHaveBeenCalledTimes(1);
+
+      // Clicking the QR graphic focuses the attached code input, and submitting unlocks directly on Web!
+      fireEvent.click(screen.getByTestId('web-unlock-qr-clickable'));
+      const webCodeInput = screen.getByTestId('web-unlock-code-input');
+      await waitFor(() => {
+        expect(document.activeElement).toBe(webCodeInput);
+      });
+      fireEvent.change(webCodeInput, { target: { value: 'm8r-347' } });
+      fireEvent.click(screen.getByTestId('web-unlock-code-submit'));
+
+      await waitFor(() => {
+        expect(consumeUnlockSpy).toHaveBeenCalledWith('m8r-347', sealedDoc.id);
+      });
+      await waitFor(() => {
+        expect(screen.queryByTestId('web-soft-copy-unlock-modal')).toBeNull();
+      });
+      expect(await screen.findByText('Q4 Facility Operations Memo')).toBeTruthy();
+    } finally {
+      Object.defineProperty(window, 'Notification', {
+        configurable: true,
+        writable: true,
+        value: prevNotification,
+      });
+    }
   });
 });

@@ -4,7 +4,9 @@ import {
   ArrowLeft,
   Camera,
   CheckCircle2,
+  Download,
   Eye,
+  FileCheck2,
   FileText,
   FolderKanban,
   History,
@@ -18,7 +20,12 @@ import {
   Send,
   ShieldAlert,
 } from 'lucide-react';
-import { CommentVisibility, DocumentComment, PresignedDownloadGrant } from '../domain/types';
+import {
+  CommentVisibility,
+  DocumentComment,
+  PresignedDownloadGrant,
+  VersionChangeType,
+} from '../domain/types';
 import { useWebApp } from '../state/WebAppContext';
 import { CopyFormatBadge, SlaBadge, TierBadge } from '../components/Badges';
 import FuseButton from '../components/FuseButton';
@@ -36,12 +43,29 @@ import {
 } from '../components/Modals';
 import { paginateList, PaginationBar } from '../components/PaginationBar';
 import { SealedQrGlyph } from '../components/SealedQrCard';
-import { formatBytes, formatClockTime, formatCompactDate, formatRelativeTime } from '../utils/formatters';
+import {
+  formatBytes,
+  formatClockTime,
+  formatCompactDate,
+  formatDisplayFileName,
+  formatRelativeTime,
+} from '../utils/formatters';
 import { isPendingReceiptForActor, isPendingSentByActor } from '../utils/sentFilter';
 
 const TIMELINE_PER_PAGE = 10;
 const COMMENTS_PER_PAGE = 8;
 const VERSIONS_PER_PAGE = 6;
+
+const VERSION_CHANGE_META: Record<
+  VersionChangeType,
+  { readonly label: string; readonly pillClass: string }
+> = {
+  initial: { label: 'Initial Upload', pillClass: 'pill pill-slate' },
+  signed: { label: 'Signed / Countersigned', pillClass: 'pill pill-emerald' },
+  revised: { label: 'Revised', pillClass: 'pill pill-amber' },
+  endorsed: { label: 'Endorsed / Stamped', pillClass: 'pill pill-sky' },
+  supporting_attachment: { label: 'Supporting File', pillClass: 'pill pill-slate' },
+};
 
 export const DocumentDetailPage: React.FC = () => {
   const {
@@ -165,9 +189,24 @@ export const DocumentDetailPage: React.FC = () => {
       : latestTx.fromOffice.id === actor?.office.id);
   const hasDigitalFiles = doc.versions.length > 0;
   const isFinalized = doc.lifecycleStatus === 'approved' || doc.lifecycleStatus === 'archived';
+  const sortedVersions = [...doc.versions].sort((a, b) => b.versionNumber - a.versionNumber);
+  const latestVersionNumber = sortedVersions[0]?.versionNumber ?? 0;
   const pagedTimeline = paginateList(doc.transactions, timelinePage, TIMELINE_PER_PAGE);
   const pagedComments = paginateList(comments, commentsPage, COMMENTS_PER_PAGE);
-  const pagedVersions = paginateList(doc.versions, versionsPage, VERSIONS_PER_PAGE);
+  const pagedVersions = paginateList(sortedVersions, versionsPage, VERSIONS_PER_PAGE);
+
+  const handleDownloadVersion = async (versionNumber: number) => {
+    const grant = await issuePresignedView(doc.id, versionNumber);
+    const cleanName = formatDisplayFileName(grant.version.fileName);
+    const anchor = document.createElement('a');
+    anchor.href = grant.url;
+    anchor.download = cleanName;
+    anchor.rel = 'noopener noreferrer';
+    anchor.target = '_blank';
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+  };
 
   if (pendingAtMyOffice) {
     const fromOffice = latestTx?.fromOffice ?? doc.originOffice;
@@ -211,7 +250,7 @@ export const DocumentDetailPage: React.FC = () => {
 
             <h3 style={{ margin: 0, fontSize: 19, fontWeight: 800, color: 'var(--text-primary)' }}>
               {doc.copyFormat === 'digital'
-                ? 'Unlock with Tracely Mobile or Password'
+                ? 'Unlock with QR Code, Code, or Password'
                 : 'Receive Physical Hard Copy'}
             </h3>
 
@@ -226,7 +265,7 @@ export const DocumentDetailPage: React.FC = () => {
                 : 'Hard-copy transfer'}
               .{' '}
               {doc.copyFormat === 'digital'
-                ? 'Display the live Unlock QR to scan with Tracely Mobile, or unlock with your account password.'
+                ? 'Click the QR to scan with Tracely Mobile or enter the active 5-minute unlock code directly on Web.'
                 : 'Scan the printed routing slip with Tracely Mobile, or enter the Tracking Code on desktop.'}
             </p>
 
@@ -502,10 +541,12 @@ export const DocumentDetailPage: React.FC = () => {
                   <button
                     type="button"
                     className="btn btn-outline"
+                    data-testid="web-doc-attach-file-btn"
                     disabled={isBusy}
                     onClick={() => setShowRevisionModal(true)}
                   >
-                    <Plus size={15} /> {hasDigitalFiles ? 'Upload Revision' : 'Attach Soft Copy (v1)'}
+                    <Plus size={15} />{' '}
+                    {hasDigitalFiles ? 'Attach Signed / Updated File' : 'Attach Soft Copy (v1)'}
                   </button>
                   <button
                     type="button"
@@ -560,6 +601,157 @@ export const DocumentDetailPage: React.FC = () => {
               ) : null}
             </div>
           </div>
+
+          {!pendingAtMyOffice && sortedVersions.length > 0 ? (
+            <div
+              className="card"
+              data-testid="web-doc-change-history"
+              style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
+            >
+              <div className="section-header-row">
+                <h4 className="section-title" style={{ fontSize: 15, display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+                  <FileCheck2 size={16} color="var(--navy)" />
+                  <span>Document Change History ({sortedVersions.length})</span>
+                </h4>
+                {inMyCustody && !isFinalized ? (
+                  <button
+                    type="button"
+                    className="btn btn-soft"
+                    style={{ minHeight: 30, padding: '4px 10px', fontSize: 12 }}
+                    onClick={() => setShowRevisionModal(true)}
+                  >
+                    <Plus size={13} /> Attach Signed / Updated
+                  </button>
+                ) : null}
+              </div>
+              <p className="field-hint" style={{ margin: 0 }}>
+                Every signed, endorsed, or revised copy is stored non-destructively with the
+                responsible office so earlier versions remain traceable.
+              </p>
+              <div className="tl-list">
+                {sortedVersions.map((ver, idx, arr) => {
+                  const isFirstRow = idx === 0;
+                  const isLastRow = idx === arr.length - 1;
+                  const isLatest = ver.versionNumber === latestVersionNumber;
+                  const changeKey: VersionChangeType =
+                    ver.changeType ?? (ver.versionNumber <= 1 ? 'initial' : 'revised');
+                  const changeMeta = VERSION_CHANGE_META[changeKey] ?? VERSION_CHANGE_META.revised;
+                  const officeCode =
+                    ver.uploadedByOfficeCode ??
+                    (ver.versionNumber === 1 ? doc.originOffice.code : doc.currentOffice.code);
+                  const officeName =
+                    ver.uploadedByOfficeName ??
+                    (ver.versionNumber === 1 ? doc.originOffice.name : '');
+                  const displayFileName = formatDisplayFileName(ver.fileName);
+
+                  return (
+                    <div
+                      key={`hist-v${ver.versionNumber}`}
+                      className="tl-row"
+                      data-testid={`web-change-history-v${ver.versionNumber}`}
+                    >
+                      <div className="tl-time">
+                        <div className="tl-date tabular">{formatCompactDate(ver.uploadedAt)}</div>
+                        <div className="tl-clock mono">{formatClockTime(ver.uploadedAt)}</div>
+                      </div>
+
+                      <div className="tl-axis" aria-hidden="true">
+                        <div className={`tl-line-top${isFirstRow ? ' tl-line-hidden' : ''}`} />
+                        <div
+                          className={`tl-dot ${
+                            changeKey === 'signed'
+                              ? 'tl-dot-completed'
+                              : isLatest
+                                ? 'tl-dot-active'
+                                : 'tl-dot-done'
+                          }`}
+                        />
+                        <div className={`tl-line-bottom${isLastRow ? ' tl-line-hidden' : ''}`} />
+                      </div>
+
+                      <div className="tl-body">
+                        <div className="tl-time-inline mono">
+                          {formatCompactDate(ver.uploadedAt)} · {formatClockTime(ver.uploadedAt)}
+                        </div>
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            gap: 8,
+                            flexWrap: 'wrap',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                            <span className="mono" style={{ fontSize: 12, fontWeight: 800, color: 'var(--navy)' }}>
+                              v{ver.versionNumber}
+                            </span>
+                            <span className={changeMeta.pillClass} style={{ fontSize: 10.5 }}>
+                              {changeMeta.label}
+                            </span>
+                            {isLatest ? (
+                              <span className="pill pill-sky" style={{ fontSize: 10 }}>
+                                Latest
+                              </span>
+                            ) : ver.versionNumber === 1 ? (
+                              <span className="pill pill-slate" style={{ fontSize: 10 }}>
+                                Original
+                              </span>
+                            ) : null}
+                          </div>
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <button
+                              type="button"
+                              className="btn btn-outline"
+                              style={{ minHeight: 28, padding: '2px 9px', fontSize: 11.5 }}
+                              onClick={async () => {
+                                const grant = await issuePresignedView(doc.id, ver.versionNumber);
+                                setViewerGrant(grant);
+                              }}
+                            >
+                              <Eye size={12} /> View
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-soft"
+                              style={{ minHeight: 28, padding: '2px 9px', fontSize: 11.5 }}
+                              onClick={() => void handleDownloadVersion(ver.versionNumber)}
+                            >
+                              <Download size={12} /> Download
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="tl-office" style={{ marginTop: 4 }}>
+                          <span className="tl-office-tag mono">{officeCode}</span>
+                          <span>
+                            {officeName ? `${officeName} · ` : ''}
+                            {ver.uploadedByName}
+                          </span>
+                        </div>
+
+                        {ver.note ? <div className="tl-remarks">{ver.note}</div> : null}
+                        <div
+                          title={displayFileName}
+                          style={{
+                            fontSize: 11.5,
+                            color: 'var(--text-secondary)',
+                            marginTop: 4,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          <FileText size={11} style={{ marginRight: 5, verticalAlign: '-1px' }} />
+                          {displayFileName} · {formatBytes(ver.sizeBytes)}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
 
           <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <h4 className="section-title" style={{ fontSize: 15 }}>
@@ -637,9 +829,22 @@ export const DocumentDetailPage: React.FC = () => {
                           </div>
                           {tx.remarks ? <div className="tl-remarks">{tx.remarks}</div> : null}
                           {tx.proofPhoto ? (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
-                              <span className="pill pill-emerald" style={{ fontSize: 10 }}>
-                                <Camera size={11} /> Proof Photo Verified ({tx.proofPhoto.fileName})
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, flexWrap: 'wrap', maxWidth: '100%' }}>
+                              <span
+                                className="pill pill-emerald"
+                                title={formatDisplayFileName(tx.proofPhoto.fileName)}
+                                style={{ fontSize: 10, maxWidth: '100%', minWidth: 0 }}
+                              >
+                                <Camera size={11} style={{ flexShrink: 0 }} />
+                                <span
+                                  style={{
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                  }}
+                                >
+                                  Proof Photo Verified ({formatDisplayFileName(tx.proofPhoto.fileName)})
+                                </span>
                               </span>
                               <button
                                 type="button"
@@ -786,14 +991,14 @@ export const DocumentDetailPage: React.FC = () => {
               <h4 className="section-title" style={{ fontSize: 15 }}>
                 Digital Attachments ({doc.versions.length})
               </h4>
-              {inMyCustody ? (
+              {inMyCustody && !isFinalized ? (
                 <button
                   type="button"
                   className="btn btn-soft"
                   style={{ minHeight: 30, padding: '4px 10px', fontSize: 12 }}
                   onClick={() => setShowRevisionModal(true)}
                 >
-                  <Plus size={13} /> {hasDigitalFiles ? 'Add Version' : 'Attach Scan'}
+                  <Plus size={13} /> {hasDigitalFiles ? 'Attach File' : 'Attach Scan'}
                 </button>
               ) : null}
             </div>
@@ -845,32 +1050,100 @@ export const DocumentDetailPage: React.FC = () => {
               </div>
             ) : (
               <>
-                {pagedVersions.pageItems.map((ver) => (
-                  <div key={ver.versionNumber} className="card-soft" style={{ padding: 12 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <strong style={{ fontSize: 13 }}>
-                        v{ver.versionNumber} · {ver.fileName}
-                      </strong>
-                      <button
-                        type="button"
-                        className="btn btn-outline"
-                        style={{ minHeight: 30, padding: '4px 10px', fontSize: 12 }}
-                        onClick={async () => {
-                          const grant = await issuePresignedView(doc.id, ver.versionNumber);
-                          setViewerGrant(grant);
+                {pagedVersions.pageItems.map((ver) => {
+                  const displayFileName = formatDisplayFileName(ver.fileName);
+                  const isLatest = ver.versionNumber === latestVersionNumber;
+                  const changeKey: VersionChangeType =
+                    ver.changeType ?? (ver.versionNumber <= 1 ? 'initial' : 'revised');
+                  const changeMeta = VERSION_CHANGE_META[changeKey] ?? VERSION_CHANGE_META.revised;
+                  const officeCode =
+                    ver.uploadedByOfficeCode ??
+                    (ver.versionNumber === 1 ? doc.originOffice.code : undefined);
+                  return (
+                    <div key={ver.versionNumber} className="card-soft" style={{ padding: 12 }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          gap: 8,
                         }}
                       >
-                        <Eye size={13} /> View
-                      </button>
+                        <strong
+                          title={displayFileName}
+                          style={{
+                            fontSize: 13,
+                            flex: 1,
+                            minWidth: 0,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          v{ver.versionNumber} · {displayFileName}
+                        </strong>
+                        <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
+                          <button
+                            type="button"
+                            className="btn btn-outline"
+                            style={{ minHeight: 30, padding: '4px 10px', fontSize: 12 }}
+                            onClick={async () => {
+                              const grant = await issuePresignedView(doc.id, ver.versionNumber);
+                              setViewerGrant(grant);
+                            }}
+                          >
+                            <Eye size={13} /> View
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-soft"
+                            aria-label={`Download version ${ver.versionNumber}`}
+                            title={`Download ${displayFileName}`}
+                            style={{ minHeight: 30, padding: '4px 8px', fontSize: 12 }}
+                            onClick={() => void handleDownloadVersion(ver.versionNumber)}
+                          >
+                            <Download size={13} />
+                          </button>
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          flexWrap: 'wrap',
+                          marginTop: 6,
+                        }}
+                      >
+                        <span className={changeMeta.pillClass} style={{ fontSize: 10 }}>
+                          {changeMeta.label}
+                        </span>
+                        {isLatest ? (
+                          <span className="pill pill-sky" style={{ fontSize: 10 }}>
+                            Latest
+                          </span>
+                        ) : null}
+                        {officeCode ? (
+                          <span className="mono" style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--navy)' }}>
+                            {officeCode}
+                          </span>
+                        ) : null}
+                      </div>
+                      {ver.note ? (
+                        <div style={{ fontSize: 11.5, color: 'var(--text-primary)', marginTop: 4 }}>
+                          {ver.note}
+                        </div>
+                      ) : null}
+                      <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4 }}>
+                        {formatBytes(ver.sizeBytes)} · {ver.uploadedByName} ·{' '}
+                        {formatCompactDate(ver.uploadedAt)} {formatClockTime(ver.uploadedAt)}
+                      </div>
+                      <div className="mono" style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>
+                        SHA-256: {ver.sha256Checksum.slice(0, 16)}...
+                      </div>
                     </div>
-                    <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4 }}>
-                      {formatBytes(ver.sizeBytes)} · {ver.uploadedByName}
-                    </div>
-                    <div className="mono" style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>
-                      SHA-256: {ver.sha256Checksum.slice(0, 16)}...
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
                 <PaginationBar
                   totalItems={doc.versions.length}
                   page={pagedVersions.safePage}
@@ -928,13 +1201,14 @@ export const DocumentDetailPage: React.FC = () => {
       <RevisionUploadModal
         open={showRevisionModal}
         document={doc}
-        onUpload={async (file, sha256Checksum, revisionNote, fileName) => {
+        onUpload={async (file, sha256Checksum, revisionNote, fileName, changeType) => {
           await uploadRevision({
             documentId: doc.id,
             file,
             fileName,
             sha256Checksum,
             revisionNote,
+            changeType,
           });
         }}
         onClose={() => setShowRevisionModal(false)}

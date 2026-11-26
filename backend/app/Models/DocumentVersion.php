@@ -17,11 +17,15 @@ class DocumentVersion extends Model
         'id',
         'document_id',
         'version_number',
+        'change_type',
         'file_name',
         'mime_type',
         'size_bytes',
         'sha256_checksum',
         'uploaded_by_id',
+        'uploaded_by_office_id',
+        'uploaded_by_office_code',
+        'uploaded_by_office_name',
         'uploaded_at',
         'revision_note',
         'storage_key',
@@ -44,5 +48,10 @@ class DocumentVersion extends Model
     public function uploadedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'uploaded_by_id');
+    }
+
+    public function uploadedByOffice(): BelongsTo
+    {
+        return $this->belongsTo(Office::class, 'uploaded_by_office_id');
     }
 }

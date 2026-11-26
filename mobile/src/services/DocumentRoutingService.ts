@@ -363,11 +363,36 @@ export class DocumentRoutingService {
     payload: UploadRevisionPayload,
   ): Promise<Document> {
     this._policy.enforce(actor, document);
+    const latestTx = document.latestTransaction;
+    if (document.isSealed || latestTx?.canBeAcknowledgedBy(actor)) {
+      throw new DomainRuleError(
+        'RECEIPT_REQUIRED_BEFORE_ACCESS',
+        'Unlock and confirm receipt of this document before attaching a signed or updated file.',
+      );
+    }
+    if (
+      document.lifecycleStatus === DocumentLifecycleStatus.APPROVED ||
+      document.lifecycleStatus === DocumentLifecycleStatus.ARCHIVED
+    ) {
+      throw new DomainRuleError(
+        'DOCUMENT_ALREADY_FINALIZED',
+        'Cannot attach a new file version to an approved or archived document.',
+      );
+    }
+    if (latestTx && latestTx.receiptStatus === ReceiptStatus.PENDING) {
+      throw new DomainRuleError(
+        'DOCUMENT_IN_TRANSIT',
+        'This document is in transit awaiting receipt. Wait until received or recall first.',
+      );
+    }
+    const isHoldingCustody =
+      actor.id === document.currentHolderId || actor.office.id === document.currentOffice.id;
+    const isOriginRevision =
+      document.lifecycleStatus === DocumentLifecycleStatus.RETURNED_FOR_REVISION &&
+      actor.office.id === document.originOffice.id;
+
     if (document.versions.length === 0) {
-      const canAttachInitial =
-        actor.id === document.currentHolderId ||
-        actor.office.id === document.currentOffice.id ||
-        actor.office.id === document.originOffice.id;
+      const canAttachInitial = isHoldingCustody || actor.office.id === document.originOffice.id;
       if (!canAttachInitial) {
         throw new DomainRuleError(
           'INITIAL_SCAN_NOT_ALLOWED',
@@ -376,22 +401,10 @@ export class DocumentRoutingService {
       }
       return this._docRepo.uploadRevisionVersion(payload);
     }
-    if (actor.office.id !== document.originOffice.id) {
+    if (!isHoldingCustody && !isOriginRevision) {
       throw new DomainRuleError(
-        'ORIGIN_OFFICE_ONLY',
-        `Only the originating office (${document.originOffice.code}) can upload a revision.`,
-      );
-    }
-    const isOriginPreDispatch =
-      document.transactions.length === 0 &&
-      document.lifecycleStatus === DocumentLifecycleStatus.IN_REVIEW;
-    if (
-      !isOriginPreDispatch &&
-      document.lifecycleStatus !== DocumentLifecycleStatus.RETURNED_FOR_REVISION
-    ) {
-      throw new DomainRuleError(
-        'REVISION_NOT_ALLOWED',
-        'A new version can only be uploaded when the document has been returned for revision.',
+        'CUSTODY_REQUIRED',
+        `Only the office currently holding custody (${document.currentOffice.code}) can attach a signed copy or updated version.`,
       );
     }
     return this._docRepo.uploadRevisionVersion(payload);

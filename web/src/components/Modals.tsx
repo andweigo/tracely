@@ -34,6 +34,7 @@ import {
   DocumentUpdatePayload,
   Personnel,
   PresignedDownloadGrant,
+  VersionChangeType,
 } from '../domain/types';
 import { buildAuditLogsCsv, downloadCsvFile } from '../utils/exportCsv';
 import {
@@ -41,6 +42,7 @@ import {
   formatBytes,
   formatClockTime,
   formatCompactDate,
+  formatDisplayFileName,
   normalizeUploadFileName,
 } from '../utils/formatters';
 import { printRoutingSlipElement } from '../utils/printRoutingSlip';
@@ -70,13 +72,16 @@ export const ModalDialog: React.FC<ModalDialogProps> = ({
     <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label={title}>
       <div className={`modal-card${wide ? ' modal-card-wide' : ''}`}>
         <div className="modal-head no-print">
-          <div>
-            <h3 className="modal-title">{title}</h3>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <h3 className="modal-title" style={{ overflowWrap: 'anywhere' }}>
+              {title}
+            </h3>
             {subtitle ? <p className="modal-sub">{subtitle}</p> : null}
           </div>
           <button
             type="button"
             className="icon-circle-btn"
+            style={{ flexShrink: 0 }}
             onClick={onClose}
             aria-label={`Close ${title}`}
           >
@@ -1048,17 +1053,27 @@ export const AcknowledgeModal: React.FC<{
               gap: 10,
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
               {proofPreviewUrl ? (
                 <img
                   src={proofPreviewUrl}
                   alt="Receive proof preview"
                   className="staged-file-thumb"
+                  style={{ flexShrink: 0 }}
                 />
               ) : null}
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {proofFile.name}
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div
+                  title={formatDisplayFileName(proofFile.name)}
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 700,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {formatDisplayFileName(proofFile.name)}
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--emerald-text)', fontWeight: 600 }}>
                   {formatBytes(proofFile.size)} · SHA-256 verified on upload
@@ -1068,6 +1083,7 @@ export const AcknowledgeModal: React.FC<{
             <button
               type="button"
               className="icon-circle-btn"
+              style={{ flexShrink: 0 }}
               aria-label="Remove proof photo"
               onClick={clearProof}
             >
@@ -1435,28 +1451,106 @@ export const TextReasonModal: React.FC<{
   );
 };
 
+const VERSION_CHANGE_TYPE_OPTIONS: ReadonlyArray<{
+  readonly id: VersionChangeType;
+  readonly label: string;
+  readonly defaultNote: string;
+}> = [
+  { id: 'signed', label: 'Signed / Countersigned', defaultNote: 'Countersigned and attached updated copy' },
+  { id: 'revised', label: 'Revised Copy', defaultNote: 'Revised document content per remarks' },
+  { id: 'endorsed', label: 'Endorsed / Stamped', defaultNote: 'Endorsed and stamped by office' },
+  { id: 'supporting_attachment', label: 'Supporting File', defaultNote: 'Attached supporting document' },
+];
+
 export const RevisionUploadModal: React.FC<{
   open: boolean;
   document: DocumentRecord | null;
-  onUpload: (file: File, sha256: string, note: string, fileName?: string) => Promise<void>;
+  onUpload: (
+    file: File,
+    sha256: string,
+    note: string,
+    fileName?: string,
+    changeType?: VersionChangeType,
+  ) => Promise<void>;
   onClose: () => void;
 }> = ({ open, document, onUpload, onClose }) => {
   const [file, setFile] = useState<File | null>(null);
   const [customFileName, setCustomFileName] = useState('');
+  const [changeType, setChangeType] = useState<VersionChangeType>('signed');
   const [note, setNote] = useState('');
   const [hashing, setHashing] = useState(false);
 
+  useEffect(() => {
+    if (!open || !document) return;
+    if (document.versions.length === 0) {
+      setChangeType('initial');
+    } else if (document.lifecycleStatus === 'returned_for_revision') {
+      setChangeType('revised');
+    } else {
+      setChangeType('signed');
+    }
+  }, [open, document]);
+
   if (!document) return null;
   const isFirstDigital = document.versions.length === 0;
+  const nextVersionNumber =
+    document.versions.reduce((max, v) => Math.max(max, v.versionNumber), 0) + 1;
   const resolvedName = file ? normalizeUploadFileName(customFileName, file.name) : '';
 
   return (
     <ModalDialog
       open={open}
       onClose={onClose}
-      title={isFirstDigital ? 'Attach Scanned Soft Copy (v1)' : 'Upload Revised Version'}
+      title={
+        isFirstDigital
+          ? 'Attach Scanned Soft Copy (v1)'
+          : `Attach Signed / Updated File (v${nextVersionNumber})`
+      }
       subtitle={`${document.trackingCode} · ${document.title}`}
     >
+      {!isFirstDigital ? (
+        <div
+          className="card-soft"
+          style={{
+            padding: '10px 12px',
+            fontSize: 12,
+            color: 'var(--text-secondary)',
+            lineHeight: 1.5,
+            background: 'var(--sky-soft)',
+            borderColor: 'var(--sky-border)',
+          }}
+        >
+          <strong style={{ color: 'var(--navy-ink)' }}>Non-destructive version history:</strong>{' '}
+          Earlier versions (e.g. v1) remain permanently preserved read-only in Change History. This
+          file becomes the active <strong>v{nextVersionNumber} (Latest)</strong> for the next
+          office.
+        </div>
+      ) : null}
+
+      {!isFirstDigital ? (
+        <div className="field-group">
+          <span className="field-label">What changed in this file?</span>
+          <div className="chip-row" style={{ flexWrap: 'wrap' }}>
+            {VERSION_CHANGE_TYPE_OPTIONS.map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                data-testid={`web-version-change-type-${opt.id}`}
+                className={`sub-chip ${changeType === opt.id ? 'sub-chip-active' : ''}`}
+                onClick={() => {
+                  setChangeType(opt.id);
+                  if (!note.trim()) {
+                    setNote(opt.defaultNote);
+                  }
+                }}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       <div className="field-group">
         <label className="field-label" htmlFor="rev-file-input">
           Select PDF or Scanned Image
@@ -1469,11 +1563,14 @@ export const RevisionUploadModal: React.FC<{
           onChange={(e) => {
             const chosen = e.target.files?.[0] ?? null;
             setFile(chosen);
-            setCustomFileName(chosen ? chosen.name : '');
+            setCustomFileName(chosen ? formatDisplayFileName(chosen.name) : '');
           }}
         />
         {file ? (
-          <span className="field-hint">
+          <span
+            className="field-hint"
+            style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}
+          >
             {resolvedName} · {formatBytes(file.size)}
           </span>
         ) : null}
@@ -1496,15 +1593,33 @@ export const RevisionUploadModal: React.FC<{
       ) : null}
       <div className="field-group">
         <label className="field-label" htmlFor="rev-note-input">
-          Version Note
+          Change Summary / Version Note
         </label>
         <input
           id="rev-note-input"
           className="input"
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          placeholder="e.g. Signed transmittal scan with wet signature"
+          placeholder="e.g. Countersigned by Budget Officer; added approval stamp"
         />
+        {!isFirstDigital ? (
+          <div className="chip-row" style={{ flexWrap: 'wrap', marginTop: 4 }}>
+            {VERSION_CHANGE_TYPE_OPTIONS.map((opt) => (
+              <button
+                key={`preset-${opt.id}`}
+                type="button"
+                className="sub-chip"
+                style={{ fontSize: 11 }}
+                onClick={() => {
+                  setChangeType(opt.id);
+                  setNote(opt.defaultNote);
+                }}
+              >
+                {opt.defaultNote}
+              </button>
+            ))}
+          </div>
+        ) : null}
       </div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
         <button type="button" className="btn btn-outline" onClick={onClose}>
@@ -1513,13 +1628,20 @@ export const RevisionUploadModal: React.FC<{
         <button
           type="button"
           className="btn btn-primary"
+          data-testid="web-upload-version-submit"
           disabled={!file || !note.trim() || hashing}
           onClick={async () => {
             if (!file) return;
             setHashing(true);
             try {
               const sha256 = await computeFileSha256(file);
-              await onUpload(file, sha256, note.trim(), resolvedName);
+              await onUpload(
+                file,
+                sha256,
+                note.trim(),
+                resolvedName,
+                isFirstDigital ? 'initial' : changeType,
+              );
               setFile(null);
               setCustomFileName('');
               setNote('');
@@ -1529,7 +1651,12 @@ export const RevisionUploadModal: React.FC<{
             }
           }}
         >
-          <Upload size={15} /> {hashing ? 'Hashing SHA-256...' : 'Upload Version'}
+          <Upload size={15} />{' '}
+          {hashing
+            ? 'Hashing SHA-256...'
+            : isFirstDigital
+              ? 'Attach Scan (v1)'
+              : `Attach File (v${nextVersionNumber})`}
         </button>
       </div>
     </ModalDialog>
@@ -1608,7 +1735,7 @@ export const PresignedViewerModal: React.FC<{
       open={Boolean(grant)}
       wide
       onClose={onClose}
-      title={`${grant.version.fileName} · v${grant.version.versionNumber}`}
+      title={`${formatDisplayFileName(grant.version.fileName)} · v${grant.version.versionNumber}`}
       subtitle="In-app secure document viewer · Policy verified & audit logged"
     >
       <div className="viewer-meta-bar">

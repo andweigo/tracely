@@ -73,6 +73,49 @@ export function buildBatchItemTitle(
 }
 
 /**
+ * Safely decodes URI-encoded default filenames and strips accidental OS/Android
+ * path or content-provider prefixes (e.g. `primary:Download/`, `C:\fakepath\`).
+ */
+export function formatDisplayFileName(rawFileName: string, fallback = 'document'): string {
+  const trimmed = rawFileName.trim();
+  if (!trimmed) return fallback;
+
+  let decoded = /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed)
+    ? trimmed.replace(/[?#].*$/, '')
+    : trimmed;
+
+  for (let pass = 0; pass < 2; pass += 1) {
+    if (!/%[0-9A-Fa-f]{2}/.test(decoded)) break;
+    try {
+      const next = decodeURIComponent(decoded);
+      if (next === decoded) break;
+      decoded = next;
+    } catch {
+      break;
+    }
+  }
+
+  const normalizedSlashes = decoded.replace(/\\+/g, '/');
+  const lastSegment = normalizedSlashes.split('/').pop() ?? normalizedSlashes;
+  const withoutProviderPrefix = lastSegment.replace(
+    /^(?:primary|home|raw|document|msf|downloads):/i,
+    '',
+  );
+  const baseSegment = (withoutProviderPrefix.split('/').pop() ?? withoutProviderPrefix).trim();
+
+  const printable = Array.from(baseSegment)
+    .filter((ch) => {
+      const code = ch.charCodeAt(0);
+      return code >= 32 && code !== 127;
+    })
+    .join('')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  return printable || fallback;
+}
+
+/**
  * Sanitizes a user-edited upload filename while preserving the original file extension
  * so renaming the filename never strips `.pdf`, `.jpg`, `.png`, or `.webp`.
  */
@@ -81,19 +124,12 @@ export function normalizeUploadFileName(
   originalFileName: string,
   maxLength = 180,
 ): string {
-  const fallback = originalFileName.trim() || 'document';
+  const fallback = formatDisplayFileName(originalFileName, 'document');
   const extMatch = /\.([a-z0-9]{1,8})$/i.exec(fallback);
   const ext = extMatch ? `.${extMatch[1].toLowerCase()}` : '';
 
-  const printable = Array.from(customName)
-    .filter((ch) => {
-      const code = ch.charCodeAt(0);
-      return code >= 32 && code !== 127;
-    })
-    .join('');
-
-  const stripped = printable
-    .trim()
+  const decodedCustom = formatDisplayFileName(customName, '');
+  const stripped = decodedCustom
     .replace(/[\\/:*?"<>|]+/g, ' ')
     .replace(/\s+/g, ' ')
     .replace(/^\.+|\.+$/g, '')
@@ -113,8 +149,9 @@ export function normalizeUploadFileName(
   }
 
   const stemLimit = Math.max(1, maxLength - ext.length);
-  const stem = ext && candidate.toLowerCase().endsWith(ext)
-    ? candidate.slice(0, candidate.length - ext.length)
-    : candidate;
+  const stem =
+    ext && candidate.toLowerCase().endsWith(ext)
+      ? candidate.slice(0, candidate.length - ext.length)
+      : candidate;
   return `${stem.slice(0, stemLimit).trimEnd()}${ext}`;
 }

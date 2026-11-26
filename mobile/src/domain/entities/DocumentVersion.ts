@@ -1,14 +1,24 @@
 import { BaseEntity } from '../base/BaseEntity';
 
+export type VersionChangeType =
+  | 'initial'
+  | 'signed'
+  | 'revised'
+  | 'endorsed'
+  | 'supporting_attachment';
+
 export interface DocumentVersionProps {
   id: string;
   versionNumber: number;
+  changeType?: VersionChangeType;
   fileName: string;
   mimeType: string;
   sizeBytes: number;
   sha256Checksum: string;
   uploadedById: string;
   uploadedByName: string;
+  uploadedByOfficeCode?: string;
+  uploadedByOfficeName?: string;
   uploadedAt: string;
   revisionNote?: string;
   storageKey: string;
@@ -19,12 +29,15 @@ export interface DocumentVersionProps {
  */
 export class DocumentVersion extends BaseEntity {
   private readonly _versionNumber: number;
+  private readonly _changeType: VersionChangeType;
   private readonly _fileName: string;
   private readonly _mimeType: string;
   private readonly _sizeBytes: number;
   private readonly _sha256Checksum: string;
   private readonly _uploadedById: string;
   private readonly _uploadedByName: string;
+  private readonly _uploadedByOfficeCode?: string;
+  private readonly _uploadedByOfficeName?: string;
   private readonly _uploadedAt: string;
   private readonly _revisionNote: string;
   private readonly _storageKey: string;
@@ -32,12 +45,15 @@ export class DocumentVersion extends BaseEntity {
   constructor(props: DocumentVersionProps) {
     super(props.id, props.uploadedAt);
     this._versionNumber = props.versionNumber;
+    this._changeType = props.changeType ?? (props.versionNumber <= 1 ? 'initial' : 'revised');
     this._fileName = BaseEntity.requireNonEmpty(props.fileName, 'fileName');
     this._mimeType = BaseEntity.requireNonEmpty(props.mimeType, 'mimeType');
     this._sizeBytes = Math.max(0, props.sizeBytes);
     this._sha256Checksum = BaseEntity.requireNonEmpty(props.sha256Checksum, 'sha256Checksum');
     this._uploadedById = BaseEntity.requireNonEmpty(props.uploadedById, 'uploadedById');
     this._uploadedByName = BaseEntity.requireNonEmpty(props.uploadedByName, 'uploadedByName');
+    this._uploadedByOfficeCode = props.uploadedByOfficeCode;
+    this._uploadedByOfficeName = props.uploadedByOfficeName;
     this._uploadedAt = props.uploadedAt;
     this._revisionNote = props.revisionNote ?? 'Initial submission';
     this._storageKey = BaseEntity.requireNonEmpty(props.storageKey, 'storageKey');
@@ -46,6 +62,9 @@ export class DocumentVersion extends BaseEntity {
 
   public get versionNumber(): number {
     return this._versionNumber;
+  }
+  public get changeType(): VersionChangeType {
+    return this._changeType;
   }
   public get fileName(): string {
     return this._fileName;
@@ -67,6 +86,12 @@ export class DocumentVersion extends BaseEntity {
   }
   public get uploadedByName(): string {
     return this._uploadedByName;
+  }
+  public get uploadedByOfficeCode(): string | undefined {
+    return this._uploadedByOfficeCode;
+  }
+  public get uploadedByOfficeName(): string | undefined {
+    return this._uploadedByOfficeName;
   }
   public get uploadedAt(): string {
     return this._uploadedAt;

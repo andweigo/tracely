@@ -30,7 +30,12 @@ import { EmptyState } from '../components/EmptyState';
 import { MobileScreenHeader } from '../components/MobileTopBars';
 import { OpaqueQrModal } from '../sheets/OpaqueQrModal';
 import { SDO_COLORS, SDO_FONTS } from '../theme/tokens';
-import { formatClockTime, formatCompactDate, formatRelativeTime } from '../utils/formatters';
+import {
+  formatClockTime,
+  formatCompactDate,
+  formatDisplayFileName,
+  formatRelativeTime,
+} from '../utils/formatters';
 import {
   filterAndSortSentDocuments,
   paginateSentItems,
@@ -389,8 +394,8 @@ export const SentScreen: React.FC = () => {
                 {latestVersion ? (
                   <View style={styles.fileRow}>
                     <FileText size={13} color={SDO_COLORS.navy} />
-                    <Text numberOfLines={1} style={styles.fileText}>
-                      {latestVersion.fileName}
+                    <Text numberOfLines={1} ellipsizeMode="middle" style={styles.fileText}>
+                      {formatDisplayFileName(latestVersion.fileName)}
                     </Text>
                   </View>
                 ) : doc.physicalSummary ? (
